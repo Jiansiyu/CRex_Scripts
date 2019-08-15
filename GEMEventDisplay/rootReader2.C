@@ -237,6 +237,20 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 	std::map<Int_t,double_t  *> GEMDetX;
 	std::map<Int_t,double_t  *> GEMDetY;
 
+
+	// read out the coord parameters
+	//  coord.pos parameters
+	std::map<Int_t, Int_t> GEM_NCoordPosX;
+	std::map<Int_t, Int_t> GEM_NCoordPosY;
+	std::map<Int_t, double *>	GEM_CoordPosX;
+	std::map<Int_t, double *>	GEM_CoordPosY;
+
+	//trkPos
+	std::map<Int_t, Int_t> GEM_NCoordTrackPosX;
+	std::map<Int_t, Int_t> GEM_NCoordTrackPosY;
+	std::map<Int_t, double *>	GEM_CoordTrackPosX;
+	std::map<Int_t, double *>	GEM_CoordTrackPosY;
+
 	// loop on the chamber list
 	for (auto chamberID : chamberList){
 		std::cout<<chamberID<<std::endl;
@@ -281,6 +295,70 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 			}
 
 		//finish load the data
+
+		// start load the coordi parameter in the root file
+
+		std::string NCoordPosX_str(Form("Ndata.RGEM.rgems.x%d.coord.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NCoordPosX_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(NCoordPosX_str.c_str(), &GEM_NCoordPosX[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+		GEM_CoordPosX[chamberID]=new double_t [100];
+		std::string CoordPosX_str(Form("RGEM.rgems.x%d.coord.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(CoordPosX_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(CoordPosX_str.c_str(), &GEM_CoordPosX[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: GEM_CoordPosX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		std::string NCoordPosY_str(Form("Ndata.RGEM.rgems.y%d.coord.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NCoordPosY_str.c_str())){
+				PRex_GEM_tree->SetBranchAddress(NCoordPosY_str.c_str(), &GEM_NCoordPosY[chamberID]);
+		}else{
+				std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		GEM_CoordPosY[chamberID]=new double_t [100];
+		std::string CoordPosY_str(Form("RGEM.rgems.y%d.coord.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(CoordPosY_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(CoordPosY_str.c_str(), &GEM_CoordPosY[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: GEM_CoordPosY data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+
+		// start load the coordi parameter in the root file
+		std::string NCoordTrackPosX_str(Form("Ndata.RGEM.rgems.x%d.coord.trkpos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NCoordTrackPosX_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(NCoordTrackPosX_str.c_str(), &GEM_NCoordTrackPosX[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it "<<__LINE__<<std::endl;
+		}
+
+		GEM_CoordTrackPosX[chamberID]=new double_t [100];
+		std::string CoordTrackPosX_str(Form("RGEM.rgems.x%d.coord.trkpos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(CoordTrackPosX_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(CoordTrackPosX_str.c_str(), &GEM_CoordTrackPosX[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: GEM_CoordPosX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		std::string NCoordTrackPosY_str(Form("Ndata.RGEM.rgems.y%d.coord.trkpos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NCoordTrackPosY_str.c_str())){
+				PRex_GEM_tree->SetBranchAddress(NCoordTrackPosY_str.c_str(), &GEM_NCoordTrackPosY[chamberID]);
+		}else{
+				std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		GEM_CoordTrackPosY[chamberID]=new double_t [100];
+		std::string CoordTrackPosY_str(Form("RGEM.rgems.y%d.coord.trkpos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(CoordTrackPosY_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(CoordTrackPosY_str.c_str(), &GEM_CoordTrackPosY[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: GEM_CoordPosY data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
 	}
 
 	// loop on the data
@@ -294,11 +372,16 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 	TH2F *DetHist2DYZ;
 	TH2F *DetHist2DXZCorr;//= new TH2F("XZ","XZ",2000,-0.4,0.4,1000,-0,3.0);
 	TH2F *DetHist2DYZCorr;
+
+	//used for plot the coord positions
+	TH2F *DetCoordPosXZ;
+	TH2F *DetCoordPosYZ;
+	TH2F *DetCoordTrackPosXZ;
+	TH2F *DetCoordTrackPosYZ;
+
+
 	for(auto entry=1;entry<(PRex_GEM_tree->GetEntries()) && entry<2000;entry++)
 	{
-
-
-
 
 		PRex_GEM_tree->GetEntry(entry);
 		//PRex_GEM_tree->GetEntry(1);
@@ -419,19 +502,71 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 		DetHist2DYZCorr->SetMarkerStyle(20);
 
 
-
+		std::cout<<"--------------Hit Pos----------------"<<std::endl;
+		std::cout<<"====> Hit Position "<<std::endl;
 		for(auto Hit : DetHitArrX){
 			DetHist2DXZ->Fill(Hit.GetX(),Hit.GetZ());
 			DetHist2DXZCorr->Fill(Hit.GetX()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)],Hit.GetZ()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+2]);
+			Hit.Print();
 		}
 
 		for (auto Hit : DetHitArrY){
 			DetHist2DYZ->Fill(Hit.GetY(),Hit.GetZ());
 			DetHist2DYZCorr->Fill(Hit.GetY()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+1],Hit.GetZ()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+2]);
 		}
+
+		// plot the data
+		DetCoordPosXZ= new TH2F(Form("XZ_Pos%d",entry),Form("XZ_Pos%d",entry),2000,-0.4,0.4,1000,-0,3.0);
+		DetCoordPosYZ= new TH2F(Form("YZ_Pos%d",entry),Form("YZ_Pos%d",entry),2000,-0.4,0.4,1000,-0,3.0);
+
+		DetCoordTrackPosXZ= new TH2F(Form("XZ_CTRackPos%d",entry),Form("XZ_CTrackPos%d",entry),2000,-0.4,0.4,1000,-0,3.0);
+		DetCoordTrackPosYZ= new TH2F(Form("YZ_CTrackPos%d",entry),Form("YZ_CTrackPos%d",entry),2000,-0.4,0.4,1000,-0,3.0);
+
+
+		DetCoordPosXZ->SetMarkerSize(1);
+		DetCoordPosXZ->SetMarkerColor(4);
+		DetCoordPosXZ->SetMarkerStyle(20);
+
+		DetCoordPosYZ->SetMarkerSize(1);
+		DetCoordPosYZ->SetMarkerColor(4);
+		DetCoordPosYZ->SetMarkerStyle(20);
+
+		std::cout<<"--------------Coord Pos----------------"<<std::endl;
+		for (auto chamberID : chamberList){
+
+			std::cout<<"====>"<<chamberID<<std::endl;
+			if((GEM_NCoordPosX.find(chamberID)!=GEM_NCoordPosX.end())&&(GEM_NCoordPosX[chamberID]!=0)){
+				for(int i = 0; i < GEM_NCoordPosX[chamberID]; i++){
+					DetCoordPosXZ->Fill(GEM_CoordPosX[chamberID][i],DetectorZpos[chamberID]);
+					std::cout<<"  xzPos: ("<<GEM_CoordPosX[chamberID][i]<<",  "<<DetectorZpos[chamberID]<<");   ";
+				}
+			}
+			if((GEM_NCoordPosY.find(chamberID)!=GEM_NCoordPosY.end())&&(GEM_NCoordPosY[chamberID]!=0)){
+				for(int i = 0; i < GEM_NCoordPosY[chamberID]; i++){
+					DetCoordPosYZ->Fill(GEM_CoordPosY[chamberID][i],DetectorZpos[chamberID]);
+					std::cout<<"  yzPos: ("<<GEM_CoordPosY[chamberID][i]<<",  "<<DetectorZpos[chamberID]<<");   ";
+				}
+			}
+
+			if((GEM_NCoordTrackPosX.find(chamberID)!=GEM_NCoordTrackPosX.end())&&(GEM_NCoordTrackPosX[chamberID]!=0)){
+				for(int i = 0; i < GEM_NCoordTrackPosX[chamberID]; i++){
+					DetCoordTrackPosXZ->Fill(GEM_CoordTrackPosX[chamberID][i],DetectorZpos[chamberID]);
+					std::cout<<"  xzTrackPos: ("<<GEM_CoordTrackPosX[chamberID][i]<<",  "<<DetectorZpos[chamberID]<<");   ";
+				}
+			}
+			if((GEM_NCoordTrackPosY.find(chamberID)!=GEM_NCoordTrackPosY.end())&&(GEM_NCoordTrackPosY[chamberID]!=0)){
+				for(int i = 0; i < GEM_NCoordTrackPosY[chamberID]; i++){
+					DetCoordTrackPosYZ->Fill(GEM_CoordTrackPosY[chamberID][i],DetectorZpos[chamberID]);
+					std::cout<<"  yzTrackPos: ("<<GEM_CoordTrackPosY[chamberID][i]<<",  "<<DetectorZpos[chamberID]<<");   ";
+				}
+			}
+		}
+
+
+
 		eventCanvas->cd(1);
 		DetHist2DXZ->Draw();
-		DetHist2DXZCorr->Draw("same");
+//		DetHist2DXZCorr->Draw("same");
 
 		/*{
 			TLine *xztrack=new TLine(fvdcX[0],0.0,fvdcX[0]+fvdc_th[0]*3.0,3.0);
@@ -445,7 +580,7 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 
 		eventCanvas->cd(2);
 		DetHist2DYZ->Draw();
-		DetHist2DYZCorr->Draw("same");
+//		DetHist2DYZCorr->Draw("same");
 		{
 			TLine *yztrack=new TLine(fvdcY[0],0.0,fvdcY[0]+fvdc_ph[0]*3.0,3.0);
 			yztrack->Draw("same");
