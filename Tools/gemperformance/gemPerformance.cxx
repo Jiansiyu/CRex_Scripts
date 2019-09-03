@@ -81,7 +81,7 @@ std::vector<Int_t> gemGetDetectorList(TString fname){
 	return DetList;
 }
 
-void gemNoiseSignalLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/prexRHRS_21289_00_test.root",std::string HRS="RHRS"){
+void gemNoiseSignalLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/prexRHRS_20862_00_test.root",std::string HRS="RHRS"){
 	if (fname.IsNull()) {
 		std::cout<<"Please input the file name"<<std::endl;
 	}
@@ -166,6 +166,9 @@ void gemNoiseSignalLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRoot
 			tree->Project((signalHist_x[ChamberID]->GetName()),Form(signalPattern_x.c_str(),ChamberID),cut.c_str());
 			canvas_x->cd(ChamberID);
 			canvas_x->cd(ChamberID)->SetLogy();
+			noiseHist_x[ChamberID]->SetXTitle("ADC(Tsample Sum)");
+			noiseHist_x[ChamberID]->SetYTitle("Count");
+
 			noiseHist_x[ChamberID]->Draw();
 			signalHist_x[ChamberID]->Draw("][same");
 		}
@@ -177,6 +180,8 @@ void gemNoiseSignalLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRoot
 			tree->Project(signalHist_y[ChamberID]->GetName(),Form(signalPattern_y.c_str(),ChamberID),cut.c_str());
 			canvas_y->cd(ChamberID);
 			canvas_y->cd(ChamberID)->SetLogy();
+			noiseHist_y[ChamberID]->SetXTitle("ADC(Tsample Sum)");
+			noiseHist_y[ChamberID]->SetYTitle("Count");
 			noiseHist_y[ChamberID]->Draw();
 			signalHist_y[ChamberID]->Draw("][same");
 		}
@@ -286,7 +291,9 @@ void gemPedestal(TString fname="/home/newdriver/Storage/Research/PRex_Experiment
 	PedestalRMS2DDist->Draw("zcol");
 	PedestalRMSAverageDist->SetMarkerSize(10);
 	PedestalRMSAverageDist->SetLineWidth(2);
-	PedestalRMSAverageDist->SetLineColor(3);
+	PedestalRMSAverageDist->GetXaxis()->SetTitle("APV cards");
+
+//	PedestalRMSAverageDist->SetLineColor(3);
 	PedestalRMSAverageDist->Draw("same");
 }
 
@@ -474,7 +481,7 @@ void gemStripGain(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/pr
 						if(chamberID<=3){
 							StripADC2D_x[chamberID]= new TH2F(Form("chamber%d_x_strip_ADC",chamberID),Form("chamber%d_x_strip_ADC",chamberID),520,-1,519,2000,0,8000);
 						}else{
-							StripADC2D_x[chamberID]= new TH2F(Form("chamber%d_x_strip_ADC",chamberID),Form("chamber%d_x_strip_ADC",chamberID),2001,-1,2000,2000,0,8000);
+							StripADC2D_x[chamberID]= new TH2F(Form("chamber%d_x_strip_ADC",chamberID),Form("chamber%d_x_strip_ADC",chamberID),1290,-1,1289,2000,0,8000);
 						}
 					}
 					StripADC2D_x[chamberID]->Fill(stripID,stripADC);
@@ -487,9 +494,9 @@ void gemStripGain(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/pr
 					auto stripADC=StripADCSum_y[chamberID][(Int_t)(StripNumber_y[chamberID][stripCounter])];
 					if(StripADC2D_y.find(chamberID)==StripADC2D_y.end()){
 						if(chamberID<=3){
-							StripADC2D_y[chamberID]= new TH2F(Form("chamber%d_y_strip_ADC",chamberID),Form("chamber%d_y_strip_ADC",chamberID),520,-1,519,2000,0,8000);
+							StripADC2D_y[chamberID]= new TH2F(Form("chamber%d_y_strip_ADC",chamberID),Form("chamber%d_y_strip_ADC",chamberID),257,-1,256,2000,0,8000);
 						}else{
-							StripADC2D_y[chamberID]= new TH2F(Form("chamber%d_y_strip_ADC",chamberID),Form("chamber%d_y_strip_ADC",chamberID),2001,-1,2000,2000,0,8000);
+							StripADC2D_y[chamberID]= new TH2F(Form("chamber%d_y_strip_ADC",chamberID),Form("chamber%d_y_strip_ADC",chamberID),1290,-1,1289,2000,0,8000);
 						}
 					}
 				    StripADC2D_y[chamberID]->Fill(stripID,stripADC);
@@ -521,11 +528,19 @@ void gemStripGain(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/pr
 	// write to canvas
 	for(auto iter=StripADC2D_x.begin(); iter!=StripADC2D_x.end();iter++){
 		canvas_x->cd(iter->first);
+		iter->second->SetXTitle("Strip ID");
+		iter->second->SetYTitle("ADC (Tsample Sum)");
+		gStyle->SetOptStat("e");
+
 		iter->second->Draw("zcol");
 	}
 
 	for(auto iter = StripADC2D_y.begin(); iter!=StripADC2D_y.end();iter++){
 		canvas_y->cd(iter->first);
+		iter->second->SetXTitle("Strip ID");
+		iter->second->SetYTitle("ADC (Tsample Sum)");
+		//iter->second->GetYaxis()->SetTitleSize(0.07);
+		gStyle->SetOptStat("e");
 		iter->second->Draw("zcol");
 	}
 
@@ -562,8 +577,8 @@ void gemTrackEfficiency(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootF
 	// searching area (square)
 //	double_t xCut[]={0.01,  0.01,   0.01,  0.01,  0.01,  0.01,  0.01};
 //	double_t yCut[]={0.01,  0.01,   0.01,  0.01,  0.01,  0.01,  0.01};
-	double_t xCut[]={0.02,  0.02,   0.02,  0.02,  0.02,  0.02,  0.02};
-	double_t yCut[]={0.02,  0.02,   0.02,  0.02,  0.02,  0.02,  0.02};
+	double_t xCut[]={0.02,  0.02,   0.02,  0.02,  0.04,  0.04,  0.04};
+	double_t yCut[]={0.02,  0.02,   0.02,  0.02,  0.04,  0.04,  0.04};
 
 	std::map<Int_t, TH2F *> vdcPredicted2D;
 	std::map<Int_t, TH2F *> gemDetected2D;
@@ -603,6 +618,8 @@ void gemTrackEfficiency(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootF
 	}
 
 
+	std::map<Int_t, TCanvas *> gemCanvas;
+
 	TCanvas *canvas=new TCanvas("GEM efficiency","GEM efficiency",600,600);
 	canvas->Divide(3,6);
 	TPaveText *pt;
@@ -612,7 +629,7 @@ void gemTrackEfficiency(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootF
 	gStyle->SetStatW(0.1);
 	gStyle->SetStatX(0.9);
 	gStyle->SetStatY(0.9);
-//	gStyle->
+
 	for(auto chamberID : gemGetDetectorList(fname)){
 		canvas->cd((chamberID-1)*3+1);
 		gemDetected2D[chamberID]->GetXaxis()->SetLabelSize(0.1);
@@ -634,10 +651,32 @@ void gemTrackEfficiency(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootF
 		pt = new TPaveText(0.2,0.7,0.4,0.85,"NDC");
 		pt->AddText(Form("Efficiency=%f",(double_t)(gemDetected2D[chamberID]->GetEntries())/(double_t)(vdcPredicted2D[chamberID]->GetEntries())));
 		pt->Draw();
+
+		if(gemCanvas.find(chamberID)==gemCanvas.end()){
+			gemCanvas[chamberID]=new TCanvas(Form("gem%d",chamberID),Form("gem%d",chamberID),600,600);
+			gemCanvas[chamberID]->Divide(3,1);
+			gStyle->SetOptStat("e");
+
+		}
+		gemCanvas[chamberID]->cd(1);
+		gemDetected2D[chamberID]->GetXaxis()->SetLabelSize(0.03);
+		gemDetected2D[chamberID]->GetYaxis()->SetLabelSize(0.03);
+		gemDetected2D[chamberID]->GetZaxis()->SetLabelSize(0.07);
+		gemDetected2D[chamberID]->Draw("zcol");
+		gemCanvas[chamberID]->cd(2);
+		vdcPredicted2D[chamberID]->GetXaxis()->SetLabelSize(0.03);
+		vdcPredicted2D[chamberID]->GetYaxis()->SetLabelSize(0.03);
+		vdcPredicted2D[chamberID]->GetZaxis()->SetLabelSize(0.07);
+		vdcPredicted2D[chamberID]->Draw("zcol");
+		gemCanvas[chamberID]->cd(3);
+		DetectedEfficiency2D[chamberID]->GetXaxis()->SetLabelSize(0.03);
+		DetectedEfficiency2D[chamberID]->GetYaxis()->SetLabelSize(0.03);
+		DetectedEfficiency2D[chamberID]->GetZaxis()->SetLabelSize(0.07);
+		DetectedEfficiency2D[chamberID]->Draw("zcol");
+		pt->Draw();
 	}
 
 }
-
 
 
 // Used for check the X-Y hit match
@@ -645,7 +684,6 @@ void gemTrackEfficiency(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootF
 //
 void gemHitMacth(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/prexRHRS_21289_00_test.root"){
 	// initial one should use RGEM.rgems.y5.hit.pos
-
-
+	// Final One should use    RGEM.rgems.y5.coord.pos
 
 }
