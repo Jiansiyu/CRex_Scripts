@@ -20,8 +20,8 @@
 #include <stdlib.h>
 #include <cctype>
 #include <numeric>
-
-
+#include <TPaveText.h>
+#include <TStyle.h>
 //#pragma cling load("libTreeSearch-GEM.so");
 //#pragma cling load("/adaqfs/home/a-onl/siyu/PRex_MPD/libprexCounting.so"); // load
 
@@ -1404,3 +1404,542 @@ void hitMatchCheck(TString fname="test_20532.root", std::string HRSarm="RGEM.rge
 
 
 }
+
+
+
+
+
+///---------------------------------------------------------------------------------------------------------------
+///---------------------------------------------------------------------------------------------------------------
+/// add the code for the                                     // RGEM or left GEM
+///
+///
+///
+void gemEfficiency(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/prexRHRS_20862_00_test.root", std::string HRSarm="RGEM.rgems"){
+	/*TCanvas *eventCanvas=new TCanvas("CanvasDisplay","CanvasDisplay",1000,1000);
+	eventCanvas->Divide(1,2);
+    eventCanvas->cd(1)->Divide(3,1);
+	eventCanvas->cd(2)->Divide(3,1);*/
+	TLine *detPlaneline[6];
+
+
+	std::map<Int_t, TCanvas *> gemEffCanvas;
+	std::map<Int_t, TH2F *> gemProjectedHist2D;
+	std::map<Int_t, TH2F *> gemRealHist2D;
+	std::map<Int_t, TH2F *> gemEfficiencyHist2D;
+
+
+
+	if(fname.IsNull()){
+		std::cout<<"Please input the file name"<<std::endl;
+	}
+
+	// read the left HRS or the right HRS
+	TFile *fileio=TFile::Open(fname.Data());
+	assert(fileio);
+	TTree *PRex_GEM_tree;
+	fileio->GetObject("T",PRex_GEM_tree);
+	if(PRex_GEM_tree->IsZombie()){
+		std::cout<<"[Error]: can not find tree in the file !!!"<<std::endl;
+	}else{
+		std::cout<<"Total Entries in the file:"<< (PRex_GEM_tree->GetEntries())<<std::endl;
+	}
+
+	// check the detector are listed in the tree
+	std::vector<int16_t> chamberList;
+	std::map<int16_t,std::vector<int16_t>> TsampleLit;
+
+	std::cout<<"List of Chambers:"<<std::endl;
+	for(int16_t chambercount=0; chambercount<=_ROOTREADER_MAX_GEM_CHAMBER;chambercount++){
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(Form("%s.x%d.adc1",HRSarm.c_str(),chambercount))){
+			std::cout<<"	->"<< chambercount<<std::endl;
+			chamberList.push_back(chambercount);
+		}
+	}
+
+	// for run 20862, the Z-distance is {1.161, 1.7979800, 2.0902131, 2.7165651, 2.8749137, 2.9976041}
+	const double_t zpos[]={0,1.161, 1.7979800, 2.0902131, 2.7165651, 2.8749137, 2.9976041};
+
+	const double_t xMinCut[]={0.0,  -0.0594110320,  -0.0549617020,  -0.0534276410,   -0.46155132,  -0.46307054,  -0.46354599  };
+	const double_t xMaxCut[]={0.0,   0.040588968,    0.045038298,    0.046572359,     0.13844868,   0.13692946,   0.13645401  };
+	const double_t yMinCut[]={0.0,  -0.096555290,   -0.091156590,   -0.089864033,    -0.27825711,  -0.27738908,  -0.22982879 };
+	const double_t yMaxCut[]={0.0,   0.1034447100,   0.10884341,     0.11013597,      0.22174289,   0.22261092,   0.27017121 };
+
+	// searching area (square)
+	const double_t xCut[]={0.02,  0.02,   0.02,  0.02,  0.10,  0.10,  0.10};
+	const double_t yCut[]={0.02,  0.02,   0.02,  0.02,  0.10,  0.10,  0.10};
+
+
+	// innitialize the canvas
+	for(auto chamberID: chamberList){
+		gemEffCanvas[chamberID] = new TCanvas(Form("chamber%d_eff",chamberID),Form("chamber%d_eff",chamberID),600,600);
+		gemEffCanvas[chamberID]->Divide(3,1);
+		gemEffCanvas[chamberID]->Draw();
+
+		if(chamberID<=3){
+			gemProjectedHist2D[chamberID]  =  new TH2F(Form("vdcPredicted_ch%d",chamberID),Form("vdcPredicted_ch%d",chamberID),20,xMinCut[chamberID],xMaxCut[chamberID],40,yMinCut[chamberID],yMaxCut[chamberID]);
+			gemRealHist2D[chamberID]       =  new TH2F(Form("gemDetected_ch%d",chamberID),Form("gemDetected_ch%d",chamberID),20,xMinCut[chamberID],xMaxCut[chamberID],40,yMinCut[chamberID],yMaxCut[chamberID]);
+		}else{
+			gemProjectedHist2D[chamberID]  =  new TH2F(Form("vdcPredicted_ch%d",chamberID),Form("vdcPredicted_ch%d",chamberID),120,xMinCut[chamberID],xMaxCut[chamberID],100,yMinCut[chamberID],yMaxCut[chamberID]);
+			gemRealHist2D[chamberID]       =  new TH2F(Form("gemDetected_ch%d",chamberID),Form("gemDetected_ch%d",chamberID),120,xMinCut[chamberID],xMaxCut[chamberID],100,yMinCut[chamberID],yMaxCut[chamberID]);
+		}
+	}
+
+
+
+	// initialize the buffers
+	for (auto chamberID : chamberList){
+
+		std::cout<<"Reading chamber :"<<chamberID<<"\n	sample:";
+		//std::vector<int16_t> TsampleLit;
+		for (int adc_sample =0; adc_sample <_ROOTREADER_MAX_TSAMPLE; adc_sample++){
+			std::string getstring;
+			if(PRex_GEM_tree->GetListOfBranches()->Contains(Form("%s.x%d.adc%d",HRSarm.c_str(),chamberID,adc_sample))){
+				std::cout<<adc_sample<<"  ";
+				TsampleLit[chamberID].push_back(adc_sample);
+			}
+		}
+		std::cout<<std::endl;
+	}
+
+	std::cout<<"******************  Reading Done  *********************"<<std::endl;
+
+	// loop on the chamber and read out the data for the position
+
+	std::string HRSarmTag="R";
+	if(HRSarm=="LGEM.lgems"){
+		HRSarmTag="L";
+	}
+
+	//----------------------------------------------------------------------------
+	// search for the vdcs
+	Int_t fEvtNum=0;
+	Int_t fRun=0;
+	Int_t fvdcXNum=0;
+	double_t fvdcX[100];
+	Int_t fvdcYNum=0;
+	double_t fvdcY[100];
+	double_t fvdc_th[10];
+	double_t fvdc_ph[10];
+
+	std::string fEvtNumForm("fEvtHdr.fEvtNum");
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fEvtNumForm.c_str())){
+		PRex_GEM_tree->SetBranchAddress(fEvtNumForm.c_str(),&fEvtNum);
+	}else{
+		std::cout<<"[Warning]:: fEvtNum data did not find in the replay resuly, skip it"<<std::endl;
+	}
+	std::string fRunForm("Event_Branch/fEvtHdr/fEvtHdr.fRun");
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fRunForm.c_str())){
+		PRex_GEM_tree->SetBranchAddress(fRunForm.c_str(),&fRun);
+	}else{
+		std::cout<<"[Warning]:: fRun data did not find in the replay resuly, skip it"<<std::endl;
+	}
+
+	std::string fvdcXNumForm(Form("Ndata.R.tr.x"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdcXNumForm.c_str())){
+		PRex_GEM_tree->SetBranchAddress(fvdcXNumForm.c_str(),&fvdcXNum);
+	}else{
+		std::cout<<"[Warning]:: VDC data did not find in the replay resuly"<<std::endl;
+	}
+
+	std::string fvdcXForm(Form("R.tr.x"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdcXForm.c_str())){
+		PRex_GEM_tree->SetBranchAddress(fvdcXForm.c_str(),fvdcX);
+	}else{
+		std::cout<<"[Warning]:: VDC data did not find in the replay result"<<std::endl;
+	}
+
+	std::string fvdc_th_Form(Form("R.tr.th"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdc_th_Form.c_str())){
+		PRex_GEM_tree->SetBranchAddress(fvdc_th_Form.c_str(),fvdc_th);
+	}else{
+		std::cout<<"[Warning]:: VDC data did not find in the replay result"<<std::endl;
+	}
+
+	std::string fvdc_ph_Form(Form("R.tr.ph"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdc_ph_Form.c_str())){
+		PRex_GEM_tree->SetBranchAddress(fvdc_ph_Form.c_str(),fvdc_ph);
+	}else{
+		std::cout<<"[Warning]:: VDC data did not find in the replay result"<<std::endl;
+	}
+
+	std::string fvdcYNumForm(Form("Ndata.R.tr.y"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdcYNumForm.c_str())){
+		PRex_GEM_tree->SetBranchAddress(fvdcYNumForm.c_str(),&fvdcYNum);
+	}else{
+		std::cout<<"[Warning]:: VDC data did not find in the replay resuly"<<std::endl;
+	}
+
+	std::string fvdcYForm(Form("R.tr.y"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdcYForm.c_str())){
+		PRex_GEM_tree->SetBranchAddress(fvdcYForm.c_str(),fvdcY);
+	}else{
+		std::cout<<"[Warning]:: VDC data did not find in the replay result"<<std::endl;
+	}
+
+	// get the detector position from the root file
+
+	// load the data from  root file
+
+	// load the Z position
+	double_t DetectorZpos[]={0.0,  0.9, 1.5982485,  1.8558464, 2.3839658, 2.5141378, 2.6395974};
+
+	for (int chamberID=0 ; chamberID<=6 ; chamberID++){
+		if(chamberID <=3){
+			detPlaneline[chamberID]= new TLine(-0.1,DetectorZpos[chamberID],0.1,DetectorZpos[chamberID]);
+			//detPlaneline[chamberID]->Draw("same");
+		}else{
+			detPlaneline[chamberID]= new TLine(-0.3,DetectorZpos[chamberID],0.3,DetectorZpos[chamberID]);
+			//detPlaneline[chamberID]->Draw("same");
+		}
+	}
+
+	//
+	std::map<Int_t,Int_t> GEMNDetX;
+	std::map<Int_t,Int_t> GEMNDetY;
+	std::map<Int_t,double_t  *> GEMDetX;
+	std::map<Int_t,double_t  *> GEMDetY;
+
+
+	// read out the coord parameters
+	//  coord.pos parameters
+	std::map<Int_t, Int_t> GEM_NCoordPosX;
+	std::map<Int_t, Int_t> GEM_NCoordPosY;
+	std::map<Int_t, double *>	GEM_CoordPosX;
+	std::map<Int_t, double *>	GEM_CoordPosY;
+
+	//trkPos
+	std::map<Int_t, Int_t> GEM_NCoordTrackPosX;
+	std::map<Int_t, Int_t> GEM_NCoordTrackPosY;
+	std::map<Int_t, double *>	GEM_CoordTrackPosX;
+	std::map<Int_t, double *>	GEM_CoordTrackPosY;
+
+	// load the GEM th-ph result
+
+	Int_t NGEMTracktheta=0;
+	Int_t NGEMTrackphi=0;
+	double	GEMTracktheta[50];
+	double  GEMTrackphi[50];
+
+	// load the data for the theta-phi for GEM detectors
+	std::string NGEMTracktheta_str(Form("Ndata.RGEM.tr.th"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(NGEMTracktheta_str.c_str())){
+		PRex_GEM_tree->SetBranchAddress(NGEMTracktheta_str.c_str(), &NGEMTracktheta);
+	}
+	std::string GEMTracktheta_str(Form("RGEM.tr.th"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(GEMTracktheta_str.c_str())){
+		PRex_GEM_tree->SetBranchAddress(GEMTracktheta_str.c_str(), GEMTracktheta);
+	}
+
+	std::string NGEMTrackphi_str(Form("Ndata.RGEM.tr.ph"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(NGEMTrackphi_str.c_str())){
+		PRex_GEM_tree->SetBranchAddress(NGEMTrackphi_str.c_str(),&NGEMTrackphi);
+	}
+	std::string GEMTrackphi_str(Form("RGEM.tr.ph"));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(GEMTrackphi_str.c_str())){
+		PRex_GEM_tree->SetBranchAddress(GEMTrackphi_str.c_str(), GEMTrackphi);
+	}
+
+	// loop on the chamber list
+	for (auto chamberID : chamberList){
+		std::cout<<chamberID<<std::endl;
+
+		double_t detX[20];
+		double_t detY[20];
+		Int_t NdetX=0;
+		Int_t NdetY=0;
+		double_t detZ=DetectorZpos[chamberID];
+
+		// load the branch data
+		// load the number of the Size X
+		std::string NdetX_str(Form("Ndata.RGEM.rgems.x%d.hit.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NdetX_str.c_str())){
+				PRex_GEM_tree->SetBranchAddress(NdetX_str.c_str(),&GEMNDetX[chamberID]);
+		}else{
+				std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+			}
+
+		// load the data
+		GEMDetX[chamberID]=new double_t [100];
+		std::string detX_str(Form("RGEM.rgems.x%d.hit.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(detX_str.c_str())){
+				PRex_GEM_tree->SetBranchAddress(detX_str.c_str(),GEMDetX[chamberID]);
+		}else{
+				std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+			}
+
+		// load the Y dimension
+		std::string NdetY_str(Form("Ndata.RGEM.rgems.y%d.hit.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NdetY_str.c_str())){
+				PRex_GEM_tree->SetBranchAddress(NdetY_str.c_str(),&GEMNDetY[chamberID]);
+		}else{
+				std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+			}
+		GEMDetY[chamberID]=new double_t [100];
+		std::string detY_str(Form("RGEM.rgems.y%d.hit.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(detY_str.c_str())){
+				PRex_GEM_tree->SetBranchAddress(detY_str.c_str(),GEMDetY[chamberID]);
+		}else{
+				std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+			}
+
+		//finish load the data
+
+		// start load the coordi parameter in the root file
+
+		std::string NCoordPosX_str(Form("Ndata.RGEM.rgems.x%d.coord.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NCoordPosX_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(NCoordPosX_str.c_str(), &GEM_NCoordPosX[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+		GEM_CoordPosX[chamberID]=new double_t [100];
+		std::string CoordPosX_str(Form("RGEM.rgems.x%d.coord.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(CoordPosX_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(CoordPosX_str.c_str(), GEM_CoordPosX[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: GEM_CoordPosX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		std::string NCoordPosY_str(Form("Ndata.RGEM.rgems.y%d.coord.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NCoordPosY_str.c_str())){
+				PRex_GEM_tree->SetBranchAddress(NCoordPosY_str.c_str(), &GEM_NCoordPosY[chamberID]);
+		}else{
+				std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		GEM_CoordPosY[chamberID]=new double_t [100];
+		std::string CoordPosY_str(Form("RGEM.rgems.y%d.coord.pos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(CoordPosY_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(CoordPosY_str.c_str(), GEM_CoordPosY[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: GEM_CoordPosY data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+
+		// start load the coordi parameter in the root file
+		std::string NCoordTrackPosX_str(Form("Ndata.RGEM.rgems.x%d.coord.trkpos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NCoordTrackPosX_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(NCoordTrackPosX_str.c_str(), &GEM_NCoordTrackPosX[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it "<<__LINE__<<std::endl;
+		}
+
+		GEM_CoordTrackPosX[chamberID]=new double_t [100];
+		std::string CoordTrackPosX_str(Form("RGEM.rgems.x%d.coord.trkpos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(CoordTrackPosX_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(CoordTrackPosX_str.c_str(), GEM_CoordTrackPosX[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: GEM_CoordPosX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		std::string NCoordTrackPosY_str(Form("Ndata.RGEM.rgems.y%d.coord.trkpos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(NCoordTrackPosY_str.c_str())){
+				PRex_GEM_tree->SetBranchAddress(NCoordTrackPosY_str.c_str(), &GEM_NCoordTrackPosY[chamberID]);
+		}else{
+				std::cout<<"[Warning]:: NdetX data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		GEM_CoordTrackPosY[chamberID]=new double_t [100];
+		std::string CoordTrackPosY_str(Form("RGEM.rgems.y%d.coord.trkpos",chamberID));
+		if(PRex_GEM_tree->GetListOfBranches()->Contains(CoordTrackPosY_str.c_str())){
+			PRex_GEM_tree->SetBranchAddress(CoordTrackPosY_str.c_str(), GEM_CoordTrackPosY[chamberID]);
+		}else{
+			std::cout<<"[Warning]:: GEM_CoordPosY data did not find in the replay resuly, skip it"<<std::endl;
+		}
+
+		// load the theta-phi result
+	}
+
+	// loop on the data
+    std::vector<std::vector<HitStruct>> DetEventBuff;
+	std::vector<HitStruct> DetHitArr;
+	std::vector<HitStruct> DetHitArrX;
+	std::vector<HitStruct> DetHitArrY;
+	std::cout<<"Total Entries:"<<PRex_GEM_tree->GetEntries()<<std::endl;
+
+	for(auto entry=1;entry<(PRex_GEM_tree->GetEntries());entry++)
+	{
+
+		PRex_GEM_tree->GetEntry(entry);
+		//PRex_GEM_tree->GetEntry(1);
+		DetHitArr.clear();
+		DetHitArrX.clear();
+		DetHitArrY.clear();
+
+		// load the data to data buff
+		for (auto chamberID : chamberList){
+			if (GEMNDetX.find(chamberID) != GEMNDetX.end()) {
+				for (int i = 0; i < GEMNDetX[chamberID]; i++) {
+					HitStruct hittemp(chamberID, GEMDetX[chamberID][i], 0.0,
+							DetectorZpos[chamberID]);
+					DetHitArrX.push_back(hittemp);
+				}
+			}
+
+			// load the Y dimension
+			if (GEMNDetY.find(chamberID) != GEMNDetY.end()) {
+				for (int i = 0; i < GEMNDetY[chamberID]; i++) {
+					double_t y = GEMDetY[chamberID][i];
+//					if(chamberID ==6) y+=0.05;
+					HitStruct hittemp(chamberID, 0.0, y,
+							DetectorZpos[chamberID]);
+					DetHitArrY.push_back(hittemp);
+				}
+			}
+
+		}
+		// write all the good event to the buff
+		// check the VDC
+		Bool_t goodHitFlag = kTRUE;
+		if((fvdcYNum==1)&&(fvdcXNum==1)){
+			HitStruct hit(0,fvdcX[0],fvdcY[0],0.0,fvdc_th[0],fvdc_ph[0]);
+			DetHitArr.push_back(hit);
+		}else{
+			goodHitFlag = kFALSE;
+		}
+
+
+		for (auto chamberID : chamberList) {
+			if ((GEMNDetX.find(chamberID) != GEMNDetX.end())
+					&& (GEMNDetY.find(chamberID) != GEMNDetY.end())) {
+				if ((GEMNDetX[chamberID] == 1)
+						&& (GEMNDetY[chamberID] == 1)) {
+
+				} else {
+					goodHitFlag = kFALSE;
+				}
+			} else {
+				goodHitFlag = kFALSE;
+			}
+		}
+		if(goodHitFlag){
+			for (auto chamberID : chamberList) {
+				HitStruct hit(chamberID,GEMDetX[chamberID][0],GEMDetY[chamberID][0],DetectorZpos[chamberID]);
+				DetHitArr.push_back(hit);
+			}
+		}
+		if(goodHitFlag){
+			DetEventBuff.push_back(DetHitArr);
+		}
+
+
+		// check the data within the range of GEM detector
+		// check wether there is any hit candidate with in cerntain range
+
+		//
+
+		// loop on the GEM detector
+		for(auto chamberID : chamberList){
+			//check the projection within the range
+
+			double_t vdcProjectX=fvdcX[0]+fvdc_th[0]*zpos[chamberID];
+			double_t vdcProjectY=fvdcY[0]+fvdc_ph[0]*zpos[chamberID];
+
+			if(((fvdcX[0]+fvdc_th[0]*zpos[chamberID])>=xMinCut[chamberID])&&((fvdcX[0]+fvdc_th[0]*zpos[chamberID])<=xMaxCut[chamberID])&&
+					(fvdcY[0]+fvdc_ph[0]*zpos[chamberID]>=yMinCut[chamberID])&&(fvdcY[0]+fvdc_ph[0]*zpos[chamberID]<=yMaxCut[chamberID]))
+			{
+				// TODO
+
+				gemProjectedHist2D[chamberID]->Fill(vdcProjectX,vdcProjectY);
+
+
+				//check the GEM hit with certain range
+				//loop on the hit
+				Bool_t match_Flag=false;
+				for(auto hitX :DetHitArrX ){
+					for(auto hitY : DetHitArrY){
+						if((hitY.GetDetectorID()==chamberID)&&(hitX.GetDetectorID()==chamberID)){
+							if((std::abs(fvdcX[0]+fvdc_th[0]*zpos[chamberID]-hitX.GetX())<=xCut[chamberID]) &&(std::abs(fvdcY[0]+fvdc_ph[0]*zpos[chamberID]-hitY.GetY())<=yCut[chamberID])){
+								// within range cut
+								// TODO
+								if(match_Flag==false){
+									gemRealHist2D[chamberID]->Fill(vdcProjectX,vdcProjectY);
+									match_Flag=true;
+								}
+
+							}
+						}
+
+					}
+
+				}
+				match_Flag=false;
+			}
+		}
+
+	}
+
+	TPaveText *pt;
+	// plot the result
+	for (auto chamberID : chamberList){
+		gemEffCanvas[chamberID]->cd(1);
+
+//		gemEffCanvas[chamberID]->cd(1)->SetBorderSize(20);
+		gemRealHist2D[chamberID]->GetXaxis()->SetTitle("X");
+		gemRealHist2D[chamberID]->GetYaxis()->SetTitle("Y");
+		gemRealHist2D[chamberID]->GetXaxis()->SetLabelSize(0.03);
+		gemRealHist2D[chamberID]->GetYaxis()->SetLabelSize(0.03);
+		gemRealHist2D[chamberID]->GetZaxis()->SetLabelSize(0.03);
+		gemRealHist2D[chamberID]->SetStats(0);
+		gStyle->SetOptStat("e");
+		gemRealHist2D[chamberID]->Draw("zcol");
+
+		gemEffCanvas[chamberID]->cd(2);
+
+		gemProjectedHist2D[chamberID]->GetXaxis()->SetTitle("X");
+		gemProjectedHist2D[chamberID]->GetYaxis()->SetTitle("Y");
+		gemProjectedHist2D[chamberID]->GetXaxis()->SetLabelSize(0.03);
+		gemProjectedHist2D[chamberID]->GetYaxis()->SetLabelSize(0.03);
+		gemProjectedHist2D[chamberID]->GetZaxis()->SetLabelSize(0.03);
+		gStyle->SetOptStat("e");
+		gemProjectedHist2D[chamberID]->Draw("zcol");
+
+		gemEffCanvas[chamberID]->cd(3);
+		gemEfficiencyHist2D[chamberID]=(TH2F *)gemRealHist2D[chamberID]->Clone(Form("efficiency_ch%d",chamberID));
+		gemEfficiencyHist2D[chamberID]->SetTitle(Form("efficiency_ch%d",chamberID));
+
+		gemEfficiencyHist2D[chamberID]->Divide(gemProjectedHist2D[chamberID]);
+		gemEfficiencyHist2D[chamberID]->SetMinimum(0.5);
+
+		gemEfficiencyHist2D[chamberID]->GetXaxis()->SetTitle("X");
+		gemEfficiencyHist2D[chamberID]->GetYaxis()->SetTitle("Y");
+		gemEfficiencyHist2D[chamberID]->GetXaxis()->SetLabelSize(0.03);
+		gemEfficiencyHist2D[chamberID]->GetYaxis()->SetLabelSize(0.03);
+		gemEfficiencyHist2D[chamberID]->GetZaxis()->SetLabelSize(0.03);
+
+		for (auto binx =0 ;(binx< gemRealHist2D[chamberID]->GetXaxis()->GetNbins()); binx++){
+			for (auto biny=0; biny<(gemRealHist2D[chamberID]->GetYaxis()->GetNbins());biny++){
+				if(gemRealHist2D[chamberID]->GetBinContent(binx,biny)<=30){
+					gemEfficiencyHist2D[chamberID]->SetBinContent(binx,biny,0.0);
+				}
+			}
+		}
+
+		gemEfficiencyHist2D[chamberID]->Draw("zcol");
+		gStyle->SetOptStat("e");
+		pt = new TPaveText(0.2,0.7,0.4,0.85,"NDC");
+		pt->AddText(Form("Efficiency=%f",(double_t)(gemRealHist2D[chamberID]->GetEntries()/(double_t)(gemProjectedHist2D[chamberID]->GetEntries()))));
+		pt->SetLineColor(0);
+		pt->SetFillColor(0);
+		pt->SetShadowColor(0);
+		pt->SetTextSize(0.04);
+		pt->Draw();
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
