@@ -147,18 +147,18 @@ void gemNoiseSignalLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRoot
 
 	for (auto ChamberID : gemGetDetectorList(fname)){
 		if(noiseHist_x.find(ChamberID)==noiseHist_x.end()){
-			noiseHist_x[ChamberID]=new TH1F(Form("%s_Chamber%d_X",HRS.c_str(),ChamberID),Form("%s_Chamber%d_X",HRS.c_str(),ChamberID),2000,-2000,8000);
+			noiseHist_x[ChamberID]=new TH1F(Form("%s_Chamber%d_X",HRS.c_str(),ChamberID),Form("%s_Chamber%d_X",HRS.c_str(),ChamberID),2000,-1000,4000);
 		}
 		if(noiseHist_y.find(ChamberID)==noiseHist_y.end()){
-			noiseHist_y[ChamberID]=new TH1F(Form("%s_Chamber%d_Y",HRS.c_str(),ChamberID),Form("%s_Chamber%d_Y",HRS.c_str(),ChamberID),2000,-2000,8000);
+			noiseHist_y[ChamberID]=new TH1F(Form("%s_Chamber%d_Y",HRS.c_str(),ChamberID),Form("%s_Chamber%d_Y",HRS.c_str(),ChamberID),2000,-1000,4000);
 		}
 
 		if(signalHist_x.find(ChamberID)==signalHist_x.end()){
-			signalHist_x[ChamberID]=new TH1F(Form("%s_Chamber%d_sigLevel_X",HRS.c_str(),ChamberID),Form("%s_Chamber%d_sigLevel_X",HRS.c_str(),ChamberID),2000,-2000,8000);
+			signalHist_x[ChamberID]=new TH1F(Form("%s_Chamber%d_sigLevel_X",HRS.c_str(),ChamberID),Form("%s_Chamber%d_sigLevel_X",HRS.c_str(),ChamberID),2000,-1000,4000);
 			signalHist_x[ChamberID]->SetLineColor(2);
 		}
 		if(signalHist_y.find(ChamberID)==signalHist_y.end()){
-			signalHist_y[ChamberID]=new TH1F(Form("%s_Chamber%d_sigLevel_Y",HRS.c_str(),ChamberID),Form("%s_Chamber%d_sigLevel_Y",HRS.c_str(),ChamberID),2000,-2000,8000);
+			signalHist_y[ChamberID]=new TH1F(Form("%s_Chamber%d_sigLevel_Y",HRS.c_str(),ChamberID),Form("%s_Chamber%d_sigLevel_Y",HRS.c_str(),ChamberID),2000,-1000,4000);
 			signalHist_y[ChamberID]->SetLineColor(2);
 		}
 
