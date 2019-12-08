@@ -109,12 +109,12 @@ std::vector<std::vector<Int_t>> splitCluster(std::vector<Int_t> StripsVec,Int_t 
 /// add the code for the                                     // RGEM or left GEM
 void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"){
 
-	TCanvas *eventCanvas=new TCanvas("CanvasDisplay","CanvasDisplay",1000,1000);
+	TCanvas *eventCanvas=new TCanvas("CanvasDisplay","CanvasDisplay",2000,2000);
 	eventCanvas->Divide(1,2);
     eventCanvas->cd(1)->Divide(3,1);
 	eventCanvas->cd(2)->Divide(3,1);
 	TLine *detPlaneline[6];
-
+	eventCanvas->Draw();
 	if(fname.IsNull()){
 		std::cout<<"Please input the file name"<<std::endl;
 	}
@@ -171,8 +171,10 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 	Int_t fEvtNum=0;
 	Int_t fRun=0;
 	Int_t fvdcXNum=0;
-	double_t fvdcX[100];
 	Int_t fvdcYNum=0;
+	Int_t fvdc_thNum=0;
+	Int_t fvdc_phNum=0;
+	double_t fvdcX[100];
 	double_t fvdcY[100];
 	double_t fvdc_th[10];
 	double_t fvdc_ph[10];
@@ -204,6 +206,13 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 		std::cout<<"[Warning]:: VDC data did not find in the replay result"<<std::endl;
 	}
 
+	std::string fvdc_thNum_Form(Form("Ndata.%s.tr.th",HRSarmTag.c_str()));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdc_thNum_Form.c_str())){
+			PRex_GEM_tree->SetBranchAddress(fvdc_thNum_Form.c_str(),&fvdc_thNum);
+	}else{
+			std::cout<<"[Warning]:: VDC data did not find in the replay result"<<std::endl;
+	}
+
 	std::string fvdc_th_Form(Form("%s.tr.th",HRSarmTag.c_str()));
 	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdc_th_Form.c_str())){
 		PRex_GEM_tree->SetBranchAddress(fvdc_th_Form.c_str(),fvdc_th);
@@ -211,6 +220,13 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 		std::cout<<"[Warning]:: VDC data did not find in the replay result"<<std::endl;
 	}
 
+	std::string fvdc_phNum_Form(Form("Ndata.%s.tr.ph",HRSarmTag.c_str()));
+	if (PRex_GEM_tree->GetListOfBranches()->Contains(fvdc_phNum_Form.c_str())) {
+		PRex_GEM_tree->SetBranchAddress(fvdc_phNum_Form.c_str(), &fvdc_phNum);
+	} else {
+		std::cout << "[Warning]:: VDC data did not find in the replay result"
+				<< std::endl;
+	}
 	std::string fvdc_ph_Form(Form("%s.tr.ph",HRSarmTag.c_str()));
 	if(PRex_GEM_tree->GetListOfBranches()->Contains(fvdc_ph_Form.c_str())){
 		PRex_GEM_tree->SetBranchAddress(fvdc_ph_Form.c_str(),fvdc_ph);
@@ -276,6 +292,13 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 	double	GEMTracktheta[50];
 	double  GEMTrackphi[50];
 
+	Int_t NGEMTrackX=0;
+	Int_t NGEMTrackY=0;
+	double	GEMTrackX[50];
+	double  GEMTrackY[50];
+
+
+
 	// load the data for the theta-phi for GEM detectors
 	std::string NGEMTracktheta_str(Form("Ndata.%sGEM.tr.th",HRSarmTag.c_str()));
 	if(PRex_GEM_tree->GetListOfBranches()->Contains(NGEMTracktheta_str.c_str())){
@@ -294,6 +317,30 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 	if(PRex_GEM_tree->GetListOfBranches()->Contains(GEMTrackphi_str.c_str())){
 		PRex_GEM_tree->SetBranchAddress(GEMTrackphi_str.c_str(), GEMTrackphi);
 	}
+
+
+
+	// load the track parameters from the Tree-Search-GEM
+	std::string NGEMTrackx_str(Form("Ndata.%sGEM.tr.x",HRSarmTag.c_str()));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(NGEMTrackx_str.c_str())){
+		PRex_GEM_tree->SetBranchAddress(NGEMTrackx_str.c_str(), &NGEMTrackX);
+	}
+	std::string GEMTrackx_str(Form("%sGEM.tr.x",HRSarmTag.c_str()));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(GEMTrackx_str.c_str())){
+		PRex_GEM_tree->SetBranchAddress(GEMTrackx_str.c_str(), GEMTrackX);
+	}
+
+	std::string NGEMTracky_str(Form("Ndata.%sGEM.tr.y",HRSarmTag.c_str()));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(NGEMTracky_str.c_str())){
+		PRex_GEM_tree->SetBranchAddress(NGEMTracky_str.c_str(),&NGEMTrackY);
+	}
+	std::string GEMTracky_str(Form("%sGEM.tr.y",HRSarmTag.c_str()));
+	if(PRex_GEM_tree->GetListOfBranches()->Contains(GEMTracky_str.c_str())){
+		PRex_GEM_tree->SetBranchAddress(GEMTracky_str.c_str(), GEMTrackY);
+	}
+
+
+
 
 	// loop on the chamber list
 	for (auto chamberID : chamberList){
@@ -496,7 +543,7 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 		for (auto hit : DetHitArrY) hit.Print();
 
 
-		// finish load the data
+/*		// finish load the data
 		// load the data for display
 		double_t CorrectionMatrix[]={
 		0.0,
@@ -520,7 +567,7 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 
 		0.00765592,
 		0.0078796,
-		0.0970067};
+		0.0970067};*/
 
 
 		DetHist2DXZ= new TH2F(Form("XZ_Evt%d",entry),Form("XZ_Evt%d",entry),2000,-0.4,0.4,1000,-0,3.0);
@@ -551,13 +598,13 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 		std::cout<<"====> Hit Position "<<std::endl;
 		for(auto Hit : DetHitArrX){
 			DetHist2DXZ->Fill(Hit.GetX(),Hit.GetZ());
-			DetHist2DXZCorr->Fill(Hit.GetX()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)],Hit.GetZ()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+2]);
+//			DetHist2DXZCorr->Fill(Hit.GetX()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)],Hit.GetZ()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+2]);
 			Hit.Print();
 		}
 
 		for (auto Hit : DetHitArrY){
 			DetHist2DYZ->Fill(Hit.GetY(),Hit.GetZ());
-			DetHist2DYZCorr->Fill(Hit.GetY()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+1],Hit.GetZ()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+2]);
+//			DetHist2DYZCorr->Fill(Hit.GetY()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+1],Hit.GetZ()+CorrectionMatrix[3*(Hit.GetDetectorID()-1)+2]);
 		}
 
 		// plot the data
@@ -651,9 +698,31 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 			detPlaneline[i]->Draw("same");
 		}
 
+		if(fvdc_phNum==1 && fvdc_thNum==1)
 		{
 			TLine *xztrack=new TLine(fvdcX[0],0.0,fvdcX[0]+fvdc_th[0]*2.7,2.7);
 			xztrack->Draw("same");
+		}
+
+		// Draw the GEM track reconstructed from the Three Search
+		{
+			TH2F *gemTrackXhh=new TH2F("GEMTrackX","GEMTrackX",2000,-0.4,0.4,1000,-0,3.0);
+			gemTrackXhh->SetMarkerSize(1);
+			gemTrackXhh->SetMarkerColor(28);
+			gemTrackXhh->SetMarkerStyle(20);
+
+			for(int counter=0; counter< NGEMTrackX; counter++){
+				gemTrackXhh->Fill(GEMTrackX[counter],DetectorZpos[0]);
+			}
+			gemTrackXhh->SetMarkerColor(3);
+			gemTrackXhh->Draw("same");
+			if((NGEMTrackphi!=0)&&(NGEMTrackY!=0)&&(NGEMTrackphi!=0)&&(NGEMTracktheta!=0)){
+				TLine *gemTrack=new TLine(GEMTrackX[0],DetectorZpos[0], GEMTrackX[0]+DetectorZpos[6]*GEMTracktheta[0],DetectorZpos[6]);
+				gemTrack->SetLineColor(3);
+				gemTrack->Draw("same");
+			}
+
+
 		}
 
 		eventCanvas->cd(2)->cd(1);
@@ -681,11 +750,11 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 		}
 
 		{
-			TLine *yztrack=new TLine(fvdcY[0],0.0,fvdcY[0]+fvdc_ph[0]*2.7,2.7);
+			TLine *yztrack=new TLine(fvdcY[0],0.0,fvdcY[0]+fvdc_ph[0]*3.0,3.0);
 			yztrack->Draw("same");
 		}
 
-		eventCanvas->Update();
+
 		//if(goodHitFlag)
 
 		//-------------------------------------
@@ -711,9 +780,12 @@ void rootReader(TString fname="test_20532.root", std::string HRSarm="RGEM.rgems"
 			std::cout<<"  "<<GEMTrackphi[i]<<",   ";
 		}
 		std::cout<<std::endl;
-		//if(DetHitArrX.size()<=4)
-		eventCanvas->SaveAs(Form("result/HitEvt%d.jpg",entry));
+		eventCanvas->Update();
 		getchar();
+		eventCanvas->Clear();
+		eventCanvas->Divide(1,2);
+	    eventCanvas->cd(1)->Divide(3,1);
+		eventCanvas->cd(2)->Divide(3,1);
 
 		DetHist2DYZ->Delete();
 		DetHist2DXZ->Delete();
@@ -875,7 +947,7 @@ void rootReader2(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/prexR
 	}
 
 	// load the Z position
-	double_t DetectorZpos[]={0.0,  0.9, 1.5982485,  1.8558464, 2.3839658, 2.5141378, 2.6395974};
+	double_t DetectorZpos[]={0.0,  1.161, 1.7979800,  2.0902131, 2.7165651, 2.8749137, 2.99760041};
 
 	for (int chamberID=0 ; chamberID<=6 ; chamberID++){
 		if(chamberID <=3){
@@ -906,6 +978,8 @@ void rootReader2(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/prexR
 	std::map<Int_t, Int_t> GEM_NCoordTrackPosY;
 	std::map<Int_t, double *>	GEM_CoordTrackPosX;
 	std::map<Int_t, double *>	GEM_CoordTrackPosY;
+
+
 
 	// load the GEM th-ph result
 
@@ -2577,7 +2651,7 @@ void gemEfficiency(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/pre
 
 		gemEfficiencyHist2D[chamberID]->Divide(gemProjectedHist2D[chamberID]);
 		if(chamberID!=5){
-			gemEfficiencyHist2D[chamberID]->SetMinimum(0.8);
+			gemEfficiencyHist2D[chamberID]->SetMinimum(0.7);
 		}else{
 			gemEfficiencyHist2D[chamberID]->SetMinimum(0.6);
 		}
@@ -2622,7 +2696,7 @@ void gemEfficiency(TString fname="/home/newdriver/PRex/PRex_Data/GEMRootFile/pre
 
 		gStyle->SetOptStat();
 		if(chamberID!=5){
-			gemEfficiencyHist1D[chamberID]=new TH1F(Form("Efficiency_distribution_Bin_ch%d",chamberID),Form("Efficiency_distribution_Bin_ch%d",chamberID),15,0.8,1.1);
+			gemEfficiencyHist1D[chamberID]=new TH1F(Form("Efficiency_distribution_Bin_ch%d",chamberID),Form("Efficiency_distribution_Bin_ch%d",chamberID),15,0.6,1.1);
 		}else{
 			gemEfficiencyHist1D[chamberID]=new TH1F(Form("Efficiency_distribution_Bin_ch%d",chamberID),Form("Efficiency_distribution_Bin_ch%d",chamberID),15,0.5,1.0);
 		}

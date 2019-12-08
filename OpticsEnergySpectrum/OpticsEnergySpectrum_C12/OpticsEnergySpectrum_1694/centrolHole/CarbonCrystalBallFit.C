@@ -14,8 +14,8 @@
 
 void CarbonCrystalBallFit(std::string HRSArm="L"){
 	TChain *t=new TChain("T");
-	t->Add("/home/newdriver/PRex/PRex_Data/PRex_Data/rootfile/Dp/prexLHRS_1694_-1_0_optics_check.root");
-	t->Add("/home/newdriver/PRex/PRex_Data/PRex_Data/rootfile/Dp/prexLHRS_1694_-1_0_optics_check_1.root");
+	t->Add("/home/newdriver/PRex/PRex_Data/rootfile/Dp/prexLHRS_1694_-1_0_optics_check.root");
+	t->Add("/home/newdriver/PRex/PRex_Data/rootfile/Dp/rootfile/Dp/prexLHRS_1694_-1_0_optics_check_1.root");
 
 	std::string basicCuts =
 			Form(   "%s.vdc.u1.nclust==1 && %s.vdc.v1.nclust==1 && %s.vdc.u2.nclust==1 && %s.vdc.v2.nclust==1 &&  %s.gold.dp<1 && %s.gold.dp > -0.1 && fEvtHdr.fEvtType==1",
