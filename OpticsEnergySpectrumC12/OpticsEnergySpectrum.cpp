@@ -32,7 +32,7 @@ inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
 	  return (stat (name.c_str(), &buffer) == 0);
 }
-UInt_t OpticsEnergySpectrum(UInt_t runID,TString folder="/home/newdriver/Storage/Research/PRex_Experiment/prex_analyzer/optReplay/Result", double_t groundp=0.9476, double_t firstp=0.94325){
+UInt_t OpticsEnergySpectrum(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result", double_t groundp=0.9476, double_t firstp=0.94325){
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
 
@@ -74,7 +74,7 @@ UInt_t OpticsEnergySpectrum(UInt_t runID,TString folder="/home/newdriver/Storage
     TCanvas *canvasp=new TCanvas("a","q",1000,1000);
     canvasp->cd();
     // plot the momentum spectrum and fit the
-    TH1F *TargetMomentumH=new TH1F("gold.p","gold.p", 500,0.93,0.96);
+    TH1F *TargetMomentumH=new TH1F("gold.p","gold.p", 500,2.1,2.2);
     chain->Project(TargetMomentumH->GetName(),"R.gold.p",Form("%s",cutg->GetName()));
 
 
