@@ -35,7 +35,7 @@
 #include <TObject.h>
 #include "TMinuit.h"
 
-struct SievePos{
+/*struct SievePos{
 	SievePos(int16_t row=0, int16_t col=3){
 		sieve_col=col;
 		sieve_row=row;
@@ -55,7 +55,7 @@ private:
 	const int16_t sieve_col_max;
 };
 
-SievePos sievePosition;
+SievePos sievePosition;*/
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
@@ -117,8 +117,8 @@ Int_t cutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_
 	box_save->SetFillColor(5);
 	box_save->Draw("same");
 
-	mainPatternCanvas->AddExec("ex", "DynamicCoordinates()");
-
+//	mainPatternCanvas->AddExec("ex", "DynamicCoordinates()");
+	mainPatternCanvas->AddExec("ex", "DynamicCanvas()");
 	std::cout<<"This is an test point"<<std::endl;
 	return 1;
 }
@@ -127,6 +127,153 @@ Int_t cutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_
 void HoleContourRec(int Sieve_row, int Sieve_col){
 
 };
+
+int FoilID=0;
+int col=3;
+int row=1;
+void DynamicCanvas(){
+	//check which button is clicked
+	//if the S button clicked, save the current  cut
+	//if the the d button clicked, skip the current hole and continue with the next one
+	int event = gPad->GetEvent();
+	if (event == kNoEvent)
+		return;
+
+	TObject *select = gPad->GetSelected();
+	if (!select)
+		return;
+	if (!select->InheritsFrom(TH2::Class())) {
+		gPad->SetUniqueID(0);
+		return;
+	}
+
+
+	// link the root tree and check which HRS we are working on
+	TChain *chain = (TChain *) gROOT->FindObject("T");
+	TString HRS("R");
+	TString filename(chain->GetFile()->GetName());
+	if (filename.Contains("RHRS")) {
+	} else if (filename.Contains("LHRS")) {
+		HRS = "L";
+	}
+
+	// check the input keys
+	if(event == kKeyPress) {
+
+		std::cout<<"Key Pressed"<<std::endl;
+		switch ((int) (gPad->GetEventX())) {
+		case 'd':
+			row++;
+			std::cout << "Delete Button Clicked" << std::endl;
+			break;
+		case 's':
+			std::cout << "Save Button Clicked" << std::endl;
+			break;
+		default:
+			std::cout<<(char)(gPad->GetEventX())<<std::endl;
+		}
+	}else
+	if (event==kButton1Down) {
+		TH2 *h = (TH2*) select;
+		gPad->GetCanvas()->FeedbackMode(kTRUE);
+
+
+		// if the button is clicked
+		//Rec the sieve pattern
+		// get the mouse click position in histogram
+		double_t x = (gPad->PadtoX(gPad->AbsPixeltoX(gPad->GetEventX())));
+		double_t y = (gPad->PadtoY(gPad->AbsPixeltoY(gPad->GetEventY())));
+
+		// create new canvas
+		TCanvas *SieveRecCanvas = (TCanvas*) gROOT->GetListOfCanvases()->FindObject("SieveRecCanvas");
+		if(SieveRecCanvas){
+			SieveRecCanvas->Clear();
+			delete SieveRecCanvas->GetPrimitive("Projection");
+		}else
+			SieveRecCanvas = new TCanvas("SieveRecCanvas","Projection Canvas", 710, 10, 700, 500);
+
+			SieveRecCanvas->Divide(1,2);
+			SieveRecCanvas->cd(2)->Divide(3,1);
+
+			//get the hsitogram and start rec
+			SieveRecCanvas->cd(2)->cd(1);
+
+			TH2F *selectedSievehh=(TH2F *)  gROOT->FindObject("Sieve_Selected_th_ph");
+			if(selectedSievehh){
+				selectedSievehh->Clear();
+			}
+			selectedSievehh = new TH2F("Sieve_Selected_th_ph",
+					"Sieve_Selected_th_ph",
+					100,
+					h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(),
+					100,
+					h->GetYaxis()->GetXmin(),h->GetYaxis()->GetXmax());
+			chain->Project(selectedSievehh->GetName(),
+					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
+					Form("sqrt((%s.gold.th-%f)^2+ (%s.gold.ph-%f)^2)<0.003 ",
+							HRS.Data(), y, HRS.Data(), x));
+			selectedSievehh->SetContour(10);
+			selectedSievehh->GetXaxis()->SetTitle("R.gold.ph");
+			selectedSievehh->GetYaxis()->SetTitle("R.gold.th");
+			selectedSievehh->Draw("CONT LIST");
+
+			SieveRecCanvas->Update(); // update the canvas to let the pattern buffer in root
+
+			// extract the contour
+			TObjArray *conts = (TObjArray*) gROOT->GetListOfSpecials()->FindObject(
+					"contours");
+			if (!conts)
+				return;
+			TList *lcontour1 = (TList*) conts->At(2);
+			if (!lcontour1)
+				return;
+			TGraph *gc1 = (TGraph*) lcontour1->First();
+			if (!gc1)
+				return;
+			if (gc1->GetN() < 10)
+				return;
+
+			//TODO need to change the name of
+			TCutG *cutg = new TCutG(Form("hcut_R_%d_%d_%d", FoilID, col, row), gc1->GetN(), gc1->GetX(), gc1->GetY());
+			cutg->SetLineColor(kRed);
+			cutg->SetName(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+			cutg->SetVarX("R.gold.ph");
+			cutg->SetVarY("R.gold.th");
+
+			SieveRecCanvas->cd(2)->cd(2);
+			auto projectx = selectedSievehh->ProjectionX();
+			projectx->Draw();
+			projectx->Fit("gaus");
+
+			SieveRecCanvas->cd(2)->cd(3);
+			auto projecty = selectedSievehh->ProjectionY();
+			projecty->Draw();
+			projecty->Fit("gaus");
+
+			// plot the cut on the canvas
+			SieveRecCanvas->cd(1);
+
+			TH2F *patternCheck=(TH2F *)  gROOT->FindObject("Sieve_Pattern_Check");
+			if(!patternCheck)
+			TH2F *patternCheck = new TH2F("Sieve_Pattern_Check",
+					"Sieve_Pattern_Check", h->GetXaxis()->GetNbins(),
+					h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(),
+					h->GetYaxis()->GetNbins(), h->GetYaxis()->GetXmin(),
+					h->GetYaxis()->GetXmax());
+			chain->Project(patternCheck->GetName(),
+					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()));
+			patternCheck->Draw("zcol");
+			cutg->Draw("same");
+
+			TPaveText *label = new TPaveText(x,y,x+0.003,y+0.005,"NB");;
+			label->AddText(Form("(%d %d)",col,row));
+			label->Draw("same");
+
+			row++;
+			SieveRecCanvas->Update();
+
+	}
+}
 
 
 void DynamicCoordinates()
@@ -144,26 +291,12 @@ void DynamicCoordinates()
 		return;
 	}
 
-	// check the input keys
-	if(event == kKeyPress) {
-
-		std::cout<<"Key Pressed"<<std::endl;
-		switch ((int) (gPad->GetEventX())) {
-		case 'd':
-			std::cout << "Delete Button Clicked" << std::endl;
-			break;
-		case 's':
-			std::cout << "Save Button Clicked" << std::endl;
-			break;
-		default:
-			std::cout<<(char)(gPad->GetEventX())<<std::endl;
-		}
-	}else if (event==kButton1Down) {
+ if (event==kButton1Down) {
 		std::cout<<"Button 1 Down"<<std::endl;
-	}
 
 
-	/*
+
+
 	TH2 *h = (TH2*) select;
 	gPad->GetCanvas()->FeedbackMode(kTRUE);
 
@@ -251,5 +384,5 @@ void DynamicCoordinates()
 	patternCheck->Draw("zcol");
 	cutg->Draw("same");
 	c2->Update();
-	*/
+ }
 }
