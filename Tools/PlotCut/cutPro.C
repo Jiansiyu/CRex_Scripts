@@ -34,43 +34,50 @@
 #include <TF2.h>
 #include <TObject.h>
 #include "TMinuit.h"
+#include <TFile.h>
+#include <fstream>
+#include <TSystem.h>
+#include <TApplication.h>
+int FoilID=0;
 
-/*struct SievePos{
-	SievePos(int16_t row=0, int16_t col=3){
-		sieve_col=col;
-		sieve_row=row;
-	};
-	int16_t sieve_row;
-	int16_t sieve_col;
-	SievePos GetNext(){
-		return this;
-	}
-	SievePos GetCurrent(){
-		return this;
-	}
-private:
-	const int16_t sieve_row_min;
-	const int16_t sieve_row_max;
-	const int16_t sieve_col_min;
-	const int16_t sieve_col_max;
-};
+int col=3;
+int row=1;
+int row_min=0;
+int row_count=10;
 
-SievePos sievePosition;*/
+
+//////////////////////////////////////////////////////////////////////////////
+// Work Directory
+// cut options
+// Need to change
+//////////////////////////////////////////////////////////////////////////////
+TString prepcut;
+TString generalcut="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1";
+//////////////////////////////////////////////////////////////////////////////
+// Work Directory
+//////////////////////////////////////////////////////////////////////////////
+TString WorkDir = "Result/";
+
+TString CutSuf = ".FullCut.root";
+TString CutDescFileSufVertex = ".VertexCut.cut";
+TString CutDescFileSufDp = ".DpCut.cut";
+TString CutDescFileSufSieve = ".SieveCut.%d_%d.cut";
+TString RootFileName;
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
 	  return (stat (name.c_str(), &buffer) == 0);
 }
 
-Int_t cutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/AfterCorrection") {
+Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/ThetaPhiOpt") {
+	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
-
 	TString HRS="R";
-
 	if(runID>20000){ //RHRS
 		if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
 			std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			RootFileName=Form("prexRHRS_%d_-1.root",runID);
 			chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
 
 			TString filename;
@@ -105,18 +112,36 @@ Int_t cutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_
 		}
 	}
 
+	TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
+	if(!mainPatternCanvas){
+		mainPatternCanvas=new TCanvas("cutPro","cutPro",600,600);
+	}else{
+		mainPatternCanvas->Clear();
+	}
+//	TCanvas *mainPatternCanvas=new TCanvas("cut","cut",600,600);
+	mainPatternCanvas->Draw();
+	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
+	if(TargetThPhHH) TargetThPhHH->Delete();
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.03,0.02,1000,-0.05,0.05);
 
-	TCanvas *mainPatternCanvas=new TCanvas("cut","cut",600,600);
-	mainPatternCanvas->ToggleEventStatus();
-
-	TH2F *TargetThPhHH=new TH2F("th vs ph","th vs ph",1000,-0.027,0.02,1000,-0.043,0.043);
-	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()));
+	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
+	// input how start row and how many holes in this row
+	col=current_col;
+    int nhol = 0;
+    std::cout << "How many holes in this No." << col << " column?" << std::endl;
+    std::cin >> nhol;
+    row_count=nhol;
+    if(nhol < 0)return 0;
+    std::cout << "min hole id : ";
+    int rmin = -1;
+    std::cin >> rmin;
+    row_min=rmin;
+    row=row_min;
 
-	auto box_save=new TBox(0.2,0.2,0.8,0.3);
-	box_save->SetFillColor(5);
-	box_save->Draw("same");
-
+    if(rmin < 0)return 0;
+    mainPatternCanvas->Update();
+	mainPatternCanvas->ToggleEventStatus();
 //	mainPatternCanvas->AddExec("ex", "DynamicCoordinates()");
 	mainPatternCanvas->AddExec("ex", "DynamicCanvas()");
 	std::cout<<"This is an test point"<<std::endl;
@@ -124,13 +149,110 @@ Int_t cutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_
 }
 
 //Recognize the save patter
-void HoleContourRec(int Sieve_row, int Sieve_col){
+// save the rec hole to the folder
+void SavePatternHole(){
+	//search all the holes in this col and save in the folder
+	std::cout<<std::endl<<std::endl;
+	std::cout<<"*******Save process start ........*******"<<std::endl;
+	std::cout<<"	Searching for holes in col ("<<col<<")"<<std::endl;
 
-};
+	TCanvas *SaveCheckCanvas=(TCanvas *) gROOT->GetListOfCanvases()->FindObject("SieveSaveCheck");
+	if(!SaveCheckCanvas){
+		SaveCheckCanvas =new TCanvas("SieveSaveCheck","SieveSaveCheck",710, 10, 700, 500);
+	}else{
+		SaveCheckCanvas->Clear();
+	}
+	SaveCheckCanvas->Divide(2,1);
 
-int FoilID=0;
-int col=3;
-int row=1;
+	TString CutFileName = WorkDir + RootFileName + CutSuf;
+	TString TempString(Form(CutDescFileSufSieve.Data(), FoilID, col));
+	TString PlotDir(RootFileName + Form(".hcut_R_%d_%d/", FoilID, col));
+	TString CutDescName = WorkDir + RootFileName + TempString;
+	// prepare the filename and folder
+	//TString CutDescName = WorkDir + RootFileName + CutDescFileSufDp;
+	//TString CutFileName = WorkDir + RootFileName + CutSuf; // used for save the root file and cut file
+	TFile *f1=new TFile(CutFileName,"UPDATE");
+	assert(f1);
+
+	std::fstream cutdesc(CutDescName, std::ios_base::out);
+	assert(cutdesc.is_open());
+
+	SaveCheckCanvas->cd(1);
+	// attached the root file and plot the canvas used for check
+	TChain *chain = (TChain *) gROOT->FindObject("T");
+	if(!chain) std::cout<<"[ERROR] CAN NOT FIND TREE"<<std::endl;
+	TH2F *h=(TH2F*)gROOT->FindObject("th_vs_ph");
+	if(!h)
+		h=new TH2F("th_vs_ph1","th_vs_ph1",1000,-0.027,0.02,1000,-0.043,0.043);
+
+	TH2F *SavesieveCheck = new TH2F("SaveSieveCheck", "SaveSieveCheck",
+			h->GetXaxis()->GetNbins(), h->GetXaxis()->GetXmin(),
+			h->GetXaxis()->GetXmax(), h->GetYaxis()->GetNbins(),
+			h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax());
+
+	TString HRS("R");
+	TString filename(chain->GetFile()->GetName());
+	if (filename.Contains("RHRS")) {
+	} else if (filename.Contains("LHRS")) {
+		HRS = "L";
+	}
+	chain->Project(SavesieveCheck->GetName(),Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s",generalcut.Data()));
+	//chain->Draw(Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s",generalcut.Data()),"zcol");
+	SavesieveCheck->Draw("zcol");
+	// search how many cut file exist in the root buffer
+	for (int i = 0 ; i < row_min; i ++)cutdesc<<"fEvtHdr.fRun==0"<< std::endl;
+	TH2F *sievehole[row_count];
+	for (int row_iter = row_min; row_iter<row_min+row_count;row_iter++){
+		TCutG *cutg=(TCutG *) gROOT->FindObject(Form("hcut_R_%d_%d_%d",FoilID,col,row_iter));
+		if(cutg){
+			sievehole[row_iter-row_min] = new TH2F(
+					Form("hcut_R_%d_%d_%d", FoilID, col, row_iter),
+					Form("hcut_R_%d_%d_%d", FoilID, col, row_iter),
+					h->GetXaxis()->GetNbins(), h->GetXaxis()->GetXmin(),
+					h->GetXaxis()->GetXmax(), h->GetYaxis()->GetNbins(),
+					h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax());
+			chain->Project(sievehole[row_iter-row_min]->GetName(), Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),cutg->GetName());
+			SaveCheckCanvas->cd(1);
+			cutg->SetName(Form("hcut_R_%d_%d_%d", FoilID, col, row_iter));
+			cutg->SetVarX(Form("%s.gold.ph"));
+			cutg->SetVarY(Form("%s.gold.th"));
+			cutg->SetLineColor(kMagenta);
+			cutg->SetLineWidth(2);
+			cutg->Draw("PL same");
+
+			cutg->Write("", TObject::kOverwrite); // Overwrite old cut
+			cutdesc << Form("hcut_R_%d_%d_%d", FoilID, col, row_iter) << " && ";
+			cutdesc << (const char*)generalcut << std::endl;
+
+			SaveCheckCanvas->cd(2);
+			sievehole[row_iter-row_min]->Draw("same");
+			sievehole[row_iter-row_min]->Delete();
+			cutg->Draw("same");
+
+		}else{
+			//if the cut does not exist,then write the cut
+			cutdesc << "fEvtHdr.fRun==0" << std::endl;
+		}
+
+	}
+
+
+	f1->Write();
+	f1->ls();
+	cutdesc.close();
+}
+
+
+void CurrentStatus(){
+	std::cout<<"***  's' save the current cut to file *****"<<std::endl;
+	std::cout<<"***  '-' decrease one hole ID         *****"<<std::endl;
+	std::cout<<"***  '+' increase one hole ID         *****"<<std::endl;
+	std::cout<<"Currently working on ::"<<std::endl;
+	std::cout<<"	hole col :"<<col<<std::endl;
+	std::cout<<"    hole row :"<<row<< "  minID:"<<row_min<<"  count:"<<row_count<<std::endl;
+	std::cout<<">>>Please click the center of the hole ("<<col<<" ,"<<row<<" ) ...."<<std::endl;
+}
+
 void DynamicCanvas(){
 	//check which button is clicked
 	//if the S button clicked, save the current  cut
@@ -162,12 +284,17 @@ void DynamicCanvas(){
 
 		std::cout<<"Key Pressed"<<std::endl;
 		switch ((int) (gPad->GetEventX())) {
-		case 'd':
+		case '+':
 			row++;
-			std::cout << "Delete Button Clicked" << std::endl;
+			CurrentStatus();
+			break;
+		case '-':
+			row--;
+			CurrentStatus();
 			break;
 		case 's':
 			std::cout << "Save Button Clicked" << std::endl;
+			SavePatternHole();
 			break;
 		default:
 			std::cout<<(char)(gPad->GetEventX())<<std::endl;
@@ -211,7 +338,7 @@ void DynamicCanvas(){
 			chain->Project(selectedSievehh->GetName(),
 					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
 					Form("sqrt((%s.gold.th-%f)^2+ (%s.gold.ph-%f)^2)<0.003 ",
-							HRS.Data(), y, HRS.Data(), x));
+							HRS.Data(), y, HRS.Data(), x),generalcut.Data());
 			selectedSievehh->SetContour(10);
 			selectedSievehh->GetXaxis()->SetTitle("R.gold.ph");
 			selectedSievehh->GetYaxis()->SetTitle("R.gold.th");
@@ -237,8 +364,9 @@ void DynamicCanvas(){
 			TCutG *cutg = new TCutG(Form("hcut_R_%d_%d_%d", FoilID, col, row), gc1->GetN(), gc1->GetX(), gc1->GetY());
 			cutg->SetLineColor(kRed);
 			cutg->SetName(Form("hcut_R_%d_%d_%d", FoilID, col, row));
-			cutg->SetVarX("R.gold.ph");
-			cutg->SetVarY("R.gold.th");
+			cutg->SetVarX(Form("%s.gold.ph",HRS.Data()));
+			cutg->SetVarY(Form("%s.gold.th",HRS.Data()));
+			cutg->Draw("same");
 
 			SieveRecCanvas->cd(2)->cd(2);
 			auto projectx = selectedSievehh->ProjectionX();
@@ -254,8 +382,10 @@ void DynamicCanvas(){
 			SieveRecCanvas->cd(1);
 
 			TH2F *patternCheck=(TH2F *)  gROOT->FindObject("Sieve_Pattern_Check");
-			if(!patternCheck)
-			TH2F *patternCheck = new TH2F("Sieve_Pattern_Check",
+			if(patternCheck){
+				patternCheck->Clear();
+			}
+			patternCheck = new TH2F("Sieve_Pattern_Check",
 					"Sieve_Pattern_Check", h->GetXaxis()->GetNbins(),
 					h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(),
 					h->GetYaxis()->GetNbins(), h->GetYaxis()->GetXmin(),
@@ -270,6 +400,7 @@ void DynamicCanvas(){
 			label->Draw("same");
 
 			row++;
+			SieveRecCanvas->Update();
 			SieveRecCanvas->Update();
 
 	}
