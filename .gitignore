@@ -8,4 +8,6 @@ Debug/*
 TrackAlignment/AlignmentDataGenerator/*.txt
 TrackAlignment/AlignmentDataGenerator/*.jpg
 GEMEventDisplay/result/*
-
+*jpg
+*root
+*dat

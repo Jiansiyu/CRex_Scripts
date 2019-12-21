@@ -1,0 +1,7 @@
+fEvtHdr.fRun==0
+hcut_R_0_9_1 && R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && abs(R.gold.p-2.193195)<3*0.002427
+hcut_R_0_9_2 && R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && abs(R.gold.p-2.183539)<3*0.001359
+hcut_R_0_9_3 && R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && abs(R.gold.p-2.172885)<3*0.001032
+hcut_R_0_9_4 && R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && abs(R.gold.p-2.157858)<3*0.003077
+hcut_R_0_9_5 && R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && abs(R.gold.p-2.120953)<3*0.008424
+fEvtHdr.fRun==0

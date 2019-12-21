@@ -233,7 +233,7 @@ UInt_t OpticsGraphicCutGeneral(UInt_t runID,TString plotString,TString folder="/
 }
 
 
-UInt_t OpticsGraphicCutDp(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/AfterCorrection"){
+UInt_t OpticsGraphicCutDp(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/"){
 
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -281,7 +281,7 @@ UInt_t OpticsGraphicCutDp(UInt_t runID,TString folder="/home/newdriver/Storage/R
 	TCanvas *a=new TCanvas("cut","cut",600,600);
 	a->Draw();
 	a->cd(0);
-	TH2F *HHistThPh=new TH2F("th vs ph","th vs ph",1000,-0.027,0.02,1000,-0.043,0.043);
+	TH2F *HHistThPh=new TH2F("th vs ph","th vs ph",1000,-0.02,0.027,1000,-0.043,0.043);
 	chain->Project(HHistThPh->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()));
 	HHistThPh->Draw("zcol");
 	TCutG *cutg=new TCutG("gcut");
@@ -321,7 +321,7 @@ UInt_t OpticsGraphicCutDp(UInt_t runID,TString folder="/home/newdriver/Storage/R
     f1stDpGaus->Draw("same");
 
     TPaveText *ptdp = new TPaveText(0.1,0.8,0.2,0.9,"NDC");
-    ptdp->AddText(Form("%f -%f",fgroudDpGaus->GetParameter(1),f1stDpGaus->GetParError(1)));
+    ptdp->AddText(Form("%f -%f =%f",fgroudDpGaus->GetParameter(1),f1stDpGaus->GetParameter(1),fgroudDpGaus->GetParameter(1)-f1stDpGaus->GetParameter(1)));
      ptdp->Draw("same");
 
 
@@ -350,7 +350,7 @@ UInt_t OpticsGraphicCutDp(UInt_t runID,TString folder="/home/newdriver/Storage/R
 
 
     canvasdpx->cd(4);
-    TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",1500,2.1,2.2);
+    TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",2000,2.1,2.2);
     chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s",cutg->GetName()));
     // get the maximum bin, this should be the first excited states
     auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
@@ -362,11 +362,11 @@ UInt_t OpticsGraphicCutDp(UInt_t runID,TString folder="/home/newdriver/Storage/R
 	momentum->Draw();
     double_t fgroudGausPar[3];
     double_t ffirstGuasPar[3];
-    TF1 *fgroudGaus=new TF1("groudstatesgaus","gaus",CGroundp-0.001,CGroundp+0.001);
+    TF1 *fgroudGaus=new TF1("groudstatesgaus","gaus",CGroundp-0.0005,CGroundp+0.0005);
     momentum->Fit("groudstatesgaus","R","ep",fgroudGaus->GetXmin(),fgroudGaus->GetXmax());
     fgroudGaus->Draw("same");
     fgroudGaus->GetParameters(fgroudGausPar);
-    TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0005,C1stp+0.0005);
+    TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0008,C1stp+0.0005);
     momentum->Fit("firststatesgaus","R","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
     ffirstGuas->Draw("same");
     ffirstGuas->GetParameters(ffirstGuasPar);
