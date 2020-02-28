@@ -39,6 +39,7 @@
 #include <TSystem.h>
 #include <TApplication.h>
 #include <TLatex.h>
+//#include <boost/filesystem.hpp>
 
 int FoilID=0;
 
@@ -56,13 +57,13 @@ const UInt_t NSieveRow = 7;
 //////////////////////////////////////////////////////////////////////////////
 TString prepcut;
 TString generalcut;
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
 //TString WorkDir = "Result/Test/";
-TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_20200128_optimized/CutP1/";
+TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_Feb292020/";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -70,15 +71,15 @@ TString CutDescFileSufDp = ".DpCut.cut";
 TString CutDescFileSufSieve = ".SieveCut.%d_%d.cut";
 TString RootFileName;
 
-int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,3,2};
-int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,2,2};
+int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
+int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
 	  return (stat (name.c_str(), &buffer) == 0);
 }
 
-Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_20200128_optimized") {
+Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result") {
 	 gStyle->SetOptStat(0);
 	// prepare the data
 	TChain *chain=new TChain("T");
@@ -100,7 +101,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Sto
 				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
 			}
 		}else{
-			std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			std::cout<<"Cannot find file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
 		}
 	}else{
 		HRS="L";
@@ -173,6 +174,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Sto
 
 //Recognize the save patter
 // save the rec hole to the folder
+// ground state
 void SavePatternHole(double momentumSigmaCut=3.0){
 	//search all the holes in this col and save in the folder
 	std::cout<<std::endl<<std::endl;
@@ -188,10 +190,18 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 	SaveCheckCanvas->Divide(1,2);
 	SaveCheckCanvas->cd(1)->Divide(2,1);
 	SaveCheckCanvas->cd(2)->Divide(row_count,1);
-	TString CutFileName = WorkDir + RootFileName + CutSuf;
+
+	TString workdir_temp=WorkDir;
+	if(momentumSigmaCut>10.0){
+		workdir_temp+="/WithMomCut/";
+	}else{
+		workdir_temp+="/GroundMomCut/";
+	}
+
+	TString CutFileName = workdir_temp + RootFileName + CutSuf;
 	TString TempString(Form(CutDescFileSufSieve.Data(), FoilID, col));
 	TString PlotDir(RootFileName + Form(".hcut_R_%d_%d/", FoilID, col));
-	TString CutDescName = WorkDir + RootFileName + TempString;
+	TString CutDescName = workdir_temp + RootFileName + TempString;
 	// prepare the filename and folder
 	//TString CutDescName = WorkDir + RootFileName + CutDescFileSufDp;
 	//TString CutFileName = WorkDir + RootFileName + CutSuf; // used for save the root file and cut file
@@ -245,7 +255,7 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 			SaveCheckCanvas->cd(2)->cd(row_iter - row_min + 1);
 			chain->Project(sievehole[row_iter-row_min]->GetName(), Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 
-			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),600,2.1,2.25);
+			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),600,0.94,0.96);
 			chain->Project(sieveholemomentum[row_iter-row_min]->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 			sieveholemomentumGausFit[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_%d_%d_%d", FoilID, col, row_iter),"gaus",
 					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())-0.002,
@@ -274,7 +284,7 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 					new TLatex(groudpcenter + 2 * groudpsigma-0.007,
 							sieveholemomentumGausFit[row_iter - row_min]->GetParameter(0),
 							Form("P_{0}= %2.5f",
-									groudpcenter, groudpsigma));
+									groudpcenter));//, groudpsigma
 			momentumInfor1[row_iter - row_min]->SetTextSize(0.055);
 			momentumInfor1[row_iter - row_min]->SetTextAlign(12);
 			momentumInfor1[row_iter - row_min]->SetTextColor(2);
@@ -367,6 +377,7 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 /// used for add the first excited states in the fitting
 //Recognize the save patter
 // save the rec hole to the folder
+// first excited state
 void SavePatternHole_P1(double momentumSigmaCut=3.0){
 	//search all the holes in this col and save in the folder
 	std::cout<<std::endl<<std::endl;
@@ -383,10 +394,14 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 	SaveCheckCanvas->Divide(1,2);
 	SaveCheckCanvas->cd(1)->Divide(2,1);
 	SaveCheckCanvas->cd(2)->Divide(row_count,1);
-	TString CutFileName = WorkDir + RootFileName + CutSuf;
+
+
+	TString workdir_temp=WorkDir+"/FirstMomCut/";
+
+	TString CutFileName = workdir_temp + RootFileName + CutSuf;
 	TString TempString(Form(CutDescFileSufSieve.Data(), FoilID, col));
 	TString PlotDir(RootFileName + Form(".hcut_R_%d_%d/", FoilID, col));
-	TString CutDescName = WorkDir + RootFileName + TempString;
+	TString CutDescName = workdir_temp + RootFileName + TempString;
 	// prepare the filename and folder
 	//TString CutDescName = WorkDir + RootFileName + CutDescFileSufDp;
 	//TString CutFileName = WorkDir + RootFileName + CutSuf; // used for save the root file and cut file
@@ -471,7 +486,7 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 					new TLatex(groudpcenter + 2 * groudpsigma-0.007,
 							sieveholemomentumGausFit[row_iter - row_min]->GetParameter(0),
 							Form("P_{0}= %2.5f",
-									groudpcenter, groudpsigma));
+									groudpcenter));//, groudpsigma
 			momentumInfor1[row_iter - row_min]->SetTextSize(0.055);
 			momentumInfor1[row_iter - row_min]->SetTextAlign(12);
 			momentumInfor1[row_iter - row_min]->SetTextColor(2);
@@ -665,7 +680,8 @@ void DynamicCanvas(){
 			break;
 		case 's':
 			std::cout << "Save Button Clicked" << std::endl;
-//			SavePatternHole();
+			SavePatternHole();
+			SavePatternHole(300000);
 			SavePatternHole_P1();
 			break;
 		case 'q':
@@ -717,7 +733,7 @@ void DynamicCanvas(){
 					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
 					Form("sqrt((%s.gold.th-%f)^2+ (%s.gold.ph-%f)^2)<0.003 && %s ",
 							HRS.Data(), y, HRS.Data(), x,generalcut.Data()));
-			selectedSievehh->SetContour(10);
+			selectedSievehh->SetContour(15);
 			selectedSievehh->GetXaxis()->SetTitle(Form("%s.gold.ph",HRS.Data()));
 			selectedSievehh->GetYaxis()->SetTitle(Form("%s.gold.th",HRS.Data()));
 			selectedSievehh->Draw("CONT LIST");
@@ -729,7 +745,7 @@ void DynamicCanvas(){
 					"contours");
 			if (!conts)
 				return;
-			TList *lcontour1 = (TList*) conts->At(1);
+			TList *lcontour1 = (TList*) conts->At(7);
 			if (!lcontour1)
 				return;
 			TGraph *gc1 = (TGraph*) lcontour1->First();
