@@ -132,7 +132,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Sto
 
 	TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
 	if(!mainPatternCanvas){
-		mainPatternCanvas=new TCanvas("cutPro","cutPro",600,600);
+		mainPatternCanvas=new TCanvas("cutPro","cutPro",1000,1200);
 	}else{
 		mainPatternCanvas->Clear();
 	}
@@ -193,7 +193,7 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 
 	TString workdir_temp=WorkDir;
 	if(momentumSigmaCut>10.0){
-		workdir_temp+="/WithMomCut/";
+		workdir_temp+="/WithOutMomCut/";
 	}else{
 		workdir_temp+="/GroundMomCut/";
 	}
@@ -255,7 +255,7 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 			SaveCheckCanvas->cd(2)->cd(row_iter - row_min + 1);
 			chain->Project(sievehole[row_iter-row_min]->GetName(), Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 
-			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),600,0.94,0.96);
+			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),600,2.1,2.25);
 			chain->Project(sieveholemomentum[row_iter-row_min]->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 			sieveholemomentumGausFit[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_%d_%d_%d", FoilID, col, row_iter),"gaus",
 					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())-0.002,
@@ -345,7 +345,7 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 		cutdesc << "fEvtHdr.fRun==0" << std::endl;
 	SaveCheckCanvas->SetName(Form("CutProfcut_R_%d_%d",FoilID, col));
 	SaveCheckCanvas->Write("", TObject::kOverwrite);
-	SaveCheckCanvas->SaveAs(Form("%s/%s.hcut_R_%d_%d.jpg",WorkDir.Data(),RootFileName.Data(),FoilID, col));
+	SaveCheckCanvas->SaveAs(Form("%s/%s.hcut_R_%d_%d.jpg",workdir_temp.Data(),RootFileName.Data(),FoilID, col));
 
 	for(auto i : sieveIDList){
 //	for (unsigned int i = 0; i < row_count; i++) {
@@ -457,7 +457,7 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 //			SaveCheckCanvas->cd(2)->cd(row_iter - row_min + 1)->SetLogy();
 			chain->Project(sievehole[row_iter-row_min]->GetName(), Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 
-			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),800,2.1,2.25);
+			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),600,2.1,2.25);
 			chain->Project(sieveholemomentum[row_iter-row_min]->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 			sieveholemomentumGausFit[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_%d_%d_%d", FoilID, col, row_iter),"gaus",
 					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())-0.002,
@@ -507,13 +507,16 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 
 			// add the second excited state gaus fit
 			TH1F *hSieveP1h=(TH1F *)sieveholemomentum[row_iter - row_min]->Clone("C12.p1");
-			hSieveP1h->GetXaxis()->SetRangeUser(sieveholemomentum[row_iter - row_min]->GetXaxis()->GetXmin()
-							,groudpcenter-groudpsigma*4);
+//			hSieveP1h->GetXaxis()->SetRangeUser(sieveholemomentum[row_iter - row_min]->GetXaxis()->GetXmin()
+//							,groudpcenter-groudpsigma*4);
 
+			hSieveP1h->GetXaxis()->SetRangeUser(groudpcenter-0.006
+							,groudpcenter-groudpsigma*4);
 
 
 			// get the bin center, and used this bin center as the fit center for the P1
 			double_t p1_mean=hSieveP1h->GetXaxis()->GetBinCenter(hSieveP1h->GetMaximumBin());
+			std::cout<<"===>"<<p1_mean<<std::endl;
 			hSieveP1h->Delete();
 			sieveholemomentumGausFit_p1[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_p1_%d_%d_%d", FoilID, col, row_iter),"gaus",p1_mean-0.0010,
 					p1_mean+0.0010);
@@ -599,7 +602,7 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 		cutdesc << "fEvtHdr.fRun==0" << std::endl;
 	SaveCheckCanvas->SetName(Form("CutProfcut_R_%d_%d",FoilID, col));
 	SaveCheckCanvas->Write("", TObject::kOverwrite);
-	SaveCheckCanvas->SaveAs(Form("%s/%s.hcut_R_%d_%d.jpg",WorkDir.Data(),RootFileName.Data(),FoilID, col));
+	SaveCheckCanvas->SaveAs(Form("%s/%s.hcut_R_%d_%d.jpg",workdir_temp.Data(),RootFileName.Data(),FoilID, col));
 
 	for(auto i : sieveIDList){
 //	for (unsigned int i = 0; i < row_count; i++) {
@@ -733,7 +736,7 @@ void DynamicCanvas(){
 					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
 					Form("sqrt((%s.gold.th-%f)^2+ (%s.gold.ph-%f)^2)<0.003 && %s ",
 							HRS.Data(), y, HRS.Data(), x,generalcut.Data()));
-			selectedSievehh->SetContour(15);
+			selectedSievehh->SetContour(10);
 			selectedSievehh->GetXaxis()->SetTitle(Form("%s.gold.ph",HRS.Data()));
 			selectedSievehh->GetYaxis()->SetTitle(Form("%s.gold.th",HRS.Data()));
 			selectedSievehh->Draw("CONT LIST");
@@ -745,7 +748,7 @@ void DynamicCanvas(){
 					"contours");
 			if (!conts)
 				return;
-			TList *lcontour1 = (TList*) conts->At(7);
+			TList *lcontour1 = (TList*) conts->At(1);
 			if (!lcontour1)
 				return;
 			TGraph *gc1 = (TGraph*) lcontour1->First();

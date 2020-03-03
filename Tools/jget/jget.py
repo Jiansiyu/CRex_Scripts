@@ -46,7 +46,8 @@ class mssget(object):
         commandList=[]
         for file in self.MssFileQauryList:
             if len(file) > 3:
-                jgetCMD="jget {0} {1} &".format(file,self.SavePath)
+                #jgetCMD="jget {0} {1} &".format(file,self.SavePath)
+                jgetCMD="jget get {0} ".format(file)
                 commandList.append(jgetCMD)
         commandList=list(set(commandList))
         commandList.sort()
