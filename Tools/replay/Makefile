@@ -1,10 +1,20 @@
+
+
+
+
+
+
+
+
+
+
 #------------------------------------------------------------------------------
 # Core library
-SRC = MPDModule.cxx MPDGEMTracker.cxx MPDGEMPlane.cxx PREXStand.cxx
+SRC = setup.C
 
-EXTRAHDR = MPDModule.h MPDGEMTracker.h MPDGEMPlane.h PREXStand.h
+EXTRAHDR = 
 
-CORE = prexCounting
+CORE = CRexReplay
 
 LINKDEF = $(CORE)_LinkDef.h
 
@@ -161,85 +171,10 @@ CXXFLAGS     += $(DEFINES) $(ROOTCFLAGS) $(ROOTCFLAGS) $(PKGINCLUDES)
 LIBS         += $(ROOTLIBS)
 GLIBS        += $(ROOTGLIBS)
 
-ifndef PKG
-PKG           = lib$(CORE)
-LOGMSG        = "$(PKG) source files"
-else
-LOGMSG        = "$(PKG) Software Development Kit"
-endif
-DISTFILE      = $(PKG).tar
-
-#------------------------------------------------------------------------------
-OBJ           = $(SRC:.cxx=.o) $(COREDICT).o
-HDR           = $(SRC:.cxx=.h) $(EXTRAHDR)
-DEP           = $(SRC:.cxx=.d)
-
-all:		$(CORELIB)
-
-$(CORELIB):	$(OBJ)
-		$(LD) $(LDFLAGS) $(SOFLAGS) -o $@ $^
-		@echo "$@ done"
+PHONY: test
 
 
-ifeq ($(ARCH),linux)
-$(COREDICT).o:	$(COREDICT).cxx
-	$(CXX) $(CXXFLAGS) $(DICTCXXFLG) -o $@ -c $^
-endif
 
-$(COREDICT).cxx: $(HDR) $(LINKDEF)
-	@echo "Generating dictionary $(COREDICT)..."
-#$(ROOTDICT_CMD) -f $@ -c $(INCLUDES) $(DEFINES) $^ ;
-	$(ROOTDICT_CMD) -f $@ $(ROOTDICT_CMD_FLAGS) -c $(INCLUDES) $(DEFINES) $^ ;
-
-install:	all
-		cp *.so $(PREX_LIBDIR)
-#		$(error Please define install yourself)
-# for example:
-#		cp $(USERLIB) $(LIBDIR)
-
-clean:
-		rm -f *.o *~ $(CORELIB) $(COREDICT).*
-
-realclean:	clean
-		rm -f *.d *.pcm *.rootmap
-
-srcdist:
-		rm -f $(DISTFILE).gz
-		rm -rf $(PKG)
-		mkdir $(PKG)
-		cp -p $(SRC) $(HDR) $(LINKDEF) db*.dat Makefile $(PKG)
-		gtar czvf $(DISTFILE) --ignore-failed-read \
-		 -V $(LOGMSG)" `date -I`" $(PKG)
-		rm -rf $(PKG)
-
-develdist:	srcdist
-		mkdir $(PKG)
-		ln -s ../.git $(PKG)
-		cp -p .gitignore $(PKG)
-		gunzip -f $(DISTFILE).gz
-		gtar rhvf $(DISTFILE) --exclude=*~ $(PKG)
-		xz -f $(DISTFILE)
-		rm -rf $(PKG)
-
-.PHONY: all clean realclean srcdist
-
-.SUFFIXES:
-.SUFFIXES: .c .cc .cpp .cxx .C .o .d
-
-%.o:	%.cxx
-ifeq ($(strip $(MAKEDEPEND)),)
-	$(CXX) $(CXXFLAGS) -MMD -o $@ -c $<
-	@mv -f $*.d $*.d.tmp
-else
-	$(CXX) $(CXXFLAGS) -o $@ -c $<
-	$(MAKEDEPEND) $(ROOTINC) $(INCLUDES) $(DEFINES) -c $< > $*.d.tmp
-endif
-	@sed -e 's|.*:|$*.o:|' < $*.d.tmp > $*.d
-	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
-	  sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	@rm -f $*.d.tmp
-
-###
-
--include $(DEP)
-
+test:
+	@echo ${LIBS}
+	@echo ${INCLUDES}

@@ -233,7 +233,7 @@ void DynamicCanvas(){
 		return;
 
 	//TODO need to change the name of
-	TCutG *cutg = new TCutG(Form("hcut_R_%d",random()),
+	TCutG *cutg = new TCutG(Form("hcut_R_%ld",random()),
 			gc1->GetN(), gc1->GetX(), gc1->GetY());
 	cutg->SetLineWidth(2);
 	cutg->SetLineColor(kRed);
@@ -328,16 +328,16 @@ void DynamicCanvas(){
 	firstposLine->Draw("same");
 
 	TPaveText *pt = new TPaveText(0.1,0.8,0.3,0.9,"NDC");
-	pt->AddText(Form("%1.3f MeV (%2.2f\%)",1000.0*(fCrystalMomentumPar[1]-fCrystalMomentumPar[6]),100.0*abs(abs(fCrystalMomentumPar[1]-fCrystalMomentumPar[6])-0.00443891)/0.00443891));
+	pt->AddText(Form("%1.3f MeV (%2.2f\%%)",1000.0*(fCrystalMomentumPar[1]-fCrystalMomentumPar[6]),100.0*abs(abs(fCrystalMomentumPar[1]-fCrystalMomentumPar[6])-0.00443891)/0.00443891));
 	pt->Draw("same");
 
-	TLatex *t1 = new TLatex(fgroudGausPar[1] + 2 * fgroudGausPar[2],fgroudGausPar[0], Form("P=%2.5fMeV #frac{#deltap}{p}=%1.2f%%", fCrystalMomentumPar[1],100*fCrystalMomentumPar[2]/fCrystalMomentumPar[1]));
+	TLatex *t1 = new TLatex(fgroudGausPar[1] + 2 * fgroudGausPar[2],fgroudGausPar[0], Form("P=%2.5fGeV #sigma=%1.2f x 10^{-3}", fCrystalMomentumPar[1],fCrystalMomentumPar[2]*1000));
 	t1->SetTextSize(0.055);
 	t1->SetTextAlign(12);
 	t1->SetTextColor(2);
 	t1->Draw("same");
 
-	TLatex *t2 = new TLatex(ffirstGuasPar[1] + 2 * ffirstGuasPar[2],ffirstGuasPar[0], Form("P=%2.5fMeV", fCrystalMomentumPar[6]));
+	TLatex *t2 = new TLatex(ffirstGuasPar[1] + 2 * ffirstGuasPar[2],ffirstGuasPar[0], Form("P=%2.5fGeV #sigma=%1.2f x 10^{-3}", fCrystalMomentumPar[6],fCrystalMomentumPar[7]*1000));
 	t2->SetTextSize(0.055);
 	t2->SetTextAlign(12);
 	t2->SetTextColor(2);
