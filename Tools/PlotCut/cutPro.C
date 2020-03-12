@@ -26,7 +26,7 @@
 #include <random>
 #include <iostream>
 #include <sys/stat.h>
-
+#include <sstream>
 #include <TComplex.h>
 #include <TVirtualPad.h>
 
@@ -39,7 +39,11 @@
 #include <TSystem.h>
 #include <TApplication.h>
 #include <TLatex.h>
-//#include <boost/filesystem.hpp>
+#include <TGApplication.h>
+
+#include <boost/filesystem.hpp>
+R__LOAD_LIBRARY(/usr/lib/x86_64-linux-gnu/libboost_filesystem.so)
+
 
 int FoilID=0;
 
@@ -63,7 +67,9 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
 //TString WorkDir = "Result/Test/";
-TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_Feb292020/";
+//TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_Feb292020/";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/RHRS_20200311/";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200311/RHRS/";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -71,16 +77,57 @@ TString CutDescFileSufDp = ".DpCut.cut";
 TString CutDescFileSufSieve = ".SieveCut.%d_%d.cut";
 TString RootFileName;
 
+//LHRS
 int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
 int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
+//RHRS
+//int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,5,3};
+//int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,1,1};
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
 	  return (stat (name.c_str(), &buffer) == 0);
 }
 
-Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result") {
-	 gStyle->SetOptStat(0);
+Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/") {
+	// need to check the folder
+	std::string bufferedWorkFolder;
+	std::string bufferedSourceDir;
+	int bufferedCol=-1;
+	int bufferedRunID=-1;
+
+
+	if(!boost::filesystem::is_regular_file("logfile.txt")){
+		bufferedSourceDir=folder;
+		bufferedWorkFolder=WorkDir;
+		bufferedCol=3;
+		bufferedRunID=runID;
+
+		// create the folder and save the infor
+	}else{
+		std::ifstream textinfile("logfile.txt");
+		textinfile>>bufferedSourceDir>>bufferedWorkFolder>>bufferedRunID>>bufferedCol;
+
+		if((bufferedSourceDir==folder)&&(bufferedWorkFolder==WorkDir)&&(bufferedRunID==runID)){
+			bufferedCol++;
+		}else{
+			bufferedSourceDir=folder;
+			bufferedWorkFolder=WorkDir;
+			bufferedRunID=runID;
+			bufferedCol=3;
+		}
+		std::cout<<"source dir:"<<bufferedSourceDir.c_str()<<std::endl;
+		std::cout<<"current work dir: " << bufferedWorkFolder.c_str()<<"\n  runID:"<<bufferedRunID<<"\n  current col: "<< bufferedCol<<std::endl;
+		// update the run infor
+	}
+
+	std::ofstream textoutfile;
+	textoutfile.open("logfile.txt", std::ios::trunc);
+	textoutfile <<bufferedSourceDir.c_str()<<" "<<bufferedWorkFolder.c_str()<< " "<<bufferedRunID<<" "<<bufferedCol << std::endl;
+
+	current_col=bufferedCol;
+
+	gStyle->SetOptStat(0);
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -140,13 +187,14 @@ Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Sto
 	mainPatternCanvas->Draw();
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.025,0.015,1000,-0.047,0.045);
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.025,0.025,1000,-0.047,0.045);
 
 	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
 	mainPatternCanvas->SetGridx(10);
 	mainPatternCanvas->SetGridy(10);
-	mainPatternCanvas->Update();
+
+//	mainPatternCanvas->Update();
 	// input how start row and how many holes in this row
 	col=current_col;
     int nhol = 0;
@@ -166,6 +214,8 @@ Int_t cutPro(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Sto
     row=row_min;
 
     if(rmin < 0)return 0;
+    TLatex *p=new TLatex(-0.025, 0.045,Form("Sieve %d, #frac{%d}{%d}",col,rmin,nhol));
+    p->Draw("same");
     mainPatternCanvas->Update();
 	mainPatternCanvas->ToggleEventStatus();
 	mainPatternCanvas->AddExec("ex", "DynamicCanvas()");
@@ -196,6 +246,14 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 		workdir_temp+="/WithOutMomCut/";
 	}else{
 		workdir_temp+="/GroundMomCut/";
+	}
+	// check the existance of the folder, if not create the folder
+	if(!boost::filesystem::is_directory(workdir_temp.Data())){
+		std::cout<<"Folder :"<< workdir_temp.Data()<<"  Does Not EXIST\n Trying to Create the folder"<<std::endl;
+		if(!boost::filesystem::create_directories(workdir_temp.Data())){
+			std::cout<<"ERROR:: cannot creat folde, please check the permission!!!!"<<std::endl;
+			exit(-1);
+		}
 	}
 
 	TString CutFileName = workdir_temp + RootFileName + CutSuf;
@@ -317,9 +375,14 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 			cutg->Write("", TObject::kOverwrite); // Overwrite old cut
 			if(groudpsigma>0.0008)groudpsigma=0.0008;
 			cutdesc << Form("hcut_R_%d_%d_%d", FoilID, col, row_iter) << " && ";
+
+			if(momentumSigmaCut>10.0){
+				cutdesc << (const char*)generalcut << std::endl;
+			}else{
 			cutdesc << (const char*)generalcut <<" && "
 					<<Form("abs(%s.gold.p-%f)<%f*%f",HRS.Data(),groudpcenter,momentumSigmaCut,groudpsigma)
 					<< std::endl;
+			}
 
 			SaveCheckCanvas->cd(1)->cd(2);
 			sievehole[row_iter-row_min]->Draw("same");
@@ -397,6 +460,15 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 
 
 	TString workdir_temp=WorkDir+"/FirstMomCut/";
+
+	// check the existance of the folder, if not create the folder
+	if(!boost::filesystem::is_directory(workdir_temp.Data())){
+		std::cout<<"Folder :"<< workdir_temp.Data()<<"  Does Not EXIST\n Trying to Create the folder"<<std::endl;
+		if(!boost::filesystem::create_directories(workdir_temp.Data())){
+			std::cout<<"ERROR:: cannot creat folde, please check the permission!!!!"<<std::endl;
+			exit(-1);
+		}
+	}
 
 	TString CutFileName = workdir_temp + RootFileName + CutSuf;
 	TString TempString(Form(CutDescFileSufSieve.Data(), FoilID, col));
@@ -511,15 +583,15 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 //							,groudpcenter-groudpsigma*4);
 
 			hSieveP1h->GetXaxis()->SetRangeUser(groudpcenter-0.006
-							,groudpcenter-groudpsigma*4);
+							,groudpcenter-0.004);
 
 
 			// get the bin center, and used this bin center as the fit center for the P1
 			double_t p1_mean=hSieveP1h->GetXaxis()->GetBinCenter(hSieveP1h->GetMaximumBin());
 			std::cout<<"===>"<<p1_mean<<std::endl;
 			hSieveP1h->Delete();
-			sieveholemomentumGausFit_p1[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_p1_%d_%d_%d", FoilID, col, row_iter),"gaus",p1_mean-0.0010,
-					p1_mean+0.0010);
+			sieveholemomentumGausFit_p1[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_p1_%d_%d_%d", FoilID, col, row_iter),"gaus",p1_mean-0.0009,
+					p1_mean+0.0009);
 			sieveholemomentum[row_iter - row_min]->Fit(
 								Form("1ststatesDpgaushcut_R_p1_%d_%d_%d", FoilID, col,
 										row_iter), "R", "ep",
@@ -657,7 +729,7 @@ void DynamicCanvas(){
 		gPad->SetUniqueID(0);
 		return;
 	}
-	TFile *tempfile=new TFile("temp.root","UPDATE");
+	TFile *tempfile=new TFile("temp.root","RECREATE");
 
 	// link the root tree and check which HRS we are working on
 	TChain *chain = (TChain *) gROOT->FindObject("T");
@@ -684,7 +756,7 @@ void DynamicCanvas(){
 		case 's':
 			std::cout << "Save Button Clicked" << std::endl;
 			SavePatternHole();
-			SavePatternHole(300000);
+			SavePatternHole(300000); // with out the groud momentum cut
 			SavePatternHole_P1();
 			break;
 		case 'q':
@@ -724,13 +796,14 @@ void DynamicCanvas(){
 			TH2F *selectedSievehh=(TH2F *)  gROOT->FindObject("Sieve_Selected_th_ph");
 			if(selectedSievehh){
 				selectedSievehh->Clear();
-			}
+			}else{
 			selectedSievehh = new TH2F("Sieve_Selected_th_ph",
 					"Sieve_Selected_th_ph",
 					100,
 					h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(),
 					100,
 					h->GetYaxis()->GetXmin(),h->GetYaxis()->GetXmax());
+			}
 
 			chain->Project(selectedSievehh->GetName(),
 					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
@@ -812,6 +885,7 @@ void DynamicCanvas(){
 							+ 0.004);
 			sieveholemomentum->Draw();
 			SieveRecCanvas->Update();
+			SieveRecCanvas->Write();
 	}
 	tempfile->Write();
 	tempfile->Close();
