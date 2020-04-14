@@ -67,13 +67,28 @@ const UInt_t NSieveRow = 7;
 //////////////////////////////////////////////////////////////////////////////
 TString prepcut;
 TString generalcut;
-TString generalcutR="R.gold.p > 2.14 && R.gold.p < 2.2";;//"R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p > 2.14 && R.gold.p < 2.2  ";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
 	  return (stat (name.c_str(), &buffer) == 0);
 }
+
+
+// does it needed to add another function to predict the position of each peak
+// add an global fit function used for the fit
+TF1 * SpectroCrystalFit_C12(TH1F *momentumSpectro){
+	TF1 *globalFit;
+
+	TH1F *FitInitialh=(TH1F *)momentumSpectro->Clone("initialh");
+	// fit the highest peak, this should be the ground states peak
+	auto CGroundp=FitInitialh->GetXaxis()->GetBinCenter(FitInitialh->GetMaximumBin());
+	auto C1stp=CGroundp-0.00443891;
+	return globalFit;
+}
+
+
 
 Int_t OpticsGraphicCutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result") {
 	// prepare the data
@@ -260,7 +275,7 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",1500,2.1,2.2);
+	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",500,2.16,2.178);
 	chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());

@@ -41,6 +41,7 @@
 #include <TLatex.h>
 #include <TGApplication.h>
 
+// used for create the folder if does not exist in the destintion folder
 #include <boost/filesystem.hpp>
 R__LOAD_LIBRARY(/usr/lib/x86_64-linux-gnu/libboost_filesystem.so)
 
@@ -69,7 +70,9 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //TString WorkDir = "Result/Test/";
 //TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_Feb292020/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/RHRS_20200311/";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200311/RHRS/";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200311/RHRS/";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200322/LHRS/";
+
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -96,16 +99,15 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
 	int bufferedCol=-1;
 	int bufferedRunID=-1;
 
-
-	if(!boost::filesystem::is_regular_file("logfile.txt")){
+	std::string cutrunProfname=Form("%s/logfile.txt",WorkDir.Data());
+	if(!boost::filesystem::is_regular_file(cutrunProfname.c_str())){
 		bufferedSourceDir=folder;
 		bufferedWorkFolder=WorkDir;
 		bufferedCol=3;
 		bufferedRunID=runID;
-
 		// create the folder and save the infor
 	}else{
-		std::ifstream textinfile("logfile.txt");
+		std::ifstream textinfile(cutrunProfname.c_str());
 		textinfile>>bufferedSourceDir>>bufferedWorkFolder>>bufferedRunID>>bufferedCol;
 
 		if((bufferedSourceDir==folder)&&(bufferedWorkFolder==WorkDir)&&(bufferedRunID==runID)){
@@ -122,7 +124,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
 	}
 
 	std::ofstream textoutfile;
-	textoutfile.open("logfile.txt", std::ios::trunc);
+	textoutfile.open(cutrunProfname.c_str(), std::ios::trunc);
 	textoutfile <<bufferedSourceDir.c_str()<<" "<<bufferedWorkFolder.c_str()<< " "<<bufferedRunID<<" "<<bufferedCol << std::endl;
 
 	current_col=bufferedCol;
@@ -650,7 +652,7 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 											h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax());
 			chain->Project(sieveholetempp1->GetName(),Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s && %s && abs(%s.gold.p-%f)<%f*%f",generalcut.Data(),cutg->GetName(),HRS.Data(),p1guasMeam,momentumSigmaCut-1,p1guasSigma));
 
-			TLatex *eventCountLable=new TLatex(sievehole[row_iter-row_min]->GetMean(1) + 0.005,sievehole[row_iter-row_min]->GetMean(2), Form("Entries(%d,%d): %2.0f-> %2.0f p1 :%2.0f",col,row_iter, (sievehole[row_iter-row_min]->GetEntries()),sieveholetemp->GetEntries(),sieveholetempp1->GetEntries()));
+			TLatex *eventCountLable=new TLatex(sievehole[row_iter-row_min]->GetMean(1) - 0.02,sievehole[row_iter-row_min]->GetMean(2)+0.003, Form("Entries(%d,%d):%2.0f->%2.0f p1:%2.0f",col,row_iter, (sievehole[row_iter-row_min]->GetEntries()),sieveholetemp->GetEntries(),sieveholetempp1->GetEntries()));
 			eventCountLable->SetTextSize(0.03);
 			eventCountLable->SetTextAlign(12);
 			eventCountLable->SetTextColor(2);
