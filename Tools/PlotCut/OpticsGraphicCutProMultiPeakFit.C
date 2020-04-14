@@ -75,7 +75,7 @@ inline Bool_t IsFileExist (const std::string& name) {
 	  return (stat (name.c_str(), &buffer) == 0);
 }
 
-Int_t OpticsGraphicCutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result") {
+Int_t OpticsGraphicCutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -261,7 +261,7 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",1500,2.1,2.2);
+	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",750,2.1,2.2);
 	chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
@@ -335,7 +335,7 @@ void DynamicCanvas(){
 	// Fit the third Peak
 	
 	double C3stp=fCrystalMomentumPar[6]-(9.641-4.43982)*0.001;
-	TF1 *fThirdGuas=new TF1 ("Thirdstatesgaus","gaus",C3stp-0.0006,C3stp+0.0004);
+	TF1 *fThirdGuas=new TF1 ("Thirdstatesgaus","gaus",C3stp-0.0008,C3stp+0.0004);
 	double fThirdGuasPar[3];
 	momentum->Fit("Thirdstatesgaus","R","ep",fThirdGuas->GetXmin(),fThirdGuas->GetXmax());
 	fThirdGuas->GetParameters(fThirdGuasPar);
