@@ -174,7 +174,7 @@ void DynamicCanvas(){
 
 
 	TFile *f1=new TFile("test_temp.root","UPDATE");
-		assert(f1);
+	assert(f1);
 
 	// link the root tree and check which HRS we are working on
 	TChain *chain = (TChain *) gROOT->FindObject("T");
@@ -389,8 +389,6 @@ void DynamicCanvas(){
 		t2->SetTextSize(0.02);
 		t2->Draw("same");
 	}
-
-
 	hSieveHole->Delete();
 //	f1->Close();
 }

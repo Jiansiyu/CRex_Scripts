@@ -63,7 +63,7 @@ const UInt_t NSieveRow = 7;
 TString prepcut;
 TString generalcut;
 TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
+TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.1 && L.gold.p < 2.2";
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
@@ -71,8 +71,8 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_Feb292020/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/RHRS_20200311/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200311/RHRS/";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200322/LHRS/";
-
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200322/LHRS/";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200413/RHRS/";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -81,11 +81,12 @@ TString CutDescFileSufSieve = ".SieveCut.%d_%d.cut";
 TString RootFileName;
 
 //LHRS
-int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
-int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
+//int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
+//int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
+
 //RHRS
-//int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,5,3};
-//int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,1,1};
+int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,5,3};
+int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,1,1};
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;

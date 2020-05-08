@@ -10,7 +10,7 @@ nfoil=$2
 
 ((nfoil=nfoil -1))
 # Number of Event in each Cut area
-N=100000
+N=130
 nCol=13
 echo $LIST $nfoil
 for run in $LIST 

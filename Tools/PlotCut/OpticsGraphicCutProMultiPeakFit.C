@@ -60,6 +60,8 @@ int row_count=10;
 const UInt_t NSieveCol = 13;
 const UInt_t NSieveRow = 7;
 
+
+
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 // cut options
@@ -69,6 +71,35 @@ TString prepcut;
 TString generalcut;
 TString generalcutR="R.gold.p > 2.14 && R.gold.p < 2.2";;//"R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
+
+
+struct PeakFitInfor{
+public:
+	PeakFitInfor(double_t mean, double_t sigma,double_t height=10){
+		Fit_mean=mean;
+		Fit_sigma=sigma;
+		Fit_height=height;
+	};
+	~PeakFitInfor(){};
+
+	double_t GetMean(){
+		return Fit_mean;
+	}
+
+	double_t GetSigma(){
+		return Fit_sigma;
+	}
+
+	double_t GetHeight(){
+		return Fit_height;
+	}
+
+private:
+	double_t Fit_mean;
+	double_t Fit_sigma;
+	double_t Fit_height;
+
+};
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
@@ -261,7 +292,7 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",750,2.1,2.2);
+	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",1500,2.1,2.2);
 	chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
@@ -325,30 +356,19 @@ void DynamicCanvas(){
 	double fSecondGuasPar[3];
 	momentum->Fit("secondstatesgaus","R","ep",fSecondGuas->GetXmin(),fSecondGuas->GetXmax());
 	fSecondGuas->GetParameters(fSecondGuasPar);
-//	fSecondGuas->Draw("same");
 	
-	// add the label 
-	TLatex *fSecondGuasTxt=new TLatex(fSecondGuasPar[1]-4*fSecondGuasPar[2],fSecondGuasPar[0],Form("#DeltaP=%1.3fMeV (%1.2f%%)",1000*(fCrystalMomentumPar[1]-fSecondGuasPar[1]),100000*(fCrystalMomentumPar[1]-fSecondGuasPar[1]-7.65407*0.001)/7.65407));
-	fSecondGuasTxt->SetLineColor(3);
-	fSecondGuasTxt->SetLineWidth(2);
-	fSecondGuasTxt->Draw("same");
 	// Fit the third Peak
-	
 	double C3stp=fCrystalMomentumPar[6]-(9.641-4.43982)*0.001;
 	TF1 *fThirdGuas=new TF1 ("Thirdstatesgaus","gaus",C3stp-0.0008,C3stp+0.0004);
 	double fThirdGuasPar[3];
 	momentum->Fit("Thirdstatesgaus","R","ep",fThirdGuas->GetXmin(),fThirdGuas->GetXmax());
 	fThirdGuas->GetParameters(fThirdGuasPar);
-//	fThirdGuas->Draw("same");
 	
-	TLatex *fThirdGuasTxt=new TLatex(fThirdGuasPar[1]-5*fThirdGuasPar[2],fThirdGuasPar[0]*0.1,Form("#DeltaP=%1.3fMeV (%1.2f%%)",1000*(fCrystalMomentumPar[1]-fThirdGuasPar[1]),100000*(fCrystalMomentumPar[1]-fThirdGuasPar[1]-9.641*0.001)/9.641));
-	fThirdGuasTxt->SetLineColor(3);
-	fThirdGuasTxt->SetLineWidth(2);
-	fThirdGuasTxt->Draw("same");
-
 
 	// put all the peaks on the same fit plot 5 + 5 + 3 + 3 parameters
+
 	double MomCombinedFitPar[16];
+	std::cout<<"Start the Global Fit with: "<<sizeof(MomCombinedFitPar)/sizeof(double)<<"  Parameters!!"<<std::endl;
 	std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,MomCombinedFitPar);
 	std::copy(fSecondGuasPar,fSecondGuasPar+3,MomCombinedFitPar+10);
 	std::copy(fThirdGuasPar,fThirdGuasPar+3,MomCombinedFitPar+13);
@@ -357,53 +377,64 @@ void DynamicCanvas(){
 	momentum->Fit("fMomentumCombinedFit","","",fMomentumCombinedFit->GetXmin(),fMomentumCombinedFit->GetXmax());
 	fMomentumCombinedFit->Draw("same");
 
+	std::map<unsigned int, PeakFitInfor*>SpectrumFitResult;
+	SpectrumFitResult[0]=new PeakFitInfor(MomCombinedFitPar[1],MomCombinedFitPar[2],MomCombinedFitPar[0]);
+	SpectrumFitResult[1]=new PeakFitInfor(MomCombinedFitPar[6],MomCombinedFitPar[7],MomCombinedFitPar[5]);
+	SpectrumFitResult[2]=new PeakFitInfor(MomCombinedFitPar[11],MomCombinedFitPar[12],MomCombinedFitPar[10]);
+	SpectrumFitResult[3]=new PeakFitInfor(MomCombinedFitPar[14],MomCombinedFitPar[15],MomCombinedFitPar[13]);
 
-	// plot the reconstrcution peak
-	TLine *groudposLine=new TLine(fCrystalMomentumPar[1],0,fCrystalMomentumPar[1],fgroudGausPar[0]*1.1);
-	groudposLine->SetLineColor(3);
-	groudposLine->SetLineWidth(2);
-	groudposLine->Draw("same");
+	for (auto peak_indix=SpectrumFitResult.begin(); peak_indix!=SpectrumFitResult.end(); peak_indix++){
+		TLatex *PeakMomInfor=new TLatex(peak_indix->second->GetMean(),peak_indix->second->GetHeight(),Form("P=%2.4f #pm %1.2fx10^{-3}GeV",peak_indix->second->GetMean(),peak_indix->second->GetSigma()*1000.0));
+		PeakMomInfor->SetTextSize(0.035);
+		PeakMomInfor->SetTextAlign(12);
+		PeakMomInfor->SetTextColor(2);
+		//PeakMomInfor->SetTextAngle(30);
+		PeakMomInfor->Draw("same");
+	}
 
-	TLine *firstposLine=new TLine(fCrystalMomentumPar[6],0,fCrystalMomentumPar[6],ffirstGuasPar[0]*1.1);
-	firstposLine->SetLineColor(3);
-	firstposLine->SetLineWidth(2);
-	firstposLine->Draw("same");
 
+	//create the peak separation
+	for(auto Spectro_index=SpectrumFitResult.size()-1;Spectro_index>=1;Spectro_index--){
+		//get the energy separation and the error propagation
+		double_t SeparationE=SpectrumFitResult.at(0)->GetMean()-SpectrumFitResult.at(Spectro_index)->GetMean();
+		double_t SeparationError=sqrt(pow(SpectrumFitResult.at(0)->GetSigma(),2)+pow(SpectrumFitResult.at(Spectro_index)->GetSigma(),2)); //
+		TLatex *deltaEtxt=new TLatex(SpectrumFitResult.at(Spectro_index)->GetMean(), SpectrumFitResult.at(Spectro_index)->GetHeight()/10,Form("#DeltaP=%1.3f",SeparationE*1000.0));
+		deltaEtxt->SetTextSize(0.035);
+		deltaEtxt->SetTextAlign(12);
+		deltaEtxt->SetTextColor(2);
+
+		deltaEtxt->Draw("same");
+	}
+
+	// create the line of each peak
+	for (auto peak_indix=SpectrumFitResult.begin(); peak_indix!=SpectrumFitResult.end(); peak_indix++){
+		TLine *peakline=new TLine(peak_indix->second->GetMean(),0,peak_indix->second->GetMean(),peak_indix->second->GetHeight()*1.1);
+		peakline->SetLineColor(3);
+		peakline->SetLineWidth(2);
+		peakline->Draw("same");
+	}
+
+	// create the peak separation for each individual
 	TPaveText *pt = new TPaveText(0.1,0.7,0.3,0.9,"NDC");
 	pt->AddText("Energy levels of ^{12}C  (MeV #pm keV)");
 	pt->AddText("E_1=4.43982 #pm 0.21");
 	pt->AddText("E_2=7.65407 #pm 0.19");
 	pt->AddText("E_3=9.641   #pm 5   ");
-
-	//pt->AddText(Form("%1.3f MeV (%2.2f\%%)",1000.0*(fCrystalMomentumPar[1]-fCrystalMomentumPar[6]),100.0*abs(abs(fCrystalMomentumPar[1]-fCrystalMomentumPar[6])-0.00443891)/0.00443891));
 	pt->Draw("same");
 
-	TLatex *t1 = new TLatex(fgroudGausPar[1] + 2 * fgroudGausPar[2],fgroudGausPar[0], Form("P=%2.5fGeV #sigma=%1.2f x 10^{-3}", fCrystalMomentumPar[1],fCrystalMomentumPar[2]*1000));
-	t1->SetTextSize(0.055);
-	t1->SetTextAlign(12);
-	t1->SetTextColor(2);
-	t1->Draw("same");
 
-	//TLatex *t2 = new TLatex(ffirstGuasPar[1] + 2 * ffirstGuasPar[2],ffirstGuasPar[0], Form("P=%2.5fGeV #sigma=%1.2f x 10^{-3}", fCrystalMomentumPar[6],fCrystalMomentumPar[7]*1000));
-	TLatex *t2 = new TLatex(ffirstGuasPar[1] - 4 * ffirstGuasPar[2],ffirstGuasPar[0]*1.1,
-			Form("#DeltaP=%1.3f MeV (%2.2f\%%)",1000.0*(fCrystalMomentumPar[1]-fCrystalMomentumPar[6]),100.0*abs(abs(fCrystalMomentumPar[1]-fCrystalMomentumPar[6])-0.00443891)/0.00443891));
-	t2->SetTextSize(0.055);
-	t2->SetTextAlign(12);
-	t2->SetTextColor(2);
-	t2->Draw("same");
+
 
 	//plot the bigger plot for first excited states
 	SieveRecCanvas->cd(2)->cd(3);
 	TH1F *groundStats=(TH1F *)momentum->Clone("C-12 p.ground");
 	groundStats->GetXaxis()->SetRangeUser(fCrystalMomentumPar[1]-0.002,fCrystalMomentumPar[1]+0.002);
 	groundStats->Draw();
-	groudposLine->Draw("same");
 
 	SieveRecCanvas->cd(2)->cd(4);
 	TH1F *firstStats=(TH1F *)momentum->Clone("C-12 p.first");
 	firstStats->GetXaxis()->SetRangeUser(fCrystalMomentumPar[6]-0.002,fCrystalMomentumPar[6]+0.002);
 	firstStats->Draw();
-	firstposLine->Draw("same");
 
 	SieveRecCanvas->Update();
 
@@ -433,17 +464,6 @@ void DynamicCanvas(){
 
 	SieveRecCanvas->Update();
 	hSieveHole->Delete();
-
-
-/*
-	// Momentum Full Fit
-	TCanvas *MomentumFitCanv=(TCanvas*) gROOT->GetListOfCanvases()->FindObject("SieveMomentumRecCanvas");
-	if(MomentumFitCanv){
-	MomentumFitCanv->Clear();
-	}else{
-	MomentumFitCanv=new TCanvas("SieveMomentumRecCanvas","SieveMomentumRecCanvas",1200,1800);
-	}
-	MomentumFitCanv->Draw();*/
 	
 	
 }
