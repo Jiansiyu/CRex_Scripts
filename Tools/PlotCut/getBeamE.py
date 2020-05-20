@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import statistics
 import numpy as np
 import pandas as pd
-runList={21626:'C_12 0%',21632:'C_12 1%',21641:'c_12 -1%',21642:'C_12 -2%'}
+runList={21626:'C_12 0%',21632:'C_12 1%',21641:'c_12 -1%',21642:'C_12 -2%',21739:'H2O_0%',21762:'H2O_1%',21789:'H2O_-1%'}
 class beamInfor(object):
     def __init__(self):
         self.DataDict={}
@@ -41,7 +41,7 @@ class beamInfor(object):
         
 
     def test(self):
-        self.ReadRawFile(Path='/home/newdriver/Storage/Server/JLabTempStorage/EPICS_BeamE')
+        self.ReadRawFile(Path='/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/BeamE')
         print(self.DataDict)
         self.BeamEPlot()
             
