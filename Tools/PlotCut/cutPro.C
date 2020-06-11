@@ -62,6 +62,7 @@ const UInt_t NSieveRow = 7;
 //////////////////////////////////////////////////////////////////////////////
 TString prepcut;
 TString generalcut;
+
 TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.1 && L.gold.p < 2.2";
 //////////////////////////////////////////////////////////////////////////////
