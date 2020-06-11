@@ -65,9 +65,11 @@ TString generalcut;
 
 TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.1 && L.gold.p < 2.2";
+
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
+
 //TString WorkDir = "Result/Test/";
 //TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_Feb292020/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/RHRS_20200311/";
@@ -75,7 +77,8 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200322/LHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200413/RHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200530/RHRS/";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200530/RHRS/";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/junk";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -83,17 +86,29 @@ TString CutDescFileSufDp = ".DpCut.cut";
 TString CutDescFileSufSieve = ".SieveCut.%d_%d.cut";
 TString RootFileName;
 
+
 //LHRS
 //int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
 //int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
+
 
 //RHRS
 int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,3,2};
 int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,2,2};
 
+
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
 	  return (stat (name.c_str(), &buffer) == 0);
+}
+
+
+// check which experiment and which HRS and load its configure
+// experiment: PRex/CRex
+// HRS: L/R
+void ExperimentConfigure(TString experiment, TString HRS){
+
+
 }
 
 Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/") {
@@ -133,6 +148,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
 
 	current_col=bufferedCol;
 
+
 	gStyle->SetOptStat(0);
 	// prepare the data
 	TChain *chain=new TChain("T");
@@ -154,7 +170,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
 				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
 			}
 		}else{
-			std::cout<<"Cannot find file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
 		}
 	}else{
 		HRS="L";
@@ -173,10 +189,9 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
 				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
 			}
 		}else{
-			std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
 		}
 	}
-//	std::cout<<"Size of the chain::"<<chain->GetCurrentFile()->GetName()<<std::endl;
 
 	if(HRS=="L"){
 		generalcut=generalcutL;
@@ -190,7 +205,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
 	}else{
 		mainPatternCanvas->Clear();
 	}
-//	TCanvas *mainPatternCanvas=new TCanvas("cut","cut",600,600);
+	//	TCanvas *mainPatternCanvas=new TCanvas("cut","cut",600,600);
 	mainPatternCanvas->Draw();
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
@@ -214,7 +229,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
     if(nhol < 0)return 0;
     std::cout << "min hole id : ";
     int rmin = -1;
-//    std::cin >> rmin;
+//  std::cin >> rmin;
     rmin=minSieveHoles[col];
     row_min=rmin;
     std::cout<<minSieveHoles[col]<<std::endl;
@@ -1228,6 +1243,7 @@ void DynamicCanvas(){
 		double_t x = (gPad->PadtoX(gPad->AbsPixeltoX(gPad->GetEventX())));
 		double_t y = (gPad->PadtoY(gPad->AbsPixeltoY(gPad->GetEventY())));
 
+		// before load to contour algorithm, get the more accurate center first
 		// create new canvas
 		TCanvas *SieveRecCanvas = (TCanvas*) gROOT->GetListOfCanvases()->FindObject("SieveRecCanvas");
 		if(SieveRecCanvas){
@@ -1237,7 +1253,47 @@ void DynamicCanvas(){
 			SieveRecCanvas = new TCanvas("SieveRecCanvas","Projection Canvas", 1000,1000);
 
 			SieveRecCanvas->Divide(1,2);
+			SieveRecCanvas->cd(1)->Divide(2,1);
 			SieveRecCanvas->cd(2)->Divide(4,1);
+
+			SieveRecCanvas->cd(1)->cd(2)->Divide(1,3);
+
+			SieveRecCanvas->cd(1)->cd(2)->cd(1);
+			//preCut
+			TH2F *selectedSievePreCuthh = (TH2F *) gROOT->FindObject(
+					"Sieve_Selected_th_ph_PreCut");
+			if (selectedSievePreCuthh) {
+				selectedSievePreCuthh->Clear();
+			} else {
+				selectedSievePreCuthh= new TH2F("Sieve_Selected_th_ph_PreCut",
+						"Sieve_Selected_th_ph_PreCut", 100, h->GetXaxis()->GetXmin(),
+						h->GetXaxis()->GetXmax(), 100, h->GetYaxis()->GetXmin(),
+						h->GetYaxis()->GetXmax());
+			}
+
+			chain->Project(selectedSievePreCuthh->GetName(),
+					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
+					Form("sqrt((%s.gold.th-%f)^2+ (%s.gold.ph-%f)^2)<0.003 && %s ",
+							HRS.Data(), y, HRS.Data(), x, generalcut.Data()));
+			selectedSievePreCuthh->GetXaxis()->SetTitle(Form("%s.gold.ph",HRS.Data()));
+			selectedSievePreCuthh->GetYaxis()->SetTitle(Form("%s.gold.th",HRS.Data()));
+			//project to theta and phi, and start fit, get  more accurate position before pass to the counter
+			auto projectxPreCut = selectedSievePreCuthh->ProjectionX();
+			auto projectyPreCut = selectedSievePreCuthh->ProjectionY();
+			selectedSievePreCuthh->Draw("zcol");
+
+			SieveRecCanvas->cd(1)->cd(2)->cd(2);
+			projectxPreCut->Draw();
+			SieveRecCanvas->cd(1)->cd(2)->cd(3);
+			projectyPreCut->Draw();
+			//get the fit and update the position information
+			projectxPreCut->Fit("gaus","","");
+			projectyPreCut->Fit("gaus","","");
+
+			// get the updated informations
+			x=projectxPreCut->GetFunction("gaus")->GetParameter(1); //phi
+			y=projectyPreCut->GetFunction("gaus")->GetParameter(1);  //theta
+
 
 			//get the hsitogram and start rec
 			SieveRecCanvas->cd(2)->cd(1);
@@ -1298,7 +1354,7 @@ void DynamicCanvas(){
 			projecty->Fit("gaus");
 
 			// plot the cut on the canvas
-			SieveRecCanvas->cd(1);
+			SieveRecCanvas->cd(1)->cd(1);
 
 			TH2F *patternCheck=(TH2F *)  gROOT->FindObject("Sieve_Pattern_Check");
 			if(patternCheck){
@@ -1313,6 +1369,7 @@ void DynamicCanvas(){
 					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s",generalcut.Data()));
 			patternCheck->Draw("zcol");
 			cutg->Draw("same");
+			SieveRecCanvas->Update(); // update the canvas to let the pattern buffer in root
 
 			TLatex *label=new TLatex(selectedSievehh->GetMean(1),selectedSievehh->GetMean(2),Form("(%d %d)",col,row));
 			label->SetTextSize(0.04);

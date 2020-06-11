@@ -30,3 +30,13 @@ myget -b "2019-12-16 04:11:14" -e "2019-12-16 04:14:12" -c HALLA:p > RHRS_21739_
 ```
 python3 getBeamE.py
 ```
+
+
+
+##PRexCRex_cut branch 
+
+modify the cutPro code, to handle both PRex and CRex data
+
+Other change 
+* plot the origional cut if exist
+* after the user click the central, select a more accurate center before pass to the cunter selection 
