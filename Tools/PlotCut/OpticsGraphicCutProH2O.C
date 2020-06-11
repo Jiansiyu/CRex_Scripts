@@ -744,12 +744,29 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storag
 	return 1;
 }
 
+
+double_t getBeamE(int runID){
+	std::map<int, double_t> beamE;
+	beamE[21739]=2.1763077;
+	beamE[21740]=2.1763047;
+	beamE[21789]=2.1762745;
+	beamE[21790]=2.1762517;
+
+	if(beamE.find(runID)!=beamE.end()){
+		return beamE[runID];
+	}else{
+
+		return 2.17568;
+	}
+
+}
+
 void DynamicCanvas(){
 	//check which button is clicked
 	//if the S button clicked, save the current  cut
 	//if the the d button clicked, skip the current hole and continue with the next one
 
-
+	// need to get the beamE
 
 
 	int event = gPad->GetEvent();
@@ -967,6 +984,7 @@ void DynamicCanvas(){
 
 	TPaveText *pt = new TPaveText(0.1,0.8,0.3,0.9,"NDC");
 	double_t deltaE=fCrystalMomentumPar[1]-fCrystalMomentumPar[6];
+	double_t deltaErr=TMath::Sqrt( (fCrystalMomentum->GetParError(1))*(fCrystalMomentum->GetParError(1))+(fCrystalMomentum->GetParError(6))*(fCrystalMomentum->GetParError(6)));
 
 
 
@@ -974,11 +992,11 @@ void DynamicCanvas(){
 	{
 
 		//calculate the Dp with +/x 10^-4 change
-		pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
-		pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
-		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE)));
-		pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
-		pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
+		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
+		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
+		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID))));
+		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
+		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
 		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");
 
 	}
@@ -986,8 +1004,6 @@ void DynamicCanvas(){
 //		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE)));
 //	}
 	pt->Draw("same");
-
-
 
 	TLatex *t1 = new TLatex(fgroudGausPar[1] + 2 * fgroudGausPar[2],fgroudGausPar[0], Form("P=%2.5fGeV #pm %1.3fMeV", fCrystalMomentumPar[1],1000.0*(fCrystalMomentum->GetParError(1))));
 	t1->SetTextSize(0.055);
@@ -1000,6 +1016,14 @@ void DynamicCanvas(){
 	t2->SetTextAlign(12);
 	t2->SetTextColor(2);
 	t2->Draw("same");
+
+	TLatex *t3 = new TLatex((ffirstGuasPar[1]+fgroudGausPar[1])/2.0,(fCrystalMomentumPar[5]+fgroudGausPar[0])*0.5, Form("#DeltaP=%2.3f #pm %1.3fMeV", 1000.0*deltaE,1000.0*deltaErr));
+	t3->SetTextSize(0.055);
+	t3->SetTextAlign(12);
+	t3->SetTextColor(2);
+	t3->Draw("same");
+
+
 
 	//plot the bigger plot for first excited states
 	SieveRecCanvas->cd(2)->cd(3);

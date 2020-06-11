@@ -72,7 +72,9 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/RHRS_20200311/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200311/RHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200322/LHRS/";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200413/RHRS/";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200413/RHRS/";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200530/RHRS/";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -85,8 +87,8 @@ TString RootFileName;
 //int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
 //RHRS
-int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,5,3};
-int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,1,1};
+int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,3,2};
+int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,2,2};
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
@@ -173,6 +175,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
 			std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
 		}
 	}
+//	std::cout<<"Size of the chain::"<<chain->GetCurrentFile()->GetName()<<std::endl;
 
 	if(HRS=="L"){
 		generalcut=generalcutL;
@@ -190,7 +193,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/S
 	mainPatternCanvas->Draw();
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.025,0.025,1000,-0.047,0.045);
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.025,0.025,1000,-0.047,0.05);
 
 	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
@@ -278,7 +281,7 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 	if(!chain) std::cout<<"[ERROR] CAN NOT FIND TREE"<<std::endl;
 	TH2F *h=(TH2F*)gROOT->FindObject("th_vs_ph");
 	if(!h)
-		h=new TH2F("th_vs_ph1","th_vs_ph1",1000,-0.03,0.03,1000,-0.045,0.045);
+		h=new TH2F("th_vs_ph1","th_vs_ph1",1000,-0.03,0.03,1000,-0.045,0.05);
 
 	TH2F *SavesieveCheck = new TH2F("SaveSieveCheck", "SaveSieveCheck",
 			h->GetXaxis()->GetNbins(), h->GetXaxis()->GetXmin(),
@@ -440,6 +443,448 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 }
 
 
+inline  int16_t getUID(UInt_t KineID,UInt_t Col, UInt_t Row){
+	// get the uni-id for the sieveholes
+	return KineID*98+Col*NSieveRow+Row;
+}
+
+
+// take the cut file and  the root file as input, and generate the average value the parameters on the focal plane
+Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
+		TString cutFile =
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/GroundMomCut",
+		TString folder =
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/rootfiles") {
+
+	TFile *rootFileIO=new TFile(Form("./OpticsFocalDiagnose_run%d.root",runID),"recreate");
+	TChain *chain=new TChain("T");
+	// if the folder itself is and root file
+	TString HRS="R";
+	if(runID<20000){HRS="L";};
+
+	if(folder.EndsWith(".root")){
+		chain->Add(folder.Data());
+	}else{
+		TString rootDir(folder.Data());
+		if(runID>20000){ //RHRS
+			if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
+				std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+				chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
+
+				TString filename;
+				int16_t split=1;
+				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				while (IsFileExist(filename.Data())){
+					std::cout<<"Add File::"<<filename.Data()<<std::endl;
+					chain->Add(filename.Data());
+					split++;
+					filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				}
+			}else{
+				std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			}
+		}else{
+			HRS="L";
+			if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
+				std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+				chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
+
+				TString filename;
+				int16_t split=1;
+				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				while (IsFileExist(filename.Data())){
+					std::cout<<"Add File::"<<filename.Data()<<std::endl;
+					chain->Add(filename.Data());
+					split++;
+					filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				}
+			}else{
+				std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			}
+		}
+	}
+
+	//load the cut and load the canvas
+	//plot the theta and phi, and load the cut file
+	if(HRS=="L"){
+		generalcut=generalcutL;
+	}else{
+		generalcut=generalcutR;
+	}
+
+	TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
+	if(!mainPatternCanvas){
+		mainPatternCanvas=new TCanvas("cutPro","cutPro",1960,1080);
+	}else{
+		mainPatternCanvas->Clear();
+	}
+	mainPatternCanvas->Divide(1,3);
+	mainPatternCanvas->cd(1)->Divide(3,1);
+	mainPatternCanvas->cd(2)->Divide(4,1);
+	mainPatternCanvas->cd(3)->Divide(4,1);
+	mainPatternCanvas->Draw();
+	mainPatternCanvas->cd(1)->cd(1);
+
+	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
+	if(TargetThPhHH) TargetThPhHH->Delete();
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.03,0.03,1000,-0.045,0.05);
+
+	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
+	TargetThPhHH->Draw("zcol");
+
+	// read the cut file and load the cut, create the new data set with the cut
+	// load the cut file
+
+	// searching for the cut file
+	//if the cut file is the path pointing to the cut file, it will automaticly searching for the cut file according to name rule
+	if(!cutFile.EndsWith(".root")){
+		cutFile=Form("%s/prexRHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
+	}
+
+	TFile *cutFileIO=new TFile(cutFile.Data(),"READ");
+	if(cutFileIO->IsZombie()){
+		std::cout<<"[ERROR]:: CAN NOT FIND CUT FILE \" "<<cutFile.Data()<<"\""<<std::endl;
+		return -1;
+	}
+
+	//loop on the files in the cut and find all the sieve hole cuts
+	TCutG *sieveCut[NSieveCol][NSieveRow];
+	TCut sieveAllHoleCut;
+	for (int16_t col = 0; col < NSieveCol; col++){
+		for (int16_t row = 0; row < NSieveRow; row++){
+			auto cutg=(TCutG*)gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+			if(cutg){
+				sieveCut[col][row]=cutg;
+				sieveCut[col][row]->SetLineWidth(2);
+				sieveCut[col][row]->SetLineColor(kRed);
+				sieveCut[col][row]->Draw("same");
+				sieveAllHoleCut=sieveAllHoleCut||TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+
+				//get the data for this canvas
+				TH2F *selectedSievehh=(TH2F *)  gROOT->FindObject("Sieve_Selected_th_ph");
+				if (selectedSievehh) {
+					selectedSievehh->Clear();
+				} else {
+					selectedSievehh = new TH2F("Sieve_Selected_th_ph",
+							"Sieve_Selected_th_ph", 1000,
+							TargetThPhHH->GetXaxis()->GetXmin(),
+							TargetThPhHH->GetXaxis()->GetXmax(), 1000,
+							TargetThPhHH->GetYaxis()->GetXmin(),
+							TargetThPhHH->GetYaxis()->GetXmax());
+				}
+				chain->Project(selectedSievehh->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),Form("%s&&%s",sieveCut[col][row]->GetName(),generalcut.Data()));
+				TLatex *label=new TLatex(selectedSievehh->GetMean(1),selectedSievehh->GetMean(2),Form("(%d %d)",col,row));
+				label->SetTextSize(0.04);
+				label->SetTextColor(2);
+				label->Draw("same");
+				selectedSievehh->Delete();
+			}
+		}
+	}
+	//merge all the sieve holes cut together
+	sieveAllHoleCut=sieveAllHoleCut+TCut(generalcut.Data());
+	mainPatternCanvas->cd(1)->cd(2);
+	TH2F *TargetThPh_SieveCutHH=(TH2F *)gROOT->FindObject("th_vs_ph_cut");
+	if(TargetThPh_SieveCutHH) TargetThPh_SieveCutHH->Delete();
+	TargetThPh_SieveCutHH=new TH2F("th_vs_ph_cut","th_vs_ph_cut",1000,-0.03,0.03,1000,-0.045,0.05);
+	chain->Project(TargetThPh_SieveCutHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveAllHoleCut);
+	TargetThPh_SieveCutHH->Draw("zcol");
+	mainPatternCanvas->Update();
+
+
+	// generate the sieve holes
+
+	std::ofstream f51OutPut;
+	f51OutPut.open(Form("./Sieve._%d_cut.f51",runID));
+
+	// start analysis the cut informations
+	std::map<int, std::map<int, TH1F *>> focalThetah;
+	std::map<int, std::map<int, TH1F *>> focalXh;
+	std::map<int, std::map<int, TH1F *>> focalPhih;
+	std::map<int, std::map<int, TH1F *>> focalYh;
+	std::map<int, std::map<int, TH1F *>> bpmXinforh;
+	std::map<int, std::map<int, TH1F *>> bpmYinforh;
+	std::map<int, std::map<int, TH1F *>> sieveholemomentum;
+	TH2F *SieveThetaPhiCuthh;
+	for (int16_t col = 0; col < NSieveCol; col++) {
+		for (int16_t row = 0; row < NSieveRow; row++) {
+			// get the informations
+			//focal plane x, focal plane Y , focal plane theta, focal plane Y
+			//kCutID, kx, ky, kTh, KPHi, Kurb_e, kbeamX, kbeamY, kBeamvz
+			auto cutg=(TCutG*)gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+			if(cutg)
+			if (cutg){
+				double  uid=0, focal_x=0, focal_y=0, focal_th=0,focal_ph=0;
+				double  bpmX=0, bpmY=0;
+
+				const double sieveMomCutSigma=3.0;
+
+
+				TCut sieveMomCut(Form("%s && %s",(Form("hcut_R_%d_%d_%d", FoilID, col, row)),generalcut.Data()));
+				// need cut on the Ground states
+				mainPatternCanvas->cd(1)->cd(3);
+				sieveholemomentum[col][row]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row),600,2.1,2.25);
+				chain->Project(sieveholemomentum[col][row]->GetName(),Form("%s.gold.p",HRS.Data()),sieveMomCut);
+				sieveholemomentum[col][row]->GetXaxis()->SetRangeUser(
+						sieveholemomentum[col][row]->GetXaxis()->GetBinCenter(
+								sieveholemomentum[col][row]->GetMaximumBin())
+											- 0.009,
+											sieveholemomentum[col][row]->GetXaxis()->GetBinCenter(
+													sieveholemomentum[col][row]->GetMaximumBin())
+											+ 0.004);
+				sieveholemomentum[col][row]->Fit("gaus","","",sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())-0.002,sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())+0.002);
+				double SieveMomFitPar[3];
+				sieveholemomentum[col][row]->GetFunction("gaus")->GetParameters(SieveMomFitPar);
+				sieveholemomentum[col][row]->Draw();
+
+
+				TString sieveGroundPcut(Form("abs(%s.gold.p-%f)<%f*%f",HRS.Data(),SieveMomFitPar[1],sieveMomCutSigma,SieveMomFitPar[2]));
+
+				TLine momLineCenter(SieveMomFitPar[1],0,SieveMomFitPar[1],SieveMomFitPar[0]);
+				momLineCenter.SetLineColor(kRed);
+				momLineCenter.Draw("same");
+
+				TLine momLineMin(SieveMomFitPar[1]-sieveMomCutSigma*SieveMomFitPar[2],0,SieveMomFitPar[1]-sieveMomCutSigma*SieveMomFitPar[2],SieveMomFitPar[0]);
+				momLineMin.SetLineColor(kGreen);
+				momLineMin.Draw("same");
+
+				TLine momLineMax(SieveMomFitPar[1]+sieveMomCutSigma*SieveMomFitPar[2],0,SieveMomFitPar[1]+sieveMomCutSigma*SieveMomFitPar[2],SieveMomFitPar[0]);
+				momLineMax.SetLineColor(kGreen);
+				momLineMax.Draw("same");
+
+
+				uid=getUID(KineID,col,row);
+				// project the Beam informations
+
+				focalXh[col][row]=new TH1F(Form("%s%d_focalX_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_focalX_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
+						2000,-1,1);
+				focalThetah[col][row]=new TH1F(Form("%s%d_focalTheta_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_focalTheta_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
+										2000,-0.3,0.3);
+				focalYh[col][row]=new TH1F(Form("%s%d_focalY_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_focalY_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
+										2000,-0.2,0.2);
+				focalPhih[col][row]=new TH1F(Form("%s%d_focalPhi_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_focalPhi_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
+										1000,-0.1,0.1);
+
+				// project the parameters
+				bpmXinforh[col][row]=new TH1F(Form("%s%d_bpmX_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_bpmX_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
+						500,-5,5);
+				bpmYinforh[col][row]=new TH1F(Form("%s%d_bpmY_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_bpmY_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
+										500,-5,5);
+
+
+				TCut sieveHoleCut(Form("%s && %s && %s",(Form("hcut_R_%d_%d_%d", FoilID, col, row)),generalcut.Data(),sieveGroundPcut.Data()));
+				//extract the informations
+				sieveCut[col][row]->SetLineWidth(2);
+				sieveCut[col][row]->SetLineColor(kGreen);
+				mainPatternCanvas->cd(1)->cd(2);
+				sieveCut[col][row]->Draw("same");
+
+				// get the focal plane variables
+				mainPatternCanvas->cd(2)->cd(1);
+				chain->Project(focalXh[col][row]->GetName(),Form("%s.tr.r_x",HRS.Data()),sieveHoleCut);
+				focalXh[col][row]->GetXaxis()->SetRangeUser(focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.05,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.03);
+				focalXh[col][row]->Fit("gaus","","",focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.01,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.01);
+				focalXh[col][row]->Draw();
+				focal_x=focalXh[col][row]->GetFunction("gaus")->GetParameter(1);
+
+				// get the Y parameter and start the fit
+				mainPatternCanvas->cd(2)->cd(2);
+				chain->Project(focalThetah[col][row]->GetName(),Form("%s.tr.r_th",HRS.Data()),sieveHoleCut);
+
+				focalThetah[col][row]->GetXaxis()->SetRangeUser(focalThetah[col][row]->GetBinCenter(focalThetah[col][row]->GetMaximumBin())-0.015,focalThetah[col][row]->GetBinCenter(focalThetah[col][row]->GetMaximumBin())+0.015);
+				focalThetah[col][row]->Fit("gaus","","",focalThetah[col][row]->GetBinCenter(focalThetah[col][row]->GetMaximumBin())-0.0020,focalThetah[col][row]->GetBinCenter(focalThetah[col][row]->GetMaximumBin())+0.002);
+				focalThetah[col][row]->Draw();
+				focal_th=focalThetah[col][row]->GetFunction("gaus")->GetParameter(1);
+
+
+				// creat ethe focal plane Y and phi variables
+
+				mainPatternCanvas->cd(2)->cd(3);
+				chain->Project(focalYh[col][row]->GetName(),Form("%s.tr.r_y",HRS.Data()),sieveHoleCut);
+				focalYh[col][row]->GetXaxis()->SetRangeUser(focalYh[col][row]->GetBinCenter(focalYh[col][row]->GetMaximumBin())-0.01,focalYh[col][row]->GetBinCenter(focalYh[col][row]->GetMaximumBin())+0.01);
+				focalYh[col][row]->Fit("gaus","","",focalYh[col][row]->GetBinCenter(focalYh[col][row]->GetMaximumBin())-0.0018,focalYh[col][row]->GetBinCenter(focalYh[col][row]->GetMaximumBin())+0.0015);
+				focalYh[col][row]->Draw();
+				focal_y=focalYh[col][row]->GetFunction("gaus")->GetParameter(1);
+
+				mainPatternCanvas->cd(2)->cd(4);
+
+				chain->Project(focalPhih[col][row]->GetName(),Form("%s.tr.r_ph",HRS.Data()),sieveHoleCut);
+				focalPhih[col][row]->GetXaxis()->SetRangeUser(focalPhih[col][row]->GetBinCenter(focalPhih[col][row]->GetMaximumBin())-0.01,focalPhih[col][row]->GetBinCenter(focalPhih[col][row]->GetMaximumBin())+0.01);
+				focalPhih[col][row]->Fit("gaus","","",focalPhih[col][row]->GetBinCenter(focalPhih[col][row]->GetMaximumBin())-0.0023,focalPhih[col][row]->GetBinCenter(focalPhih[col][row]->GetMaximumBin())+0.0023);
+				focalPhih[col][row]->Draw();
+				focal_ph=focalPhih[col][row]->GetFunction("gaus")->GetParameter(1);
+
+				//write the BPM informations
+				mainPatternCanvas->cd(3)->cd(1);
+				chain->Project(bpmXinforh[col][row]->GetName(),Form("targx"),sieveHoleCut);
+				bpmXinforh[col][row]->GetXaxis()->SetRangeUser(bpmXinforh[col][row]->GetBinCenter(bpmXinforh[col][row]->GetMaximumBin())-1,bpmXinforh[col][row]->GetBinCenter(bpmXinforh[col][row]->GetMaximumBin())+1);
+				bpmXinforh[col][row]->Fit("gaus","","",bpmXinforh[col][row]->GetBinCenter(bpmXinforh[col][row]->GetMaximumBin())-1,bpmXinforh[col][row]->GetBinCenter(bpmXinforh[col][row]->GetMaximumBin())+1);
+				bpmXinforh[col][row]->Draw();
+				bpmX=bpmXinforh[col][row]->GetFunction("gaus")->GetParameter(1);
+
+
+				mainPatternCanvas->cd(3)->cd(2);
+				chain->Project(bpmYinforh[col][row]->GetName(),Form("targy"),sieveHoleCut);
+			    bpmYinforh[col][row]->GetXaxis()->SetRangeUser(bpmYinforh[col][row]->GetBinCenter(bpmYinforh[col][row]->GetMaximumBin())-1,bpmYinforh[col][row]->GetBinCenter(bpmYinforh[col][row]->GetMaximumBin())+1);
+			    bpmYinforh[col][row]->Fit("gaus","","",bpmYinforh[col][row]->GetBinCenter(bpmYinforh[col][row]->GetMaximumBin())-1,bpmYinforh[col][row]->GetBinCenter(bpmYinforh[col][row]->GetMaximumBin())+1);
+			    bpmYinforh[col][row]->Draw();
+				bpmY=bpmYinforh[col][row]->GetFunction("gaus")->GetParameter(1);
+
+
+
+				// draw the theta and phi on the canvas
+				mainPatternCanvas->cd(3)->cd(3);
+				SieveThetaPhiCuthh=new TH2F(Form("th_vs_ph_cut_Run%d_kine%d_col%d_row%d",runID,KineID,col,row),Form("th_vs_ph_cut_Run%d_kine%d_col%d_row%d",runID,KineID,col,row),
+						1000,-0.03,0.03,1000,-0.045,0.05);
+				chain->Project(SieveThetaPhiCuthh->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveMomCut);
+				SieveThetaPhiCuthh->Draw("zcol");
+
+				mainPatternCanvas->Update();
+				//mainPatternCanvas->Write(Form("sieve_kine%d_col%d_row%d",KineID,col,row));
+				f51OutPut<<uid<<"	"<<focal_x<<" "<<focal_th<<" "<<focal_y<<" "<<focal_ph<<" "<<0.00000<<" "<<bpmX/1000.0<<" "<<bpmY/1000.0<<" "<<0.0<<std::endl;
+
+			}
+		}
+	}
+f51OutPut.close();
+mainPatternCanvas->Close();
+	return 1;
+}
+
+// Used check the cut
+//input, the root file, cut root file
+//TODO, need to input the size ID vs. scattered angle chart
+Int_t OpticsCutCheck(UInt_t runID,TString cutFile, TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result") {
+	TChain *chain=new TChain("T");
+	// if the folder itself is and root file
+	TString HRS="R";
+	if(runID<20000){HRS="L";};
+
+	if(folder.EndsWith(".root")){
+		chain->Add(folder.Data());
+	}else{
+		TString rootDir(folder.Data());
+		if(runID>20000){ //RHRS
+			if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
+				std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+				chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
+
+				TString filename;
+				int16_t split=1;
+				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				while (IsFileExist(filename.Data())){
+					std::cout<<"Add File::"<<filename.Data()<<std::endl;
+					chain->Add(filename.Data());
+					split++;
+					filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				}
+			}else{
+				std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			}
+		}else{
+			HRS="L";
+			if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
+				std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+				chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
+
+				TString filename;
+				int16_t split=1;
+				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				while (IsFileExist(filename.Data())){
+					std::cout<<"Add File::"<<filename.Data()<<std::endl;
+					chain->Add(filename.Data());
+					split++;
+					filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				}
+			}else{
+				std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			}
+		}
+	}
+
+	//load the cut and load the canvas
+	//plot the theta and phi, and load the cut file
+	if(HRS=="L"){
+		generalcut=generalcutL;
+	}else{
+		generalcut=generalcutR;
+	}
+
+	TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
+	if(!mainPatternCanvas){
+		mainPatternCanvas=new TCanvas("cutPro","cutPro",1960,1080);
+	}else{
+		mainPatternCanvas->Clear();
+	}
+	mainPatternCanvas->Divide(1,2);
+	mainPatternCanvas->Draw();
+	mainPatternCanvas->cd(1);
+
+	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
+	if(TargetThPhHH) TargetThPhHH->Delete();
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.03,0.03,1000,-0.045,0.045);
+
+	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
+	TargetThPhHH->Draw("zcol");
+
+
+	// read the cut file and load the cut, create the new data set with the cut
+	// load the cut file
+	TFile *cutFileIO=new TFile(cutFile.Data(),"READ");
+	if(cutFileIO->IsZombie()){
+		std::cout<<"[ERROR]:: CAN NOT FIND CUT FILE \" "<<cutFile.Data()<<"\""<<std::endl;
+		return -1;
+	}
+
+	//loop on the files in the cut and find all the sieve hole cuts
+	TCutG *sieveCut[NSieveCol][NSieveRow];
+	TCut sieveAllHoleCut;
+	for (int16_t col = 0; col < NSieveCol; col++){
+		for (int16_t row = 0; row < NSieveRow; row++){
+			auto cutg=(TCutG*)gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+			if(cutg){
+				sieveCut[col][row]=cutg;
+				sieveCut[col][row]->SetLineWidth(2);
+				sieveCut[col][row]->SetLineColor(kRed);
+				sieveCut[col][row]->Draw("same");
+				sieveAllHoleCut=sieveAllHoleCut||TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+
+				//get the data for this canvas
+				TH2F *selectedSievehh=(TH2F *)  gROOT->FindObject("Sieve_Selected_th_ph");
+				if (selectedSievehh) {
+					selectedSievehh->Clear();
+				} else {
+					selectedSievehh = new TH2F("Sieve_Selected_th_ph",
+							"Sieve_Selected_th_ph", 1000,
+							TargetThPhHH->GetXaxis()->GetXmin(),
+							TargetThPhHH->GetXaxis()->GetXmax(), 1000,
+							TargetThPhHH->GetYaxis()->GetXmin(),
+							TargetThPhHH->GetYaxis()->GetXmax());
+				}
+				chain->Project(selectedSievehh->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),Form("%s&&%s",sieveCut[col][row]->GetName(),generalcut.Data()));
+				TLatex *label=new TLatex(selectedSievehh->GetMean(1),selectedSievehh->GetMean(2),Form("(%d %d)",col,row));
+				label->SetTextSize(0.04);
+				label->SetTextColor(2);
+				label->Draw("same");
+				selectedSievehh->Delete();
+			}
+		}
+	}
+	//merge all the sieve holes cut together
+	sieveAllHoleCut=sieveAllHoleCut+TCut(generalcut.Data());
+	mainPatternCanvas->cd(2);
+	TH2F *TargetThPh_SieveCutHH=(TH2F *)gROOT->FindObject("th_vs_ph_cut");
+	if(TargetThPh_SieveCutHH) TargetThPh_SieveCutHH->Delete();
+	TargetThPh_SieveCutHH=new TH2F("th_vs_ph_cut","th_vs_ph_cut",1000,-0.03,0.03,1000,-0.045,0.045);
+	chain->Project(TargetThPh_SieveCutHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveAllHoleCut);
+	TargetThPh_SieveCutHH->Draw("zcol");
+	mainPatternCanvas->Update();
+
+	return 1;
+}
+
+
+
 /// used for add the first excited states in the fitting
 //Recognize the save patter
 // save the rec hole to the folder
@@ -492,7 +937,7 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 	if(!chain) std::cout<<"[ERROR] CAN NOT FIND TREE"<<std::endl;
 	TH2F *h=(TH2F*)gROOT->FindObject("th_vs_ph");
 	if(!h)
-		h=new TH2F("th_vs_ph1","th_vs_ph1",1000,-0.03,0.03,1000,-0.045,0.045);
+		h=new TH2F("th_vs_ph1","th_vs_ph1",1000,-0.03,0.03,1000,-0.045,0.05);
 
 	TH2F *SavesieveCheck = new TH2F("SaveSieveCheck", "SaveSieveCheck",
 			h->GetXaxis()->GetNbins(), h->GetXaxis()->GetXmin(),

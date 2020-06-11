@@ -1,4 +1,14 @@
 /*
+ * OpticsFocalVariableCheck.C
+ *
+ *  Created on: May 19, 2020
+ *      Author: newdriver
+ */
+
+
+
+
+/*
  * OpticsPointingDpCheck.C
  *
  *  Created on: May 7, 2020
@@ -126,6 +136,8 @@ TF1 *SpectroCrystalFitDp_C12(TH1F*momentumSpectro){
 	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
 	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
 	momentumSpectro->Fit("fCrystalMomentum","","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+
+
 	return fCrystalMomentum;
 }
 
@@ -227,7 +239,7 @@ TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Resear
 		return chain;
 }
 
-Int_t OpticsPointingDpCheck(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
+Int_t OpticsPointingDpCheck(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -406,7 +418,7 @@ void DynamicCanvas(){
 		chainArray[-1] = LoadrootFile(2565);
 		chainArray[0] = LoadrootFile(2550);
 		chainArray[1] = LoadrootFile(2556);
-		chainArray[999] = LoadrootFile(2555);
+//		chainArray[999] = LoadrootFile(2555);
 	} else {
 		std::cout<<"Working on RHRS"<<std::endl;
 		chainArray[-2] = LoadrootFile(21642);
@@ -414,7 +426,6 @@ void DynamicCanvas(){
 		chainArray[0] = LoadrootFile(21626);
 		chainArray[1] = LoadrootFile(21632);
 //		chainArray[999] = LoadrootFile(21789);
-		chainArray[999] = LoadrootFile(21740);
 	}
 
 	std::map<int,TH2F *>SieveThetaPhiList;
@@ -448,7 +459,7 @@ void DynamicCanvas(){
 	int maximumPeakHight=0;
 	for (auto item = chainArray.begin(); item!= chainArray.end();item++){
 		if((item->first)<10){
-			OptDpArrayH[item->first]=new TH1F(Form("Dp_hist:%d",item->first),Form("Dp_hist:%d",item->first),1000,-0.03,0.02);
+			OptDpArrayH[item->first]=new TH1F(Form("Dp_hist%d",item->first),Form("Dp_hist%d",item->first),1000,-0.03,0.02);
 			OptDpArrayH[item->first]->GetYaxis()->SetRange(0,10000);
 			item->second->Project(OptDpArrayH[item->first]->GetName(),Form("%s.gold.dp",HRS.Data()),
 			Form("%s && %s", generalcut.Data(),cutg->GetName()));
@@ -493,7 +504,7 @@ void DynamicCanvas(){
 
 	std::map<int, double >CentralPArray;
 	for (auto item = OptDpArrayH.begin(); item!= OptDpArrayH.end();item++){
-//		if((item->first)>10) continue;
+
 		if((item->first)<10){
 			item->second->SetLineColor(8+item->first);
 			legend->AddEntry((item->second),Form("C_{12} Dp:%2d%% scan",item->first));
@@ -510,6 +521,7 @@ void DynamicCanvas(){
 		}else{
 			item->second->Draw("same");
 		}
+
 		fitFunctionsList[item->first]=SpectroCrystalFitDp_C12(item->second);
 		fitFunctionsList[item->first]->SetLineColor(42);
 		fitFunctionsList[item->first]->Draw("same");
@@ -517,15 +529,6 @@ void DynamicCanvas(){
 		fitFunctionsList[item->first]->GetParameters(FitPars[item->first]);
 
 
-
-//		if ((FitPars.find(item->first)!=FitPars.end()) &&(DpTheoreticalMap.find(item->first)!=DpTheoreticalMap.end())){
-//			TLatex *peakInfor = new TLatex(FitPars[item->first][1],FitPars[item->first][0],Form("#DeltaDp=%1.2f*10^{-4}",10000.0*(FitPars[item->first][1]-DpTheoreticalMap[item->first])));
-//			peakInfor->SetLineWidth(2);
-//							peakInfor->SetTextSize(0.02);
-//							peakInfor->Draw("same");
-//		}
-
-		// plot the central P informations
 		if(HRS=="L"){
 			TH1F *HallProbHH = new TH1F("HallLProb", "HallLProb", 1000, -1, 0);
 			chainArray[item->first]->Project(HallProbHH->GetName(),
@@ -534,15 +537,10 @@ void DynamicCanvas(){
 				double CentralP = std::abs(
 						(HallProbHH->GetMean()) * 0.95282 / 0.33930);
 				std::cout << "CentralMomentum is ::" << (CentralP) << std::endl;
-				TLatex *peakInfor = new TLatex(
-						FitPars[item->first][1] - 5 * FitPars[item->first][2],
-						FitPars[item->first][0],
-						Form("P_{0}=%1.4fGeV#pm%1.3fMeV", CentralP,std::abs(
-								(HallProbHH->GetRMS()) * 0.95282*1000.0 / 0.33930)));
-				peakInfor->SetLineWidth(2);
-				peakInfor->SetTextSize(0.02);
-				peakInfor->Draw("same");
 				CentralPArray[item->first]=CentralP;
+			}else {
+				std::cout << "\033[1;33m [Warning]\033[0m Missing HallLProb:"
+						<< std::endl;
 			}
 			HallProbHH->Delete();
 		}else{
@@ -554,146 +552,378 @@ void DynamicCanvas(){
 			if (HallR_NMR->GetEntries()) {
 				double Mag = HallR_NMR->GetMean();
 				CentralP = 2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
-				std::cout << "CentralMomentum is (RHRS) from NMR::" << CentralP
-						<< std::endl;
-
-				std::cout << "CentralMomentum is ::" << (CentralP) << std::endl;
-				Mag=HallR_NMR->GetRMS();
-				double nmrperror=2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
-				TLatex *peakInfor = new TLatex(
-						FitPars[item->first][1] - 5 * FitPars[item->first][2],
-						FitPars[item->first][0],
-						Form("P_{0}=%1.4fGeV", CentralP,nmrperror));
-				peakInfor->SetLineWidth(2);
-				peakInfor->SetTextSize(0.02);
-//				peakInfor->Draw("same");
 				CentralPArray[item->first]=CentralP;
 
 			} else {
 				std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
 						<< std::endl;
 			}
+			HallR_NMR->Delete();
 		}
 	}
 
-	for(auto item = OptDpArrayH.begin(); item!= OptDpArrayH.end();item++){
-		int i = item->first;
-		if(FitPars.find(i)!=FitPars.end()){
-			 TArrow *ar5 = new TArrow(FitPars[i][1],FitPars[i][0],FitPars[i][6],FitPars[i][0],15,"<|>");
-			ar5->SetAngle(60);
-			ar5->SetLineWidth(4);
-			ar5->SetLineColor(4);
-			ar5->SetFillStyle(3008);
-			ar5->SetFillColor(2);
-			ar5->Draw("same");
+	// start searching for the focal plane variables
+	// general cut + central sieve hole cut + ground states cut
+	double groundPeakSigma=3.0;
 
-			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("%1.3fMeV",CentralPArray[i]*1000.0*(FitPars[i][1]-FitPars[i][6]),CentralPArray[i]*1000.0*TMath::Sqrt(fitFunctionsList[i]->GetParError(1)*fitFunctionsList[i]->GetParError(1)+fitFunctionsList[i]->GetParError(6)*fitFunctionsList[i]->GetParError(6))));
-//			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("P=%1.4fMeV",CentralPArray[i]+CentralPArray[i]*(FitPars[i][1])));
-//			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("Dp%d%%:P=%1.6fMeV",i,CentralPArray[i]));
-			txt->SetLineWidth(2);
-			txt->SetTextSize(0.02);
-			txt->Draw("same");
-		}
+	std::map<int,TCut> dpCutArray;   // list of the cut
+	for (auto fitpar_iter= FitPars.begin(); fitpar_iter!=FitPars.end();fitpar_iter++){
+		auto groundPeakMean=fitpar_iter->second[1];
+		auto groundPeakRMS =fitpar_iter->second[2];
+		dpCutArray[fitpar_iter->first]=TCut(Form("abs(%s.gold.dp-%f)<%f*%f",HRS.Data(),groundPeakMean,groundPeakSigma,groundPeakRMS));
 	}
 
 
 
-/*	for (int i =-2; i <1;i++)
-	{
-		   TArrow *ar5 = new TArrow(FitPars[i][1],FitPars[i][0],FitPars[i+1][1],FitPars[i][0],15,"<|>");
-		   ar5->SetAngle(60);
-		   ar5->SetLineWidth(4);
-		   ar5->SetLineColor(4);
-		   ar5->SetFillStyle(3008);
-		   ar5->SetFillColor(2);
-		   ar5->Draw("same");
-
-		   TLatex *txt=new TLatex(FitPars[i+1][1]+(FitPars[i][1]-FitPars[i+1][1])*0.2,FitPars[i][0],Form("#DeltaDp=%1.4f (Bias:%1.2f*10^{-4})",FitPars[i][1]-FitPars[i+1][1],10000.0*(FitPars[i][1]-FitPars[i+1][1]-(DpTheoreticalMap[i]-DpTheoreticalMap[i+1]))));
-		   txt->SetLineWidth(2);
-		   txt->SetTextSize(0.02);
-		   txt->Draw("same");
-
-	}
+	std::map<int, TH1F *> sieveFocalXArray;
+	std::map<int, TH1F *> sieveFocalYArray;
+	std::map<int, TH1F *> sieveFocalThetaArray;
+	std::map<int, TH1F *> sieveFocalPhiArray;
 
 
-	{
-		TArrow *ar5 = new TArrow(FitPars[999][1],FitPars[999][0],FitPars[999][6],FitPars[999][0],15,"<|>");
-		ar5->SetAngle(60);
-		ar5->SetLineWidth(4);
-		ar5->SetLineColor(4);
-		ar5->SetFillStyle(3008);
-		ar5->SetFillColor(2);
-		ar5->Draw("same");
-
-		TLatex *txt=new TLatex(FitPars[999][6]+(FitPars[999][1]-FitPars[999][6])*0.2,FitPars[999][0]+200,Form("#DeltaDp=%1.4f",FitPars[999][1]-FitPars[999][6]));
-		txt->SetLineWidth(2);
-		txt->SetTextSize(0.02);
-		txt->Draw("same");
-	}*/
-
-
-
-	legend->Draw("same");
-
-
-	//create
-
-/*
- 	 if(HRS=="L"){
- 	double DpTheoreticalList[8]={0.0134086,0.00337445,-0.00699935,-0.0122753,0.0154806,0.00542595,-0.00496891,-0.010256};
-	TLine *line[sizeof(DpTheoreticalList)/sizeof(double_t)];
-	for(int i =0; i < (sizeof(DpTheoreticalList)/sizeof(double_t)); i ++){
-		line[i]=new TLine(DpTheoreticalList[i],0,DpTheoreticalList[i],6000);
-		line[i]->SetLineWidth(2);
-		line[i]->Draw("same");
-	}
-	}else{
-	double DpTheoreticalList[8]={0.0141027,0.00387559,-0.00628469,-0.0157513,0.012034,0.00182792,-0.008312,-0.0177587};
-	TLine *line[sizeof(DpTheoreticalList)/sizeof(double_t)];
-	for(int i =0; i < (sizeof(DpTheoreticalList)/sizeof(double_t)); i ++){
-		line[i]=new TLine(DpTheoreticalList[i],0,DpTheoreticalList[i],6000);
-		line[i]->SetLineWidth(2);
-		line[i]->Draw("same");
-	}
-
-	}*/
-
-	DpCanvas->Update();
-
-/*	auto legendHallProb = new TLegend(0.1,0.7,0.48,0.9);
-	legendHallProb->SetHeader("HallProb","C"); // option "C" allows to center the header
-	TCanvas *CentralPCanvas = (TCanvas*) gROOT->GetListOfCanvases()->FindObject("CentralPCanvas");
-	if (CentralPCanvas) {
-		CentralPCanvas->Clear();
-
-	} else {
-		CentralPCanvas = new TCanvas("CentralPCanvas", "CentralPCanvas", 600, 600);
-	}
-	CentralPCanvas->Draw();
-	std::map<int, TH1F*>HallProbh;
+	//project the focal plane variables
 	for (auto item = chainArray.begin(); item!= chainArray.end();item++){
-		HallProbh[item->first] = new TH1F("HallLProb", "HallLProb", 1000, -0.79, -0.75);
-		chainArray[item->first]->Project(HallProbh[item->first]->GetName(),
-				"HacL_D_LS450_FLD_DATA", generalcut.Data());
-		if (HallProbh[item->first]->GetEntries() != 0) {
-			double CentralP = std::abs(
-					(HallProbh[item->first]->GetMean()) * 0.95282 / 0.33930);
-			std::cout << "CentralMomentum is ::" << (CentralP) << std::endl;
-			if((item->first)<10){
-				HallProbh[item->first]->SetLineColor(8+item->first);
-				legendHallProb->AddEntry((HallProbh[item->first]),Form("C_{12} Dp:%2d%% scan",item->first));
-			}else{
-				HallProbh[item->first]->SetLineColor(kRed);
-				legendHallProb->AddEntry((HallProbh[item->first]),Form("H_{2}O Dp"));
-			}
-		}
-		if(item==chainArray.begin()){
-			HallProbh[item->first]->Draw();
-		}else{
-			HallProbh[item->first]->Draw("same");
-		}
-	}*/
+		sieveFocalXArray[item->first]=new TH1F(Form("Dp%d_%s.tr.x",item->first,HRS.Data()),Form("Dp%d_%s.tr.x",item->first,HRS.Data()),2000,-0.4,0.4);
+		sieveFocalYArray[item->first]=new TH1F(Form("Dp%d_%s.tr.y",item->first,HRS.Data()),Form("Dp%d_%s.tr.y",item->first,HRS.Data()),1000,-0.01,0.01);
+		sieveFocalThetaArray[item->first]=new TH1F(Form("Dp%d_%s.tr.th",item->first,HRS.Data()),Form("Dp%d_%s.tr.th",item->first,HRS.Data()),2000,-0.06,0.06);
+		sieveFocalPhiArray[item->first]=new TH1F(Form("Dp%d_%s.tr.ph",item->first,HRS.Data()),Form("Dp%d_%s.tr.ph",item->first,HRS.Data()),1000,-0.01,0.01);
 
+		TCut focalCut=TCut(generalcut.Data())+dpCutArray[item->first]+TCut(cutg->GetName());
+		item->second->Project(sieveFocalXArray[item->first]->GetName(),Form("%s.tr.x",HRS.Data()),focalCut);
+		item->second->Project(sieveFocalYArray[item->first]->GetName(),Form("%s.tr.y",HRS.Data()),focalCut);
+		item->second->Project(sieveFocalThetaArray[item->first]->GetName(),Form("%s.tr.th",HRS.Data()),focalCut);
+		item->second->Project(sieveFocalPhiArray[item->first]->GetName(),Form("%s.tr.ph",HRS.Data()),focalCut);
+
+		//focalLegend[item->first]=new TLegend(0.1,0.7,0.48,0.9);
+
+	}
+
+
+
+
+
+
+	//focal plan variables
+	std::map<int, double *> SieveFocalXGuasFitPar;
+	std::map<int, double *> SieveFocalYGuasFitPar;
+
+	TCanvas *focalPlaneDiag=new TCanvas("Focal Plane Variables","Folca Plane Variables",1000,1000);
+	focalPlaneDiag->Draw();
+	focalPlaneDiag->Divide(2,2);
+
+	focalPlaneDiag->cd(1);
+	TLegend * focalLegend_x;
+	focalLegend_x=new TLegend(0.1,0.7,0.48,0.9);
+	for(auto item=sieveFocalXArray.begin();item!=sieveFocalXArray.end(); item++){
+		item->second->SetLineColor(8+item->first);
+		if(item->first < 100){
+			focalLegend_x->AddEntry((item->second),Form("C_{12} Dp%d%%",item->first));
+		}else{
+			focalLegend_x->AddEntry((item->second),Form("H_{2}O %d",item->first));
+		}
+		focalLegend_x->SetLineWidth(2);
+		if (item == sieveFocalXArray.begin()){
+			item->second->Draw();
+		}else{
+			item->second->Draw("same");
+		}
+
+		// get peak value and put in the canvas
+		// fit the peak with gaus
+		double GuasFitPars[3];
+		SieveFocalXGuasFitPar[item->first]=new double[3];
+		auto maximumPeak=item->second->GetXaxis()->GetBinCenter(item->second->GetMaximumBin());
+		item->second->Fit("gaus","R0Q","ep",maximumPeak-0.005,maximumPeak+0.005);
+		item->second->GetFunction("gaus")->GetParameters(GuasFitPars);
+		item->second->GetFunction("gaus")->GetParameters(SieveFocalXGuasFitPar[item->first]);
+
+		TLatex *peakInfor=new TLatex(GuasFitPars[1],GuasFitPars[0],Form("%f",GuasFitPars[1]));
+		peakInfor->SetLineWidth(2);
+		peakInfor->SetTextSize(0.04);
+		peakInfor->Draw("same");
+	}
+	focalLegend_x->Draw("same");
+
+	focalPlaneDiag->cd(2);
+	TLegend * focalLegend_y;
+	focalLegend_y=new TLegend(0.1,0.7,0.48,0.9);
+	for(auto item=sieveFocalYArray.begin();item!=sieveFocalYArray.end(); item++){
+		item->second->SetLineColor(8+item->first);
+		item->second->SetLineWidth(2);
+		if(item->first < 100){
+			focalLegend_y->AddEntry((item->second),Form("C_{12} Dp%d%%",item->first));
+		}else{
+			focalLegend_y->AddEntry((item->second),Form("H_{2}O %d",item->first));
+		}
+		focalLegend_y->SetLineWidth(2);
+		if (item == sieveFocalYArray.begin()){
+			item->second->Draw();
+		}else{
+			item->second->Draw("same");
+		}
+		// get peak value and put in the canvas
+		// fit the peak with gaus
+		SieveFocalYGuasFitPar[item->first]=new double[3];
+		double GuasFitPars[3];
+		auto maximumPeak=item->second->GetXaxis()->GetBinCenter(item->second->GetMaximumBin());
+		item->second->Fit("gaus","R0Q","ep",maximumPeak-0.005,maximumPeak+0.005);
+		item->second->GetFunction("gaus")->GetParameters(GuasFitPars);
+		item->second->GetFunction("gaus")->GetParameters(SieveFocalYGuasFitPar[item->first]);
+		TLatex *peakInfor=new TLatex(GuasFitPars[1],GuasFitPars[0],Form("%f",GuasFitPars[1]));
+		peakInfor->SetLineWidth(2);
+		peakInfor->SetTextSize(0.04);
+		peakInfor->Draw("same");
+	}
+	focalLegend_y->Draw("same");
+
+	focalPlaneDiag->cd(3);
+	TLegend * focalLegend_th;
+	focalLegend_th=new TLegend(0.1,0.7,0.48,0.9);
+	for(auto item=sieveFocalThetaArray.begin();item!=sieveFocalThetaArray.end(); item++){
+		item->second->SetLineColor(8+item->first);
+		item->second->SetLineWidth(2);
+		if(item->first < 100){
+			focalLegend_th->AddEntry((item->second),Form("C_{12} Dp%d%%",item->first));
+		}else{
+			focalLegend_th->AddEntry((item->second),Form("H_{2}O %d",item->first));
+		}
+		focalLegend_th->SetLineWidth(2);
+		if (item == sieveFocalThetaArray.begin()){
+			item->second->Draw();
+		}else{
+			item->second->Draw("same");
+		}
+
+		// get peak value and put in the canvas
+		// fit the peak with gaus
+		double GuasFitPars[3];
+		auto maximumPeak=item->second->GetXaxis()->GetBinCenter(item->second->GetMaximumBin());
+		item->second->Fit("gaus","R0Q","ep",maximumPeak-0.005,maximumPeak+0.005);
+		item->second->GetFunction("gaus")->GetParameters(GuasFitPars);
+		TLatex *peakInfor=new TLatex(GuasFitPars[1],GuasFitPars[0],Form("%f",GuasFitPars[1]));
+		peakInfor->SetLineWidth(2);
+		peakInfor->SetTextSize(0.04);
+		peakInfor->Draw("same");
+	}
+	focalLegend_th->Draw("same");
+
+	focalPlaneDiag->cd(4);
+	TLegend * focalLegend_phi;
+	focalLegend_phi=new TLegend(0.1,0.7,0.48,0.9);
+	for(auto item=sieveFocalPhiArray.begin();item!=sieveFocalPhiArray.end(); item++){
+		item->second->SetLineColor(8+item->first);
+//		item->second->SetLineWidth(2);
+		if(item->first < 100){
+			focalLegend_phi->AddEntry((item->second),Form("C_{12} Dp%d%%",item->first));
+		}else{
+			focalLegend_phi->AddEntry((item->second),Form("H_{2}O %d",item->first));
+		}
+		focalLegend_phi->SetLineWidth(2);
+		if (item == sieveFocalPhiArray.begin()){
+			item->second->Draw();
+		}else{
+			item->second->Draw("same");
+		}
+		// get peak value and put in the canvas
+		// fit the peak with gaus
+		double GuasFitPars[3];
+		auto maximumPeak=item->second->GetXaxis()->GetBinCenter(item->second->GetMaximumBin());
+		item->second->Fit("gaus","R0Q","ep",maximumPeak-0.005,maximumPeak+0.005);
+		item->second->GetFunction("gaus")->GetParameters(GuasFitPars);
+		TLatex *peakInfor=new TLatex(GuasFitPars[1],GuasFitPars[0],Form("%f",GuasFitPars[1]));
+		peakInfor->SetLineWidth(2);
+		peakInfor->SetTextSize(0.04);
+		peakInfor->Draw("same");
+	}
+	focalLegend_phi->Draw("same");
+	focalPlaneDiag->Update();
+
+	// check the cut, check the sieve patter and check Dp plot
+	// check the goodness of cut used in the
+	TCanvas *SieveThetaPhiPCanv=new TCanvas("Check Sieve Theta Phi P","Check Sieve Theta Phi P",1000,1000);
+	SieveThetaPhiPCanv->Divide(SieveThetaPhiList.size(),3);
+	// draw the initial canvas theta and phi
+	canvas_counter_temp=1;
+	for(auto item = SieveThetaPhiList.begin(); item != SieveThetaPhiList.end();item++){
+		SieveThetaPhiPCanv->cd(canvas_counter_temp);
+		SieveThetaPhiList[item->first]->Draw("zcol");
+		canvas_counter_temp++;
+	}
+
+	std::map<int,TH2F *>SieveThetaPhiWithFocalCutList;
+	canvas_counter_temp=1;
+	for (auto item = chainArray.begin(); item!= chainArray.end();item++){
+		TCut focalCut=TCut(generalcut.Data())+dpCutArray[item->first]+TCut(cutg->GetName());
+		if((item->first)<10){
+			SieveThetaPhiWithFocalCutList[item->first]=new TH2F(Form("th_vs_ph_Dp%1d_focalcut",item->first),Form("th_vs_ph_Dp%1d_focalcu",item->first),1000,-0.03,0.03,1000,-0.045,0.045);
+			item->second->Project(SieveThetaPhiWithFocalCutList[item->first]->GetName(),Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
+				focalCut);
+
+			SieveThetaPhiPCanv->cd(SieveThetaPhiList.size()+canvas_counter_temp);
+			SieveThetaPhiWithFocalCutList[item->first]->Draw("zcol");
+			cutg->Draw("same");
+		}else{
+			SieveThetaPhiWithFocalCutList[item->first]=new TH2F(Form("th_vs_ph_H20%1d_focalcu",item->first),Form("th_vs_ph_H20%1d_focalcu",item->first),1500,-0.03,0.03,1000,-0.045,0.045);
+			item->second->Project(SieveThetaPhiWithFocalCutList[item->first]->GetName(),Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
+							focalCut);
+			SieveThetaPhiPCanv->cd(SieveThetaPhiList.size()+canvas_counter_temp);
+			SieveThetaPhiWithFocalCutList[item->first]->Draw("zcol");
+			cutg->Draw("same");
+		}
+		canvas_counter_temp++;
+	}
+
+	// plot the dp informations
+	std::map<int,TH1F *>OptDpArrayWithFocalCutH;
+	canvas_counter_temp=1;
+	for (auto item = chainArray.begin(); item!= chainArray.end();item++){
+		TCut focalCut=TCut(generalcut.Data())+dpCutArray[item->first]+TCut(cutg->GetName());
+		if((item->first)<10){
+			OptDpArrayWithFocalCutH[item->first]=new TH1F(Form("Dp_hist:%d",item->first),Form("Dp_hist:%d",item->first),1000,-0.03,0.02);
+			OptDpArrayWithFocalCutH[item->first]->GetYaxis()->SetRange(0,10000);
+			item->second->Project(OptDpArrayWithFocalCutH[item->first]->GetName(),Form("%s.gold.dp",HRS.Data()),
+			focalCut);
+		}else{
+			OptDpArrayWithFocalCutH[item->first]=new TH1F(Form("Dp_hist:H2O%d",item->first),Form("Dp_hist:H_{2}O%d",item->first),1000,-0.1,0.1);
+
+			item->second->Project(OptDpArrayWithFocalCutH[item->first]->GetName(),Form("%s.gold.dp",HRS.Data()),
+		    focalCut);
+		}
+		SieveThetaPhiPCanv->cd(SieveThetaPhiList.size()*2+canvas_counter_temp);
+		OptDpArrayWithFocalCutH[item->first]->Draw();
+		canvas_counter_temp++;
+	}
+	SieveThetaPhiPCanv->Update();
+
+
+	// plot the detail of the x and theta
+
+	TCanvas *focalPlaneXCanvas=new TCanvas("Focal Plane Variables x","Focal Plane Variables x",1000,1000);
+	focalPlaneXCanvas->Divide(1,2);
+	focalPlaneXCanvas->cd(2)->Divide(4,1);
+
+	for(auto item=sieveFocalXArray.begin();item!=sieveFocalXArray.end(); item++){
+			item->second->SetLineColor(8+item->first);
+			focalPlaneXCanvas->cd(1);
+			if (item == sieveFocalXArray.begin()){
+				item->second->Draw();
+			}else{
+				item->second->Draw("same");
+			}
+
+			// get peak value and put in the canvas
+			// fit the peak with gaus
+			double GuasFitPars[3];
+			auto maximumPeak=item->second->GetXaxis()->GetBinCenter(item->second->GetMaximumBin());
+			item->second->Fit("gaus","R0Q","ep",maximumPeak-0.005,maximumPeak+0.005);
+			item->second->GetFunction("gaus")->GetParameters(GuasFitPars);
+
+			TLatex *peakInfor=new TLatex(GuasFitPars[1],GuasFitPars[0],Form("%f",GuasFitPars[1]));
+			peakInfor->SetLineWidth(2);
+			peakInfor->SetTextSize(0.04);
+			peakInfor->Draw("same");
+
+
+			// locate each canvas set the range
+			focalPlaneXCanvas->cd(2)->cd(item->first+3);
+			auto plot=(TH1F *)item->second->Clone(Form("%s_d",item->second->GetName()));
+			plot->GetXaxis()->SetRangeUser(GuasFitPars[1]-8*GuasFitPars[2],GuasFitPars[1]+8*GuasFitPars[2]);
+			plot->SetLineWidth(3);
+			plot->Draw();
+			peakInfor->Draw("same");
+
+		}
+	focalPlaneXCanvas->cd(1);
+	focalLegend_x->Draw("same");
+	focalPlaneXCanvas->Update();
+
+	//draw the detail of the theta part
+	TCanvas *focalPlaneThetaCanvas=new TCanvas("Focal Plane Variables theta","Focal Plane Variables theta",1000,1000);
+	focalPlaneThetaCanvas->Divide(1,2);
+	focalPlaneThetaCanvas->cd(2)->Divide(4,1);
+	for(auto item=sieveFocalThetaArray.begin();item!=sieveFocalThetaArray.end(); item++){
+			item->second->SetLineColor(8+item->first);
+			item->second->SetLineWidth(2);
+
+			focalPlaneThetaCanvas->cd(1);
+			if (item == sieveFocalThetaArray.begin()){
+				item->second->Draw();
+			}else{
+				item->second->Draw("same");
+			}
+
+			// get peak value and put in the canvas
+			// fit the peak with gaus
+			double GuasFitPars[3];
+			auto maximumPeak=item->second->GetXaxis()->GetBinCenter(item->second->GetMaximumBin());
+			item->second->Fit("gaus","R0Q","ep",maximumPeak-0.005,maximumPeak+0.005);
+			item->second->GetFunction("gaus")->GetParameters(GuasFitPars);
+			TLatex *peakInfor=new TLatex(GuasFitPars[1],GuasFitPars[0],Form("%f",GuasFitPars[1]));
+			peakInfor->SetLineWidth(2);
+			peakInfor->SetTextSize(0.04);
+			peakInfor->Draw("same");
+
+			focalPlaneThetaCanvas->cd(2)->cd(item->first+3);
+			auto plot=(TH1F *)item->second->Clone(Form("%s_d",item->second->GetName()));
+			plot->GetXaxis()->SetRangeUser(GuasFitPars[1]-8*GuasFitPars[2],GuasFitPars[1]+8*GuasFitPars[2]);
+			plot->SetLineWidth(3);
+			plot->Draw();
+			peakInfor->Draw("same");
+		}
+	focalPlaneThetaCanvas->cd(1);
+	focalLegend_th->Draw("same");
+	focalPlaneThetaCanvas->Update();
+
+	//plot the 2-D focal plane x-y
+	// used for plot the focal plane x.y in the central sieve cut, in ground states
+	std::map<int, TH2F *>SieveFocalGroundXY;
+	for (auto item = chainArray.begin(); item!= chainArray.end();item++){
+		if(item->first < 10){
+			SieveFocalGroundXY[item->first]=new TH2F(Form("C_{12} Dp%d%% focal plane x vs. y",item->first),Form("C_{12} Dp%d%% focal plane x vs. y",item->first),1000,-0.2,0.3,1000,-0.01,0.01);
+			// project the data
+			TCut focalCut=TCut(generalcut.Data())+dpCutArray[item->first]+TCut(cutg->GetName());
+			item->second->Project(SieveFocalGroundXY[item->first]->GetName(),Form("%s.tr.y:%s.tr.x",HRS.Data(),HRS.Data()),focalCut);
+			SieveFocalGroundXY[item->first]->GetXaxis()->SetTitle(Form("%s.tr.x",HRS.Data()));
+			SieveFocalGroundXY[item->first]->GetYaxis()->SetTitle(Form("%s.tr.y",HRS.Data()));
+		}else{
+			SieveFocalGroundXY[item->first]=new TH2F(Form("H_{2}O Dp%d%% focal plane x vs. y",item->first),Form("C_{12} Dp%d%% focal plane x vs. y",item->first),1000,-0.4,0.4,1000,-0.01,0.01);
+			// project the data
+			TCut focalCut=TCut(generalcut.Data())+dpCutArray[item->first]+TCut(cutg->GetName());
+			item->second->Project(SieveFocalGroundXY[item->first]->GetName(),Form("%s.tr.y:%s.tr.x",HRS.Data(),HRS.Data()),focalCut);
+		}
+	}
+
+	//draw the plot on canvas
+	TCanvas *sieveFocalXYCanv=new TCanvas("Focal Canvas X. Y","Focal Canvas X. Y",1000,1000);
+	sieveFocalXYCanv->Divide(1,2);
+	sieveFocalXYCanv->cd(2)->Divide(4,1);
+	sieveFocalXYCanv->Draw();
+	// plot the canvas holes
+	for (auto item = SieveFocalGroundXY.begin(); item!= SieveFocalGroundXY.end();item++){
+		if (item->first < 10){
+			sieveFocalXYCanv->cd(1);
+			if(item==SieveFocalGroundXY.begin()){
+				item->second->Draw("zcol");
+			}else{
+
+				item->second->Draw("zcol same");
+			}
+			// get the fit parameter and set the range the set the cut
+			std::string str("");
+			TLatex *text=new TLatex(SieveFocalXGuasFitPar[item->first][1],SieveFocalYGuasFitPar[item->first][1]+0.002,Form("Dp%d%%(%1.4f,%1.4f)",item->first,SieveFocalXGuasFitPar[item->first][1],SieveFocalYGuasFitPar[item->first][1]));
+			text->SetTextColor(kRed);
+//			text->SetTextSize(0.01);
+			text->Draw("same");
+
+			sieveFocalXYCanv->cd(2)->cd(item->first+3);
+			auto plot=(TH2F *)item->second->Clone(Form("focal x vs. y dp%d%%_d",item->first));
+			plot->SetTitle(Form("focal x vs. y dp%d%%_d",item->first));
+			//plot->SetAxisRange(SieveFocalXGuasFitPar[item->first][1]-4*SieveFocalXGuasFitPar[item->first][0],SieveFocalXGuasFitPar[item->first][1]+4*SieveFocalXGuasFitPar[item->first][0],"X");
+			//plot->SetAxisRange(SieveFocalYGuasFitPar[item->first][1]-4*SieveFocalYGuasFitPar[item->first][0],SieveFocalYGuasFitPar[item->first][1]+4*SieveFocalYGuasFitPar[item->first][0],"Y");
+			plot->Draw("zcol");
+		}
+	}
+	sieveFocalXYCanv->Update();
 
 }
 

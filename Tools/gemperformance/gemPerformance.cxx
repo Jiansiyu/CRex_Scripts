@@ -1028,7 +1028,7 @@ void gemNoiseLevel(TString fname = "/home/newdriver/PRex/PRex_Data/GEMRootFile/p
 			std::cout<<(noiseHist_x[ChamberID]->GetName())<<std::endl;
 			tree->Project((noiseHist_x[ChamberID]->GetName()),Form(noisePattern_x.c_str(),ChamberID));
 			std::string cut=std::string(Form(signalPattern_x.c_str(),ChamberID))+" !=0";
-			tree->Project((signalHist_x[ChamberID]->GetName()),Form(signalPattern_x.c_str(),ChamberID),cut.c_str());
+			tree->Project((signalHist_x[ChamberID]->GetName()),Form(signalPattern_x.c_str(),ChamberID),cut.c_str()); // need to take the average
 			canvas_x->cd(ChamberID);
 			//canvas_x->cd(ChamberID)->SetLogy();
 			noiseHist_x[ChamberID]->SetXTitle("ADC(Tsample Average)");
