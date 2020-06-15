@@ -81,7 +81,7 @@ TF1 * SpectroCrystalFit_C12(TH1F *momentumSpectro){
 	return globalFit;
 }
 
-TF1 *SpectroCrystalFitDp_C12(TH1F*momentumSpectro){
+TF1 *SpectroCrystalFitDp_C12(TH1F*momentumSpectro,int fitPeak=4){
 
 
 	auto CGroundDp=momentumSpectro->GetXaxis()->GetBinCenter(momentumSpectro->GetMaximumBin());
@@ -125,7 +125,56 @@ TF1 *SpectroCrystalFitDp_C12(TH1F*momentumSpectro){
 	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
 	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
 	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
-	momentumSpectro->Fit("fCrystalMomentum","","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+	momentumSpectro->Fit("fCrystalMomentum","RQ0","ep",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
+	// get the Dp seperation for the first and second, and then project to the third and the fouth to fit the second the third excited states
+
+
+	if(fitPeak>3){
+		double c2GausFitPar[3];
+		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-2*fCrystalMomentum->GetParameter(7);
+		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+2*fCrystalMomentum->GetParameter(7);
+		//fit the peak with gaussion
+		momentumSpectro->Fit("gaus","R0Q","ep",c2_fitRange_Min,c2_fitRange_Max);
+		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
+
+		double c3GausFitPar[3];
+		double c3_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982-2*fCrystalMomentum->GetParameter(7);
+		double c3_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982+2*fCrystalMomentum->GetParameter(7);
+		// get th peak and start the fit
+		momentumSpectro->Fit("gaus","R0Q","ep",c3_fitRange_Min,c3_fitRange_Max);
+		momentumSpectro->GetFunction("gaus")->GetParameters(c3GausFitPar);
+
+		double_t fCrystalGausMomentumPar[16];
+		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
+		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
+		std::copy(c3GausFitPar,c3GausFitPar+3,fCrystalGausMomentumPar+13);
+
+		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)+gaus(13)",c3_fitRange_Min,fgroundCrystalball->GetXmax());
+		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
+		momentumSpectro->Fit("fCrystalGuasMomentum","R0Q","ep",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
+		return fCrystalGuasMomentum;
+
+	}else if (fitPeak==3) {
+		double c2GausFitPar[3];
+		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-3*fCrystalMomentum->GetParameter(7);
+		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+3*fCrystalMomentum->GetParameter(7);
+		//fit the peak with gaussion
+		momentumSpectro->Fit("gaus","","",c2_fitRange_Min,c2_fitRange_Max);
+		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
+
+		double_t fCrystalGausMomentumPar[13];
+		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
+		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
+
+		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)",c2_fitRange_Min,fgroundCrystalball->GetXmax());
+		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
+		momentumSpectro->Fit("fCrystalGuasMomentum","","",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
+		return fCrystalGuasMomentum;
+	}
+
+
+
 	return fCrystalMomentum;
 }
 
@@ -298,7 +347,41 @@ Int_t OpticsPointingDpCheck(UInt_t runID,TString folder="/home/newdriver/Storage
 	return 1;
 }
 
+
+
+double getC12TheoreticalDp(int runID, int excitedState){
+	// get the theoretical Dp value in given runID and the exxited Stetates
+	std::map<int, std::map<int, double >> DpTheoreticalList;
+	DpTheoreticalList[21642][0]=0.0139829;
+	DpTheoreticalList[21641][0]=0.00389789;
+	DpTheoreticalList[21626][0]=-0.00628822;
+	DpTheoreticalList[21632][0]=-0.0156923;
+
+	//4.43982 MeV
+	DpTheoreticalList[21642][1]=0.0119146;
+	DpTheoreticalList[21641][1]=0.00185016;
+	DpTheoreticalList[21626][1]=-0.0083155;
+	DpTheoreticalList[21632][1]=-0.0176998;
+
+	//7.65407 MeV
+	//0.0104159,0.000366456,-0.00978438,-0.0191544,
+	DpTheoreticalList[21642][2]= 0.0104159;
+	DpTheoreticalList[21641][2]= 0.000366456;
+	DpTheoreticalList[21626][2]=-0.00978438;
+	DpTheoreticalList[21632][2]=-0.0191544;
+
+	//9.641 MeV
+	//0.00948953,-0.000550671,-0.0106923,-0.0200535,
+	DpTheoreticalList[21642][3]=0.00948953;
+	DpTheoreticalList[21641][3]=-0.000550671;
+	DpTheoreticalList[21626][3]=-0.0106923;
+	DpTheoreticalList[21632][3]=-0.0200535;
+
+	return DpTheoreticalList[runID][excitedState];
+}
+
 void DynamicCanvas(){
+	gStyle->SetOptStat(0);
 	gStyle->SetTimeOffset(0);
 	//check which button is clicked
 	//if the S button clicked, save the current  cut
@@ -399,7 +482,7 @@ void DynamicCanvas(){
 
 	//Load ALl the root files
 	std::map<int,TChain *> chainArray;
-
+	std::map<int,int> ScanrunListArray;
 	if (HRS == 'L') {
 		std::cout<<"Working on LHRS"<<std::endl;
 		chainArray[-2] = LoadrootFile(2566);
@@ -414,7 +497,15 @@ void DynamicCanvas(){
 		chainArray[0] = LoadrootFile(21626);
 		chainArray[1] = LoadrootFile(21632);
 //		chainArray[999] = LoadrootFile(21789);
-		chainArray[999] = LoadrootFile(21740);
+//		chainArray[999] = LoadrootFile(21740);
+		chainArray[999] = LoadrootFile(21763);
+
+		ScanrunListArray[-2]=21642;
+		ScanrunListArray[-1]=21641;
+		ScanrunListArray[0]=21626;
+		ScanrunListArray[1]=21632;
+		ScanrunListArray[999]=21763;
+
 	}
 
 	std::map<int,TH2F *>SieveThetaPhiList;
@@ -450,6 +541,7 @@ void DynamicCanvas(){
 		if((item->first)<10){
 			OptDpArrayH[item->first]=new TH1F(Form("Dp_hist:%d",item->first),Form("Dp_hist:%d",item->first),1000,-0.03,0.02);
 			OptDpArrayH[item->first]->GetYaxis()->SetRange(0,10000);
+
 			item->second->Project(OptDpArrayH[item->first]->GetName(),Form("%s.gold.dp",HRS.Data()),
 			Form("%s && %s", generalcut.Data(),cutg->GetName()));
 		}else{
@@ -461,6 +553,7 @@ void DynamicCanvas(){
 		if(maximumPeakHight<OptDpArrayH[item->first]->GetMaximumBin()){
 			maximumPeakHight=OptDpArrayH[item->first]->GetMaximumBin();
 		}
+
 	}
 	TCanvas *DpCanvas = (TCanvas*) gROOT->GetListOfCanvases()->FindObject("DpCanvas");
 	if (DpCanvas) {
@@ -513,10 +606,9 @@ void DynamicCanvas(){
 		fitFunctionsList[item->first]=SpectroCrystalFitDp_C12(item->second);
 		fitFunctionsList[item->first]->SetLineColor(42);
 		fitFunctionsList[item->first]->Draw("same");
-		FitPars[item->first]=new double[10];
+		const int NfitPars= fitFunctionsList[item->first]->GetNpar();
+		FitPars[item->first]=new double[NfitPars];
 		fitFunctionsList[item->first]->GetParameters(FitPars[item->first]);
-
-
 
 //		if ((FitPars.find(item->first)!=FitPars.end()) &&(DpTheoreticalMap.find(item->first)!=DpTheoreticalMap.end())){
 //			TLatex *peakInfor = new TLatex(FitPars[item->first][1],FitPars[item->first][0],Form("#DeltaDp=%1.2f*10^{-4}",10000.0*(FitPars[item->first][1]-DpTheoreticalMap[item->first])));
@@ -563,7 +655,7 @@ void DynamicCanvas(){
 				TLatex *peakInfor = new TLatex(
 						FitPars[item->first][1] - 5 * FitPars[item->first][2],
 						FitPars[item->first][0],
-						Form("P_{0}=%1.4fGeV", CentralP,nmrperror));
+						Form("P_{0}=%1.4fGeV#pn%1.3f", CentralP,nmrperror));
 				peakInfor->SetLineWidth(2);
 				peakInfor->SetTextSize(0.02);
 //				peakInfor->Draw("same");
@@ -587,7 +679,7 @@ void DynamicCanvas(){
 			ar5->SetFillColor(2);
 			ar5->Draw("same");
 
-			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("%1.3fMeV",CentralPArray[i]*1000.0*(FitPars[i][1]-FitPars[i][6]),CentralPArray[i]*1000.0*TMath::Sqrt(fitFunctionsList[i]->GetParError(1)*fitFunctionsList[i]->GetParError(1)+fitFunctionsList[i]->GetParError(6)*fitFunctionsList[i]->GetParError(6))));
+			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("%1.3fMeV#pn%1.3f",CentralPArray[i]*1000.0*(FitPars[i][1]-FitPars[i][6]),CentralPArray[i]*1000.0*TMath::Sqrt(fitFunctionsList[i]->GetParError(1)*fitFunctionsList[i]->GetParError(1)+fitFunctionsList[i]->GetParError(6)*fitFunctionsList[i]->GetParError(6))));
 //			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("P=%1.4fMeV",CentralPArray[i]+CentralPArray[i]*(FitPars[i][1])));
 //			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("Dp%d%%:P=%1.6fMeV",i,CentralPArray[i]));
 			txt->SetLineWidth(2);
@@ -693,6 +785,124 @@ void DynamicCanvas(){
 			HallProbh[item->first]->Draw("same");
 		}
 	}*/
+
+
+	// start the new canvas to draw the bias etc
+	TCanvas *DpBiasCanv=new TCanvas("Dp Bias Canvas","Dp Bias Canvas",1960,1080);
+
+	DpBiasCanv->Draw("same");
+	DpBiasCanv->SetLogy();
+	{
+
+		for (auto item = OptDpArrayH.begin(); item != OptDpArrayH.end();
+				item++) {
+			if (item->first < 10) {
+				item->second->GetYaxis()->SetRangeUser(1, 100000);
+				if (item == OptDpArrayH.begin()) {
+					item->second->Draw();
+				} else {
+					item->second->Draw("same");
+				}
+				fitFunctionsList[item->first]->Draw("same");
+
+
+				//get the excited states, calculat the seperation
+				const uint nPars=fitFunctionsList[item->first]->GetNpar();
+				double FitPars[nPars];
+				fitFunctionsList[item->first]->GetParameters(FitPars);
+				auto FitParErrors=fitFunctionsList[item->first]->GetParErrors();
+
+				if (nPars>=10){   //Ground and first excited states
+					// theoretical Seperation
+					double DpSepTheoretical=getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],1);
+					TLatex *txt0=new TLatex(FitPars[1],FitPars[0],Form("Dp_{0}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[1],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1])));
+					txt0->SetTextSize(0.02);
+					txt0->Draw("same");
+
+					TLatex *txt1=new TLatex(FitPars[6],FitPars[5],Form("Dp_{1}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[6],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6])));
+					txt1->SetTextSize(0.02);
+					txt1->Draw("same");
+
+				}
+
+				if (nPars>=13){   // second excited states
+					TLatex *txt1=new TLatex(FitPars[11],FitPars[10],Form("Dp_{2}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[11],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],2)-FitPars[11])));
+					txt1->SetTextSize(0.02);
+					txt1->Draw("same");
+				}
+
+				if(nPars >=16){   // third excited states
+					TLatex *txt1=new TLatex(FitPars[14],FitPars[13],Form("Dp_{3}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[14],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],3)-FitPars[14])));
+					txt1->SetTextSize(0.02);
+					txt1->Draw("same");
+				}
+			}
+		}
+
+		legend->Draw("same");
+	}
+
+	DpBiasCanv->Update();
+
+
+	// get the Momentum seperation
+	TCanvas *MomSepBiasCanv=new TCanvas("Momentum Sep Bias Canvas","Momentum Sep Bias Canvas",1960,1080);
+	MomSepBiasCanv->Draw("same");
+	MomSepBiasCanv->SetLogy();
+
+	{
+
+		for (auto item = OptDpArrayH.begin(); item != OptDpArrayH.end();
+				item++) {
+			if (item->first < 10) {
+				item->second->GetYaxis()->SetRangeUser(1, 100000);
+				if (item == OptDpArrayH.begin()) {
+					item->second->Draw();
+				} else {
+					item->second->Draw("same");
+				}
+				fitFunctionsList[item->first]->Draw("same");
+
+
+				//get the excited states, calculat the seperation
+				const uint nPars=fitFunctionsList[item->first]->GetNpar();
+				double FitPars[nPars];
+				fitFunctionsList[item->first]->GetParameters(FitPars);
+				auto FitParErrors=fitFunctionsList[item->first]->GetParErrors();
+
+				if (nPars>=10){   //Ground and first excited states
+					// theoretical Seperation
+					double MomSep=CentralPArray[item->first]*(FitPars[1]-FitPars[6]);
+					double MomBias=CentralPArray[item->first]*((getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],1))-(FitPars[1]-FitPars[6]));
+
+					TLatex *txt0=new TLatex(FitPars[1],FitPars[0],Form("#DeltaP_{1}:%1.3f Bias %1.3f MeV",MomSep*1000.0,MomBias*1000.0));
+					txt0->SetTextSize(0.02);
+					txt0->Draw("same");
+
+				}
+
+				if (nPars>=13){   // second excited states
+					double MomSep=CentralPArray[item->first]*(FitPars[1]-FitPars[11]);
+					double MomBias=CentralPArray[item->first]*((getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],2))-(FitPars[1]-FitPars[11]));
+
+					TLatex *txt0=new TLatex(FitPars[11],FitPars[10]*0.5+FitPars[5]*0.5,Form("#DeltaP_{2}:%1.3f Bias %1.3f MeV",MomSep*1000.0,MomBias*1000.0));
+					txt0->SetTextSize(0.02);
+					txt0->Draw("same");				}
+
+				if(nPars >=16){   // third excited states
+					double MomSep=CentralPArray[item->first]*(FitPars[1]-FitPars[14]);
+					double MomBias=CentralPArray[item->first]*((getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],3))-(FitPars[1]-FitPars[14]));
+
+					TLatex *txt0=new TLatex(FitPars[14],FitPars[13]*0.5+FitPars[10]*0.5,Form("#DeltaP_{3}:%1.3f Bias %1.3f MeV",MomSep*1000.0,MomBias*1000.0));
+					txt0->SetTextSize(0.02);
+					txt0->Draw("same");
+				}
+			}
+		}
+
+		legend->Draw("same");
+
+	}
 
 
 }
