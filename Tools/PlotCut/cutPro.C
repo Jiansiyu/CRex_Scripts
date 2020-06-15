@@ -63,8 +63,11 @@ const UInt_t NSieveRow = 7;
 TString prepcut;
 TString generalcut;
 
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<-0.002 && R.gold.dp > -0.01 && fEvtHdr.fEvtType==1";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.1 && L.gold.p < 2.2";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p<0.955 && R.gold.p > 0.94 && fEvtHdr.fEvtType==1";
+TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
+
+//TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<-0.002 && R.gold.dp > -0.01 && fEvtHdr.fEvtType==1";
+//TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.1 && L.gold.p < 2.2";
 
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
@@ -72,7 +75,8 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200530/RHRS/";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/junk";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/junk";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200614/";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -93,8 +97,8 @@ double_t defaultMomMax;
 //int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
 //RHRS
-int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,3,2};
-int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,2,2};
+int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
+int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
 
 
@@ -1421,7 +1425,14 @@ void DynamicCanvas(){
 
 
 // when the sieve holes cannot seperate well, you may want to cut the sieve holes manually
-Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/Storage/Research/PRex_Experiment/prex_analyzer/optReplay/Result/") {
+Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
+	// check which experiment, and load the default information
+	ExperimentConfigure("PRex","L");
+
+	// load the default informations
+	if (folder.IsNull()){
+		folder=defaultDataPath;
+	}
 
 	// start check the cut log, read the cut log information
 	std::string bufferedWorkFolder;
