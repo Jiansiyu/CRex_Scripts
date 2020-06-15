@@ -63,19 +63,13 @@ const UInt_t NSieveRow = 7;
 TString prepcut;
 TString generalcut;
 
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<-0.002 && R.gold.dp > -0.01 && fEvtHdr.fEvtType==1";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.1 && L.gold.p < 2.2";
 
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
 
-//TString WorkDir = "Result/Test/";
-//TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_Feb292020/";
-//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/RHRS_20200311/";
-//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200311/RHRS/";
-//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200322/LHRS/";
-//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200413/RHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200530/RHRS/";
 TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/junk";
@@ -87,14 +81,21 @@ TString CutDescFileSufSieve = ".SieveCut.%d_%d.cut";
 TString RootFileName;
 
 
+// configure information, will be overwrite according to differentt experinent
+TString defaultDataPath;
+double_t defaultMomMin;
+double_t defaultMomMax;
+
+
+//CRex Experiment
 //LHRS
 //int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
 //int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
-
 //RHRS
 int numberofSieveHoles[13]={0,0,0,6,6,5,5,6,5,5,4,3,2};
 int minSieveHoles[13]=     {0,0,0,0,0,1,1,0,1,1,1,2,2};
+
 
 
 inline Bool_t IsFileExist (const std::string& name) {
@@ -108,10 +109,30 @@ inline Bool_t IsFileExist (const std::string& name) {
 // HRS: L/R
 void ExperimentConfigure(TString experiment, TString HRS){
 
+	if(experiment =="PRex"){
+		defaultDataPath="/home/newdriver/Storage/Research/PRex_Experiment/prex_analyzer/optReplay/Result/";
+
+		defaultMomMin=0.94;
+		defaultMomMax=0.952;
+
+	}else{
+		defaultDataPath="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/";
+	}
 
 }
 
-Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/") {
+Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="") {
+
+	// check which experiment, and load the default information
+	ExperimentConfigure("PRex","L");
+
+	// load the default informations
+	if (folder.IsNull()){
+		folder=defaultDataPath;
+	}
+
+	// start check the cut log, read the cut log information
+
 	// need to check the folder
 	std::string bufferedWorkFolder;
 	std::string bufferedSourceDir;
@@ -1304,9 +1325,9 @@ void DynamicCanvas(){
 			}else{
 			selectedSievehh = new TH2F("Sieve_Selected_th_ph",
 					"Sieve_Selected_th_ph",
-					100,
+					200,
 					h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(),
-					100,
+					200,
 					h->GetYaxis()->GetXmin(),h->GetYaxis()->GetXmax());
 			}
 
@@ -1314,6 +1335,7 @@ void DynamicCanvas(){
 					Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
 					Form("sqrt((%s.gold.th-%f)^2+ (%s.gold.ph-%f)^2)<0.003 && %s ",
 							HRS.Data(), y, HRS.Data(), x,generalcut.Data()));
+//			selectedSievehh->GetZaxis()->SetRange(20,60);
 			selectedSievehh->SetContour(10);
 			selectedSievehh->GetXaxis()->SetTitle(Form("%s.gold.ph",HRS.Data()));
 			selectedSievehh->GetYaxis()->SetTitle(Form("%s.gold.th",HRS.Data()));
@@ -1380,7 +1402,7 @@ void DynamicCanvas(){
 			SieveRecCanvas->Update();
 
 			SieveRecCanvas->cd(2)->cd(4);
-			TH1F *sieveholemomentum=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum_check", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum_check", FoilID, col, row),600,2.1,2.25);
+			TH1F *sieveholemomentum=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum_check", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum_check", FoilID, col, row),600,defaultMomMin,defaultMomMax);
 			chain->Project(sieveholemomentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 			sieveholemomentum->GetXaxis()->SetRangeUser(
 					sieveholemomentum->GetXaxis()->GetBinCenter(
@@ -1396,4 +1418,156 @@ void DynamicCanvas(){
 	tempfile->Write();
 	tempfile->Close();
 }
+
+
+// when the sieve holes cannot seperate well, you may want to cut the sieve holes manually
+Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/Storage/Research/PRex_Experiment/prex_analyzer/optReplay/Result/") {
+
+	// start check the cut log, read the cut log information
+	std::string bufferedWorkFolder;
+	std::string bufferedSourceDir;
+	int bufferedCol=-1;
+	int bufferedRunID=-1;
+
+	std::string cutrunProfname=Form("%s/logfile.txt",WorkDir.Data());
+	if(!boost::filesystem::is_regular_file(cutrunProfname.c_str())){
+		bufferedSourceDir=folder;
+		bufferedWorkFolder=WorkDir;
+		bufferedCol=3;
+		bufferedRunID=runID;
+		// create the folder and save the infor
+	}else{
+		std::ifstream textinfile(cutrunProfname.c_str());
+		textinfile>>bufferedSourceDir>>bufferedWorkFolder>>bufferedRunID>>bufferedCol;
+
+		if((bufferedSourceDir==folder)&&(bufferedWorkFolder==WorkDir)&&(bufferedRunID==runID)){
+			bufferedCol++;
+		}else{
+			bufferedSourceDir=folder;
+			bufferedWorkFolder=WorkDir;
+			bufferedRunID=runID;
+			bufferedCol=3;
+		}
+		std::cout<<"source dir:"<<bufferedSourceDir.c_str()<<std::endl;
+		std::cout<<"current work dir: " << bufferedWorkFolder.c_str()<<"\n  runID:"<<bufferedRunID<<"\n  current col: "<< bufferedCol<<std::endl;
+		// update the run infor
+	}
+
+	std::ofstream textoutfile;
+	textoutfile.open(cutrunProfname.c_str(), std::ios::trunc);
+	textoutfile <<bufferedSourceDir.c_str()<<" "<<bufferedWorkFolder.c_str()<< " "<<bufferedRunID<<" "<<bufferedCol << std::endl;
+
+	current_col=bufferedCol;
+
+	gStyle->SetOptStat(0);
+	// prepare the data
+	TChain *chain=new TChain("T");
+	TString rootDir(folder.Data());
+	TString HRS="R";
+
+	if(runID>20000){ //RHRS
+		if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
+			std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			RootFileName=Form("prexRHRS_%d_-1.root",runID);
+			chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
+
+			TString filename;
+			int16_t split=1;
+			filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+			while (IsFileExist(filename.Data())){
+				std::cout<<"Add File::"<<filename.Data()<<std::endl;
+				chain->Add(filename.Data());
+				split++;
+				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+			}
+		}else{
+			std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+		}
+	}else{
+		HRS="L";
+		if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
+			RootFileName=Form("prexLHRS_%d_-1.root",runID);
+			std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
+
+			TString filename;
+			int16_t split=1;
+			filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+			while (IsFileExist(filename.Data())){
+				std::cout<<"Add File::"<<filename.Data()<<std::endl;
+				chain->Add(filename.Data());
+				split++;
+				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+			}
+		}else{
+			std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+		}
+	}
+
+	if(HRS=="L"){
+		generalcut=generalcutL;
+	}else{
+		generalcut=generalcutR;
+	}
+
+	TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
+	if(!mainPatternCanvas){
+		mainPatternCanvas=new TCanvas("cutPro","cutPro",600,600);
+	}else{
+		mainPatternCanvas->Clear();
+	}
+//	TCanvas *mainPatternCanvas=new TCanvas("cut","cut",600,600);
+	mainPatternCanvas->Draw();
+	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
+	if(TargetThPhHH) TargetThPhHH->Delete();
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.025,0.015,1000,-0.047,0.045);
+
+	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
+	TargetThPhHH->Draw("zcol");
+	mainPatternCanvas->SetGridx(10);
+	mainPatternCanvas->SetGridy(10);
+	mainPatternCanvas->Update();
+	// input how start row and how many holes in this row
+	col=current_col;
+    int nhol = 0;
+    std::cout << "How many holes in this No." << col << " column?" << std::endl;
+//    std::cin >> nhol;
+    nhol=numberofSieveHoles[col];
+    row_count=nhol;
+    std::cout<<numberofSieveHoles[col]<<std::endl;
+//    row_count=numberofSieveHoles[col];
+    if(nhol < 0)return 0;
+    std::cout << "min hole id : ";
+    int rmin = -1;
+//    std::cin >> rmin;
+    rmin=minSieveHoles[col];
+    row_min=rmin;
+    std::cout<<minSieveHoles[col]<<std::endl;
+    row=row_min;
+
+    if(rmin < 0)return 0;
+    mainPatternCanvas->Update();
+
+    // make the select cut and save to folder
+    TFile *tempfile=new TFile("temp.root","UPDATE");
+
+    for(int row = rmin; row < rmin + nhol; row++){
+    	std::cout << "Testing " << Form("hcut_R_%d_%d_%d", FoilID, col, row) << std::endl;
+    	TCutG* cutg = (TCutG*)gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+    	 if(!cutg){
+    		 cutg = (TCutG*)(TVirtualPad::Pad()->WaitPrimitive("CUTG", "CutG")); // making cut, store to CUTG
+    		 mainPatternCanvas->Update();
+    	 }
+		cutg->SetLineColor(kRed);
+		cutg->SetName(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+		cutg->SetVarX(Form("%s.gold.ph", HRS.Data()));
+		cutg->SetVarY(Form("%s.gold.th", HRS.Data()));
+		cutg->Draw("PL");
+		mainPatternCanvas->Update();
+    }
+
+  SavePatternHole();
+  return 1;
+}
+
 

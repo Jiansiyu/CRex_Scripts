@@ -39,6 +39,11 @@
 #include <TSystem.h>
 #include <TApplication.h>
 #include <TLatex.h>
+#include <TGApplication.h>
+
+// used for create the folder if does not exist in the destintion folder
+#include <boost/filesystem.hpp>
+R__LOAD_LIBRARY(/usr/lib/x86_64-linux-gnu/libboost_filesystem.so)
 
 int FoilID=0;
 
@@ -56,13 +61,14 @@ const UInt_t NSieveRow = 7;
 //////////////////////////////////////////////////////////////////////////////
 TString prepcut;
 TString generalcut;
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<-0.002 && R.gold.dp > -0.01 && fEvtHdr.fEvtType==1";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
+
 //TString WorkDir = "Result/Test/";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Experiment/prex_analyzer/optReplay/Result/ReOpt20200207/CutGround/";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/junk";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -523,12 +529,53 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 }
 
 
-Int_t cutManual(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/Storage/Research/PRex_Experiment/prex_analyzer/optReplay/Result/ReOpt20200207/") {
-	 gStyle->SetOptStat(0);
+Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="/home/newdriver/Storage/Research/PRex_Experiment/prex_analyzer/optReplay/Result/") {
+
+	// start check the cut log, read the cut log information
+
+	// need to check the folder
+	std::string bufferedWorkFolder;
+	std::string bufferedSourceDir;
+	int bufferedCol=-1;
+	int bufferedRunID=-1;
+
+	std::string cutrunProfname=Form("%s/logfile.txt",WorkDir.Data());
+	if(!boost::filesystem::is_regular_file(cutrunProfname.c_str())){
+		bufferedSourceDir=folder;
+		bufferedWorkFolder=WorkDir;
+		bufferedCol=3;
+		bufferedRunID=runID;
+		// create the folder and save the infor
+	}else{
+		std::ifstream textinfile(cutrunProfname.c_str());
+		textinfile>>bufferedSourceDir>>bufferedWorkFolder>>bufferedRunID>>bufferedCol;
+
+		if((bufferedSourceDir==folder)&&(bufferedWorkFolder==WorkDir)&&(bufferedRunID==runID)){
+			bufferedCol++;
+		}else{
+			bufferedSourceDir=folder;
+			bufferedWorkFolder=WorkDir;
+			bufferedRunID=runID;
+			bufferedCol=3;
+		}
+		std::cout<<"source dir:"<<bufferedSourceDir.c_str()<<std::endl;
+		std::cout<<"current work dir: " << bufferedWorkFolder.c_str()<<"\n  runID:"<<bufferedRunID<<"\n  current col: "<< bufferedCol<<std::endl;
+		// update the run infor
+	}
+
+	std::ofstream textoutfile;
+	textoutfile.open(cutrunProfname.c_str(), std::ios::trunc);
+	textoutfile <<bufferedSourceDir.c_str()<<" "<<bufferedWorkFolder.c_str()<< " "<<bufferedRunID<<" "<<bufferedCol << std::endl;
+
+	current_col=bufferedCol;
+
+
+	gStyle->SetOptStat(0);
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
 	TString HRS="R";
+
 	if(runID>20000){ //RHRS
 		if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
 			std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
@@ -545,7 +592,7 @@ Int_t cutManual(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/
 				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
 			}
 		}else{
-			std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
 		}
 	}else{
 		HRS="L";
@@ -564,7 +611,7 @@ Int_t cutManual(UInt_t runID,UInt_t current_col,TString folder="/home/newdriver/
 				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
 			}
 		}else{
-			std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+			std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
 		}
 	}
 

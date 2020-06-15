@@ -392,6 +392,7 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 				if(SieveMomentumArray[col][row]->GetEntries())
 				{
 					auto fitFunction=SpectroCrystalFit_H2O(SieveMomentumArray[col][row]);
+
 					MomentumFitParArray[col][row]=new double[10];
 					fitFunction->GetParameters(MomentumFitParArray[col][row]);
 					fitFunction->Draw("same");
@@ -969,6 +970,8 @@ void DynamicCanvas(){
 	momentum->Fit("fCrystalMomentum","","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
 	fCrystalMomentum->Draw("same");
 	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
+
+
 
 	SieveRecCanvas->Update();
 	// plot the reconstrcution peak
