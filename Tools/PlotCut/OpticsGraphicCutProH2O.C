@@ -997,7 +997,23 @@ void DynamicCanvas(){
 		//calculate the Dp with +/x 10^-4 change
 		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
 		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
-		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID))));
+		// get the error
+		double DeltaEMax=deltaE+deltaErr;
+		double DeltaE200=deltaE+200.0/1000000.0;
+		double DeltaEMin=deltaE-deltaErr;
+		double AngleMax=GetPointingAngle(DeltaEMax,getBeamE(eventID));
+		double AngleMin=GetPointingAngle(DeltaEMin,getBeamE(eventID));
+		double Angletemp=GetPointingAngle(deltaE,getBeamE(eventID));
+		double errorAngle=0;
+		if(abs(AngleMax-Angletemp) >abs(Angletemp-AngleMin) ){
+			errorAngle=abs(AngleMax-Angletemp);
+		}else{
+			errorAngle=abs(AngleMin-Angletemp);
+		}
+
+		double errorAngle1=abs(GetPointingAngle(DeltaE200,getBeamE(eventID)))-Angletemp;
+
+		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID)),errorAngle,errorAngle1));
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
 		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
 		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");

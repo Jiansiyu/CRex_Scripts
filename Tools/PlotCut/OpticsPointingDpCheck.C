@@ -357,6 +357,19 @@ double getC12TheoreticalDp(int runID, int excitedState){
 	DpTheoreticalList[21626][0]=-0.00628822;
 	DpTheoreticalList[21632][0]=-0.0156923;
 
+//h2o o
+//	-0.00576159,-0.0156143,0.00425469,0.00424658,
+	DpTheoreticalList[21740][0]=-0.00576159;
+	DpTheoreticalList[21762][0]=-0.0156143;
+	DpTheoreticalList[21789][0]=0.00425469;
+	DpTheoreticalList[21790][0]=0.00424658;
+//-0.0132058,-0.0229847,-0.00326446,-0.00327241,
+	DpTheoreticalList[21740][1]=-0.0132058;
+	DpTheoreticalList[21762][1]=-0.0229847;
+	DpTheoreticalList[21789][1]=-0.00326446;
+	DpTheoreticalList[21790][1]=-0.00327241;
+
+
 	//4.43982 MeV
 	DpTheoreticalList[21642][1]=0.0119146;
 	DpTheoreticalList[21641][1]=0.00185016;
@@ -496,15 +509,17 @@ void DynamicCanvas(){
 		chainArray[-1] = LoadrootFile(21641);
 		chainArray[0] = LoadrootFile(21626);
 		chainArray[1] = LoadrootFile(21632);
-//		chainArray[999] = LoadrootFile(21789);
-//		chainArray[999] = LoadrootFile(21740);
-		chainArray[999] = LoadrootFile(21763);
+		chainArray[999] = LoadrootFile(21790);
+		chainArray[1000] = LoadrootFile(21740);
+		chainArray[1001] = LoadrootFile(21762);
 
 		ScanrunListArray[-2]=21642;
 		ScanrunListArray[-1]=21641;
 		ScanrunListArray[0]=21626;
 		ScanrunListArray[1]=21632;
-		ScanrunListArray[999]=21763;
+		ScanrunListArray[999]=21790;
+		ScanrunListArray[1000]=21740;
+		ScanrunListArray[1001]=21762;
 
 	}
 
@@ -545,7 +560,7 @@ void DynamicCanvas(){
 			item->second->Project(OptDpArrayH[item->first]->GetName(),Form("%s.gold.dp",HRS.Data()),
 			Form("%s && %s", generalcut.Data(),cutg->GetName()));
 		}else{
-			OptDpArrayH[item->first]=new TH1F(Form("Dp_hist:H2O%d",item->first),Form("Dp_hist:H_{2}O%d",item->first),1000,-0.1,0.1);
+			OptDpArrayH[item->first]=new TH1F(Form("Dp_hist:H2O%d",item->first),Form("Dp_hist:H_{2}O%d",item->first),1000,-0.03,0.02);
 
 			item->second->Project(OptDpArrayH[item->first]->GetName(),Form("%s.gold.dp",HRS.Data()),
 		    Form("%s && %s", generalcut.Data(),cutg->GetName()));
@@ -592,7 +607,7 @@ void DynamicCanvas(){
 			legend->AddEntry((item->second),Form("C_{12} Dp:%2d%% scan",item->first));
 		}else{
 			item->second->SetLineColor(kRed);
-			legend->AddEntry((item->second),Form("H_{2}O Dp"));
+			legend->AddEntry((item->second),Form("H_{2}O Dp%d",item->first-1000));
 		}
 
 		item->second->GetYaxis()->SetRangeUser(0,10000);
@@ -603,7 +618,11 @@ void DynamicCanvas(){
 		}else{
 			item->second->Draw("same");
 		}
-		fitFunctionsList[item->first]=SpectroCrystalFitDp_C12(item->second);
+		if((item->first)<10){
+			fitFunctionsList[item->first]=SpectroCrystalFitDp_C12(item->second);
+		}else{
+			fitFunctionsList[item->first]=SpectroCrystalFitDp_C12(item->second,2);
+		}
 		fitFunctionsList[item->first]->SetLineColor(42);
 		fitFunctionsList[item->first]->Draw("same");
 		const int NfitPars= fitFunctionsList[item->first]->GetNpar();
@@ -668,6 +687,13 @@ void DynamicCanvas(){
 		}
 	}
 
+
+
+	for (auto item = CentralPArray.begin(); item!=CentralPArray.end(); item++){
+		std::cout<<" Central P ::"<<item->first<<"    -> "<<item->second<<std::endl;
+	}
+
+
 	for(auto item = OptDpArrayH.begin(); item!= OptDpArrayH.end();item++){
 		int i = item->first;
 		if(FitPars.find(i)!=FitPars.end()){
@@ -679,7 +705,7 @@ void DynamicCanvas(){
 			ar5->SetFillColor(2);
 			ar5->Draw("same");
 
-			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("%1.3fMeV#pn%1.3f",CentralPArray[i]*1000.0*(FitPars[i][1]-FitPars[i][6]),CentralPArray[i]*1000.0*TMath::Sqrt(fitFunctionsList[i]->GetParError(1)*fitFunctionsList[i]->GetParError(1)+fitFunctionsList[i]->GetParError(6)*fitFunctionsList[i]->GetParError(6))));
+			TLatex *txt=new TLatex(FitPars[i][1]*0.5+FitPars[i][6]*0.5,FitPars[i][0],Form("%1.3fMeV#pm%1.3f",CentralPArray[i]*1000.0*(FitPars[i][1]-FitPars[i][6]),CentralPArray[i]*1000.0*TMath::Sqrt(fitFunctionsList[i]->GetParError(1)*fitFunctionsList[i]->GetParError(1)+fitFunctionsList[i]->GetParError(6)*fitFunctionsList[i]->GetParError(6))));
 //			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("P=%1.4fMeV",CentralPArray[i]+CentralPArray[i]*(FitPars[i][1])));
 //			TLatex *txt=new TLatex(FitPars[i][1],FitPars[i][0],Form("Dp%d%%:P=%1.6fMeV",i,CentralPArray[i]));
 			txt->SetLineWidth(2);
@@ -789,15 +815,64 @@ void DynamicCanvas(){
 
 	// start the new canvas to draw the bias etc
 	TCanvas *DpBiasCanv=new TCanvas("Dp Bias Canvas","Dp Bias Canvas",1960,1080);
-
-	DpBiasCanv->Draw("same");
 	DpBiasCanv->SetLogy();
+	DpBiasCanv->Draw();
+	// calcualte the comman bias and subtract the common bias
+	double CommBiasC12=0.0;
+	double CommBiasH2O=0.0;
 	{
+		//for carbon, get the common bias to the 4th order
+		double CommBiasC12Sum=0.0;
+		int8_t CommBiasC12Counter=0;
 
+		double CommBiasH2OSum=0.0;
+		int8_t CommBiasH2OCounter=0;
+
+		for (auto item = OptDpArrayH.begin(); item != OptDpArrayH.end();item++) {
+			if (item->first < 10) {
+				const uint nPars=fitFunctionsList[item->first]->GetNpar();
+				double FitPars[nPars];
+				fitFunctionsList[item->first]->GetParameters(FitPars);
+
+				if (nPars>=10){
+					CommBiasC12Sum+=1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1]);
+					CommBiasC12Counter+=1;
+
+					CommBiasC12Sum+=1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6]);
+					CommBiasC12Counter+=1;
+
+				}
+				if (nPars>=13){
+					CommBiasC12Sum+=1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],2)-FitPars[11]);
+					CommBiasC12Counter+=1;
+
+				}
+				if(nPars >=16){
+					CommBiasC12Sum+=1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],3)-FitPars[14]);
+					CommBiasC12Counter+=1;
+				}
+
+			}else{
+
+				const uint nPars=fitFunctionsList[item->first]->GetNpar();
+				double FitPars[nPars];
+				fitFunctionsList[item->first]->GetParameters(FitPars);
+				CommBiasH2OSum+=1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1]);
+				CommBiasH2OCounter++;
+				CommBiasH2OSum+=1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6]);
+				CommBiasH2OCounter++;
+
+			}
+		}
+		CommBiasC12=CommBiasC12Sum/(double)CommBiasC12Counter;
+		CommBiasH2O=CommBiasH2OSum/(double)CommBiasH2OCounter;
+	}
+	DpBiasCanv->cd();
+	{
 		for (auto item = OptDpArrayH.begin(); item != OptDpArrayH.end();
 				item++) {
+			item->second->GetYaxis()->SetRangeUser(1, 100000);
 			if (item->first < 10) {
-				item->second->GetYaxis()->SetRangeUser(1, 100000);
 				if (item == OptDpArrayH.begin()) {
 					item->second->Draw();
 				} else {
@@ -815,43 +890,165 @@ void DynamicCanvas(){
 				if (nPars>=10){   //Ground and first excited states
 					// theoretical Seperation
 					double DpSepTheoretical=getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],1);
-					TLatex *txt0=new TLatex(FitPars[1],FitPars[0],Form("Dp_{0}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[1],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1])));
+					TLatex *txt0=new TLatex(FitPars[1],FitPars[0],Form("Dp_{0}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[1],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1])-CommBiasC12));
 					txt0->SetTextSize(0.02);
 					txt0->Draw("same");
 
-					TLatex *txt1=new TLatex(FitPars[6],FitPars[5],Form("Dp_{1}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[6],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6])));
+					TLatex *txt1=new TLatex(FitPars[6],FitPars[5],Form("Dp_{1}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[6],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6])-CommBiasC12));
 					txt1->SetTextSize(0.02);
 					txt1->Draw("same");
 
 				}
 
 				if (nPars>=13){   // second excited states
-					TLatex *txt1=new TLatex(FitPars[11],FitPars[10],Form("Dp_{2}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[11],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],2)-FitPars[11])));
+					TLatex *txt1=new TLatex(FitPars[11],FitPars[10],Form("Dp_{2}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[11],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],2)-FitPars[11])-CommBiasC12));
 					txt1->SetTextSize(0.02);
 					txt1->Draw("same");
 				}
 
 				if(nPars >=16){   // third excited states
-					TLatex *txt1=new TLatex(FitPars[14],FitPars[13],Form("Dp_{3}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[14],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],3)-FitPars[14])));
+					TLatex *txt1=new TLatex(FitPars[14],FitPars[13],Form("Dp_{3}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[14],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],3)-FitPars[14])-CommBiasC12));
 					txt1->SetTextSize(0.02);
 					txt1->Draw("same");
 				}
+			}
+			/*else{
+				// fit for the water target
+				item->second->Draw("same");
+				fitFunctionsList[item->first]->Draw("same");
+				const uint nPars=fitFunctionsList[item->first]->GetNpar();
+				double FitPars[nPars];
+				fitFunctionsList[item->first]->GetParameters(FitPars);
+				auto FitParErrors=fitFunctionsList[item->first]->GetParErrors();
+
+				TLatex *txt0=new TLatex(FitPars[1],FitPars[0]*1.5,Form("Dp_{0}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[1],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1])-CommBiasH2O));
+				txt0->SetTextSize(0.02);
+				txt0->SetTextColor(kBlue);
+				txt0->Draw("same");
+				TLatex *txt1=new TLatex(FitPars[6],FitPars[5]*1.5,Form("Dp_{1}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[6],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6])-CommBiasH2O));
+				txt1->SetTextSize(0.02);
+				txt1->SetTextColor(kBlue);
+				txt1->Draw("same");
+			}*/
+		}
+		legend->Draw("same");
+	}
+	DpBiasCanv->Update();
+
+
+	TCanvas *DpH2OBiasCanv=new TCanvas("Dp H20 Bias Canvas","Dp H2O Bias Canvas",1960,1080);
+	DpH2OBiasCanv->Draw();
+	DpH2OBiasCanv->SetLogy();
+	DpH2OBiasCanv->cd();
+	{
+		for (auto item = OptDpArrayH.begin(); item != OptDpArrayH.end();
+				item++) {
+			if (item->first > 10)
+			{
+				// fit for the water target
+				if(item->first==999){
+					item->second->Draw();
+				}else{
+					item->second->Draw("same");
+				}
+				fitFunctionsList[item->first]->Draw("same");
+				const uint nPars=fitFunctionsList[item->first]->GetNpar();
+				double FitPars[nPars];
+				fitFunctionsList[item->first]->GetParameters(FitPars);
+				auto FitParErrors=fitFunctionsList[item->first]->GetParErrors();
+
+				TLatex *txt0=new TLatex(FitPars[1],FitPars[0]*1.5,Form("Dp_{0}:%1.3f Bias %1.3f #times 10^{3}(%1.1fKeV) ",1000.0*FitPars[1],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1])-CommBiasH2O,1000.0*CentralPArray[item->first]*(1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1])-CommBiasH2O)));
+				txt0->SetTextSize(0.02);
+				txt0->SetTextColor(kBlue);
+				txt0->Draw("same");
+				TLatex *txt1=new TLatex(FitPars[6],FitPars[5]*1.5,Form("Dp_{1}:%1.3f Bias %1.3f #times 10^{3}(%1.1fKeV) ",1000.0*FitPars[6],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6])-CommBiasH2O,1000.0*CentralPArray[item->first]*(1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6])-CommBiasH2O)));
+				txt1->SetTextSize(0.02);
+				txt1->SetTextColor(kBlue);
+				txt1->Draw("same");
 			}
 		}
 
 		legend->Draw("same");
 	}
+	DpH2OBiasCanv->Update();
 
-	DpBiasCanv->Update();
 
+	TCanvas *MomC12BiasCanv=new TCanvas("P Bias Canvas","P Bias Canvas",1960,1080);
+	MomC12BiasCanv->SetLogy();
+	MomC12BiasCanv->Draw();
+
+	{
+			for (auto item = OptDpArrayH.begin(); item != OptDpArrayH.end();
+					item++) {
+				item->second->GetYaxis()->SetRangeUser(1, 100000);
+				if (item->first < 10) {
+					if (item == OptDpArrayH.begin()) {
+						item->second->Draw();
+					} else {
+						item->second->Draw("same");
+					}
+					fitFunctionsList[item->first]->Draw("same");
+
+
+					//get the excited states, calculat the seperation
+					const uint nPars=fitFunctionsList[item->first]->GetNpar();
+					double FitPars[nPars];
+					fitFunctionsList[item->first]->GetParameters(FitPars);
+					auto FitParErrors=fitFunctionsList[item->first]->GetParErrors();
+
+					if (nPars>=10){   //Ground and first excited states
+						// theoretical Seperation
+						double DpSepTheoretical=getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],1);
+						TLatex *txt0=new TLatex(FitPars[1],FitPars[0],Form("P_{0}:%1.3fGeV Bias %1.3fKeV",FitPars[1]*CentralPArray[item->first]+CentralPArray[item->first],1000.0*(1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1])-CommBiasC12)*CentralPArray[item->first]));
+						txt0->SetTextSize(0.02);
+						txt0->Draw("same");
+
+						TLatex *txt1=new TLatex(FitPars[6],FitPars[5],Form("P_{1}:%1.3fGeV Bias %1.3fKeV",FitPars[6]*CentralPArray[item->first]+CentralPArray[item->first],CentralPArray[item->first]*1000.0*(1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6])-CommBiasC12)));
+						txt1->SetTextSize(0.02);
+						txt1->Draw("same");
+
+					}
+
+					if (nPars>=13){   // second excited states
+						TLatex *txt1=new TLatex(FitPars[11],FitPars[10],Form("P_{2}:%1.3fGeV Bias %1.3fKeV",FitPars[11]*CentralPArray[item->first]+CentralPArray[item->first],(1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],2)-FitPars[11])-CommBiasC12)*CentralPArray[item->first]*1000.0));
+						txt1->SetTextSize(0.02);
+						txt1->Draw("same");
+					}
+
+					if(nPars >=16){   // third excited states
+						TLatex *txt1=new TLatex(FitPars[14],FitPars[13],Form("P_{3}:%1.3fGeV Bias %1.3fKeV",FitPars[14]*CentralPArray[item->first]+CentralPArray[item->first],(1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],3)-FitPars[14])-CommBiasC12)*CentralPArray[item->first]*1000.0));
+						txt1->SetTextSize(0.02);
+						txt1->Draw("same");
+					}
+				}
+				/*else{
+					// fit for the water target
+					item->second->Draw("same");
+					fitFunctionsList[item->first]->Draw("same");
+					const uint nPars=fitFunctionsList[item->first]->GetNpar();
+					double FitPars[nPars];
+					fitFunctionsList[item->first]->GetParameters(FitPars);
+					auto FitParErrors=fitFunctionsList[item->first]->GetParErrors();
+
+					TLatex *txt0=new TLatex(FitPars[1],FitPars[0]*1.5,Form("Dp_{0}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[1],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],0)-FitPars[1])-CommBiasH2O));
+					txt0->SetTextSize(0.02);
+					txt0->SetTextColor(kBlue);
+					txt0->Draw("same");
+					TLatex *txt1=new TLatex(FitPars[6],FitPars[5]*1.5,Form("Dp_{1}:%1.3f Bias %1.3f #times 10^{3}",1000.0*FitPars[6],1000.0*(getC12TheoreticalDp(ScanrunListArray[item->first],1)-FitPars[6])-CommBiasH2O));
+					txt1->SetTextSize(0.02);
+					txt1->SetTextColor(kBlue);
+					txt1->Draw("same");
+				}*/
+			}
+			legend->Draw("same");
+		}
+	MomC12BiasCanv->Update();
 
 	// get the Momentum seperation
 	TCanvas *MomSepBiasCanv=new TCanvas("Momentum Sep Bias Canvas","Momentum Sep Bias Canvas",1960,1080);
 	MomSepBiasCanv->Draw("same");
 	MomSepBiasCanv->SetLogy();
-
 	{
-
 		for (auto item = OptDpArrayH.begin(); item != OptDpArrayH.end();
 				item++) {
 			if (item->first < 10) {
@@ -875,7 +1072,7 @@ void DynamicCanvas(){
 					double MomSep=CentralPArray[item->first]*(FitPars[1]-FitPars[6]);
 					double MomBias=CentralPArray[item->first]*((getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],1))-(FitPars[1]-FitPars[6]));
 
-					TLatex *txt0=new TLatex(FitPars[1],FitPars[0],Form("#DeltaP_{1}:%1.3f Bias %1.3f MeV",MomSep*1000.0,MomBias*1000.0));
+					TLatex *txt0=new TLatex(FitPars[1],FitPars[0],Form("#DeltaP_{1}:%1.3fMeV Bias %1.1fKeV",MomSep*1000.0,MomBias*1000000.0));
 					txt0->SetTextSize(0.02);
 					txt0->Draw("same");
 
@@ -885,7 +1082,7 @@ void DynamicCanvas(){
 					double MomSep=CentralPArray[item->first]*(FitPars[1]-FitPars[11]);
 					double MomBias=CentralPArray[item->first]*((getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],2))-(FitPars[1]-FitPars[11]));
 
-					TLatex *txt0=new TLatex(FitPars[11],FitPars[10]*0.5+FitPars[5]*0.5,Form("#DeltaP_{2}:%1.3f Bias %1.3f MeV",MomSep*1000.0,MomBias*1000.0));
+					TLatex *txt0=new TLatex(FitPars[11],FitPars[10]*0.5+FitPars[5]*0.5,Form("#DeltaP_{2}:%1.3fMeV Bias %1.1fKeV",MomSep*1000.0,MomBias*1000000.0));
 					txt0->SetTextSize(0.02);
 					txt0->Draw("same");				}
 
@@ -893,10 +1090,14 @@ void DynamicCanvas(){
 					double MomSep=CentralPArray[item->first]*(FitPars[1]-FitPars[14]);
 					double MomBias=CentralPArray[item->first]*((getC12TheoreticalDp(ScanrunListArray[item->first],0)-getC12TheoreticalDp(ScanrunListArray[item->first],3))-(FitPars[1]-FitPars[14]));
 
-					TLatex *txt0=new TLatex(FitPars[14],FitPars[13]*0.5+FitPars[10]*0.5,Form("#DeltaP_{3}:%1.3f Bias %1.3f MeV",MomSep*1000.0,MomBias*1000.0));
+					TLatex *txt0=new TLatex(FitPars[14],FitPars[13]*0.5+FitPars[10]*0.5,Form("#DeltaP_{3}:%1.3fMeV Bias %1.1fKeV",MomSep*1000.0,MomBias*1000000.0));
 					txt0->SetTextSize(0.02);
 					txt0->Draw("same");
 				}
+			}else{
+				// fit for the water target
+
+
 			}
 		}
 

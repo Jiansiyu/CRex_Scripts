@@ -63,7 +63,7 @@ const UInt_t NSieveRow = 7;
 TString prepcut;
 TString generalcut;
 
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p<0.955 && R.gold.p > 0.94 && fEvtHdr.fEvtType==1";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p<0.96 && R.gold.p > 0.95 && fEvtHdr.fEvtType==1";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
 
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<-0.002 && R.gold.dp > -0.01 && fEvtHdr.fEvtType==1";
@@ -76,7 +76,7 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200530/RHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/junk";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200614/";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200618";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -114,10 +114,10 @@ inline Bool_t IsFileExist (const std::string& name) {
 void ExperimentConfigure(TString experiment, TString HRS){
 
 	if(experiment =="PRex"){
-		defaultDataPath="/home/newdriver/Storage/Research/PRex_Experiment/prex_analyzer/optReplay/Result/";
+		defaultDataPath="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result";
 
 		defaultMomMin=0.94;
-		defaultMomMax=0.952;
+		defaultMomMax=0.973;
 
 	}else{
 		defaultDataPath="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/";
@@ -360,15 +360,19 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 			SaveCheckCanvas->cd(2)->cd(row_iter - row_min + 1);
 			chain->Project(sievehole[row_iter-row_min]->GetName(), Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 
-			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),600,2.1,2.25);
+			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),500,defaultMomMin,defaultMomMax);
 			chain->Project(sieveholemomentum[row_iter-row_min]->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
+
 			sieveholemomentumGausFit[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_%d_%d_%d", FoilID, col, row_iter),"gaus",
-					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())-0.002,
-					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())+0.002);
+					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())-0.0008,
+					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())+0.0008);
+
 			sieveholemomentumGausFit[row_iter-row_min]->SetParameter(1,sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin()));
+			sieveholemomentumGausFit[row_iter-row_min]->SetParameter(0,sieveholemomentum[row_iter-row_min]->GetMaximumBin());
+
 			sieveholemomentum[row_iter - row_min]->Fit(
 					Form("1ststatesDpgaushcut_R_%d_%d_%d", FoilID, col,
-							row_iter), "R", "ep",
+							row_iter), "R0Q", "ep",
 					sieveholemomentumGausFit[row_iter-row_min]->GetXmin(),
 					sieveholemomentumGausFit[row_iter-row_min]->GetXmax());
 
@@ -664,7 +668,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				TCut sieveMomCut(Form("%s && %s",(Form("hcut_R_%d_%d_%d", FoilID, col, row)),generalcut.Data()));
 				// need cut on the Ground states
 				mainPatternCanvas->cd(1)->cd(3);
-				sieveholemomentum[col][row]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row),600,2.1,2.25);
+				sieveholemomentum[col][row]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row),600,0.94,0.97);
 				chain->Project(sieveholemomentum[col][row]->GetName(),Form("%s.gold.p",HRS.Data()),sieveMomCut);
 				sieveholemomentum[col][row]->GetXaxis()->SetRangeUser(
 						sieveholemomentum[col][row]->GetXaxis()->GetBinCenter(
@@ -1018,7 +1022,7 @@ void SavePatternHole_P1(double momentumSigmaCut=3.0){
 //			SaveCheckCanvas->cd(2)->cd(row_iter - row_min + 1)->SetLogy();
 			chain->Project(sievehole[row_iter-row_min]->GetName(), Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 
-			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),600,2.1,2.25);
+			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),600,0.94,0.97);
 			chain->Project(sieveholemomentum[row_iter-row_min]->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 			sieveholemomentumGausFit[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_%d_%d_%d", FoilID, col, row_iter),"gaus",
 					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())-0.002,
@@ -1329,9 +1333,9 @@ void DynamicCanvas(){
 			}else{
 			selectedSievehh = new TH2F("Sieve_Selected_th_ph",
 					"Sieve_Selected_th_ph",
-					200,
+					100,
 					h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(),
-					200,
+					100,
 					h->GetYaxis()->GetXmin(),h->GetYaxis()->GetXmax());
 			}
 
@@ -1578,6 +1582,8 @@ Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
     }
 
   SavePatternHole();
+  SavePatternHole(300000); // with out the groud momentum cut
+  //SavePatternHole_P1();
   return 1;
 }
 
