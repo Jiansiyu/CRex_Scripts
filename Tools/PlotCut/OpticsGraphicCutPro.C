@@ -396,9 +396,157 @@ void DynamicCanvas(){
 		t2->SetTextSize(0.02);
 		t2->Draw("same");
 	}
-
-
 	hSieveHole->Delete();
 //	f1->Close();
+}
+
+
+// load the root file and  return the TChain
+TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result"){
+	TChain *chain=new TChain("T");
+	TString HRS="R";
+		if(runID<20000){HRS="L";};
+
+		if(folder.EndsWith(".root")){
+			chain->Add(folder.Data());
+		}else{
+			TString rootDir(folder.Data());
+			if(runID>20000){ //RHRS
+				if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
+					std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+					chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
+
+					TString filename;
+					int16_t split=1;
+					filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+					while (IsFileExist(filename.Data())){
+						std::cout<<"Add File::"<<filename.Data()<<std::endl;
+						chain->Add(filename.Data());
+						split++;
+						filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+					}
+				}else{
+					std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+				}
+			}else{
+				HRS="L";
+				if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
+					std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+					chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
+
+					TString filename;
+					int16_t split=1;
+					filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+					while (IsFileExist(filename.Data())){
+						std::cout<<"Add File::"<<filename.Data()<<std::endl;
+						chain->Add(filename.Data());
+						split++;
+						filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+					}
+				}else{
+					std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+				}
+			}
+		}
+		return chain;
+}
+
+
+//Used the cut file and the root file to calculate the momentum fit
+// take the cut root file and the data root file, make the cut and fit all the sieve holes
+// carbon target
+int OpticsGraphicCutDpCheck(UInt_t runID,
+		TString cutFile =
+						"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/GroundMomCut",
+				TString folder =
+						"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/rootfiles"){
+
+	// check which HRS we are working on
+	TString HRS="R";
+	if(runID<20000){HRS="L";};
+
+	TFile *rootfileIO=new TFile(Form("./OpticsCheckRun%d_SieveMom.root",runID),"recreate");
+
+	auto chain=LoadrootFile(runID, folder);
+	//load the cut and load the canvas
+	//plot the theta and phi, and load the cut file
+	if(HRS=="L"){
+		generalcut=generalcutL;
+	}else{
+		generalcut=generalcutR;
+	}
+
+	// searching for the cut file
+	//if the cut file is the path pointing to the cut file, it will automaticly searching for the cut file according to name rule
+	if(!cutFile.EndsWith(".root")){
+		cutFile=Form("%s/prexRHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
+	}
+
+	TFile *cutFileIO=new TFile(cutFile.Data(),"READ");
+	if(cutFileIO->IsZombie()){
+		std::cout<<"[ERROR]:: CAN NOT FIND CUT FILE \" "<<cutFile.Data()<<"\""<<std::endl;
+		return -1;
+	}
+
+	TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("DpCheck");
+	if(!mainPatternCanvas){
+		mainPatternCanvas=new TCanvas("DpCheck","DpCheck",1960,1080);
+	}else{
+		mainPatternCanvas->Clear();
+	}
+
+	mainPatternCanvas->Divide(1,2);
+
+	mainPatternCanvas->cd(1)->Divide(3,1);
+	mainPatternCanvas->cd(1)->cd(3)->Divide(1,2);
+
+
+	mainPatternCanvas->cd(1)->cd(1);
+	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
+	if(TargetThPhHH) TargetThPhHH->Delete();
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.03,0.03,1000,-0.045,0.05);
+	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
+	TargetThPhHH->Draw("zcol");
+
+	//loop on the files in the cut and find all the sieve hole cuts
+	TCutG *sieveCut[NSieveCol][NSieveRow];
+	TCut sieveAllHoleCut;
+	for (int16_t col = 0; col < NSieveCol; col++){
+		for (int16_t row = 0; row < NSieveRow; row++){
+			auto cutg=(TCutG*)gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+			if(cutg){
+				sieveCut[col][row]=cutg;
+				sieveCut[col][row]->SetLineWidth(2);
+				sieveCut[col][row]->SetLineColor(kRed);
+				sieveCut[col][row]->Draw("same");
+				sieveAllHoleCut=sieveAllHoleCut||TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+
+				//get the data for this canvas
+				TH2F *selectedSievehh=(TH2F *)  gROOT->FindObject("Sieve_Selected_th_ph");
+				if (selectedSievehh) {
+					selectedSievehh->Clear();
+				} else {
+					selectedSievehh = new TH2F("Sieve_Selected_th_ph",
+							"Sieve_Selected_th_ph", 1000,
+							TargetThPhHH->GetXaxis()->GetXmin(),
+							TargetThPhHH->GetXaxis()->GetXmax(), 1000,
+							TargetThPhHH->GetYaxis()->GetXmin(),
+							TargetThPhHH->GetYaxis()->GetXmax());
+				}
+				chain->Project(selectedSievehh->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),Form("%s&&%s",sieveCut[col][row]->GetName(),generalcut.Data()));
+				TLatex *label=new TLatex(selectedSievehh->GetMean(1),selectedSievehh->GetMean(2),Form("(%d %d)",col,row));
+				label->SetTextSize(0.04);
+				label->SetTextColor(2);
+				label->Draw("same");
+				selectedSievehh->Delete();
+			}
+		}
+	}
+
+
+	// loop on the sieve holes and cut the Dp and select the sieves
+
+
+
 }
 

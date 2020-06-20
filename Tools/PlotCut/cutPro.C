@@ -63,7 +63,7 @@ const UInt_t NSieveRow = 7;
 TString prepcut;
 TString generalcut;
 
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p<0.96 && R.gold.p > 0.95 && fEvtHdr.fEvtType==1";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p<0.98 && R.gold.p > 0.94 && fEvtHdr.fEvtType==1";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
 
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<-0.002 && R.gold.dp > -0.01 && fEvtHdr.fEvtType==1";
@@ -87,8 +87,8 @@ TString RootFileName;
 
 // configure information, will be overwrite according to differentt experinent
 TString defaultDataPath;
-double_t defaultMomMin;
-double_t defaultMomMax;
+double_t defaultMomMin=0.94;
+double_t defaultMomMax=1.0;
 
 
 //CRex Experiment
@@ -360,12 +360,12 @@ void SavePatternHole(double momentumSigmaCut=3.0){
 			SaveCheckCanvas->cd(2)->cd(row_iter - row_min + 1);
 			chain->Project(sievehole[row_iter-row_min]->GetName(), Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 
-			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),500,defaultMomMin,defaultMomMax);
+			sieveholemomentum[row_iter-row_min]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row_iter),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row_iter),1000,defaultMomMin,defaultMomMax);
 			chain->Project(sieveholemomentum[row_iter-row_min]->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
 
 			sieveholemomentumGausFit[row_iter-row_min]=new TF1(Form("1ststatesDpgaushcut_R_%d_%d_%d", FoilID, col, row_iter),"gaus",
-					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())-0.0008,
-					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())+0.0008);
+					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())-0.001,
+					sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin())+0.001);
 
 			sieveholemomentumGausFit[row_iter-row_min]->SetParameter(1,sieveholemomentum[row_iter-row_min]->GetXaxis()->GetBinCenter(sieveholemomentum[row_iter-row_min]->GetMaximumBin()));
 			sieveholemomentumGausFit[row_iter-row_min]->SetParameter(0,sieveholemomentum[row_iter-row_min]->GetMaximumBin());
@@ -497,9 +497,9 @@ inline  int16_t getUID(UInt_t KineID,UInt_t Col, UInt_t Row){
 // take the cut file and  the root file as input, and generate the average value the parameters on the focal plane
 Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		TString cutFile =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/GroundMomCut",
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200618/GroundMomCut",
 		TString folder =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/rootfiles") {
+				"/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result") {
 
 	TFile *rootFileIO=new TFile(Form("./OpticsFocalDiagnose_run%d.root",runID),"recreate");
 	TChain *chain=new TChain("T");
@@ -668,7 +668,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				TCut sieveMomCut(Form("%s && %s",(Form("hcut_R_%d_%d_%d", FoilID, col, row)),generalcut.Data()));
 				// need cut on the Ground states
 				mainPatternCanvas->cd(1)->cd(3);
-				sieveholemomentum[col][row]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row),600,0.94,0.97);
+				sieveholemomentum[col][row]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row),600,defaultMomMin,defaultMomMax);
 				chain->Project(sieveholemomentum[col][row]->GetName(),Form("%s.gold.p",HRS.Data()),sieveMomCut);
 				sieveholemomentum[col][row]->GetXaxis()->SetRangeUser(
 						sieveholemomentum[col][row]->GetXaxis()->GetBinCenter(
@@ -676,8 +676,8 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 											- 0.009,
 											sieveholemomentum[col][row]->GetXaxis()->GetBinCenter(
 													sieveholemomentum[col][row]->GetMaximumBin())
-											+ 0.004);
-				sieveholemomentum[col][row]->Fit("gaus","","",sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())-0.002,sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())+0.002);
+											+ 0.009);
+				sieveholemomentum[col][row]->Fit("gaus","","",sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())-0.001,sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())+0.001);
 				double SieveMomFitPar[3];
 				sieveholemomentum[col][row]->GetFunction("gaus")->GetParameters(SieveMomFitPar);
 				sieveholemomentum[col][row]->Draw();
@@ -702,11 +702,11 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				// project the Beam informations
 
 				focalXh[col][row]=new TH1F(Form("%s%d_focalX_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_focalX_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
-						2000,-1,1);
+						3000,-1,1);
 				focalThetah[col][row]=new TH1F(Form("%s%d_focalTheta_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_focalTheta_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
-										2000,-0.3,0.3);
+										4000,-0.3,0.3);
 				focalYh[col][row]=new TH1F(Form("%s%d_focalY_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_focalY_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
-										2000,-0.2,0.2);
+										3000,-0.2,0.2);
 				focalPhih[col][row]=new TH1F(Form("%s%d_focalPhi_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),Form("%s%d_focalPhi_kineID%d_col%d_row%d",HRS.Data(),runID,KineID,col,row),
 										1000,-0.1,0.1);
 
@@ -788,11 +788,14 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				//mainPatternCanvas->Write(Form("sieve_kine%d_col%d_row%d",KineID,col,row));
 				f51OutPut<<uid<<"	"<<focal_x<<" "<<focal_th<<" "<<focal_y<<" "<<focal_ph<<" "<<0.00000<<" "<<bpmX/1000.0<<" "<<bpmY/1000.0<<" "<<0.0<<std::endl;
 
+//				mainPatternCanvas->Write(Form("run%d_kine%d_col%d_row%d",runID,KineID,col,row));
+				rootFileIO->WriteObject(mainPatternCanvas,Form("run%d_kine%d_col%d_row%d",runID,KineID,col,row));
 			}
 		}
 	}
-f51OutPut.close();
-mainPatternCanvas->Close();
+
+	f51OutPut.close();
+	mainPatternCanvas->Close();
 	return 1;
 }
 
