@@ -26,11 +26,20 @@ import pandas as pd
 #     21785:'C_12 -1%_4'
 #     }
 
-runList={ 
-    21739:'H2O_ 0%_0',
-    21740:'H2O_ 0%_1',
-    21789:'H2O -1%_0',
-    21790:'H20 -1%_1'
+# runList={ 
+#     21739:'H2O_ 0%_0',
+#     21740:'H2O_ 0%_1',
+#     21789:'H2O -1%_0',
+#     21790:'H20 -1%_1'
+#     }
+
+runList={
+    20804:'H2O -1%',
+    20805:'H2O +1%',
+#    20808:'H2O 0%',
+    20825:'C12 1%',
+    20826:'C12 -1%',
+    20827:'C12 0%'
     }
 
 class beamInfor(object):
@@ -45,8 +54,14 @@ class beamInfor(object):
                 with open (fullPath) as flileio:
                     lines=flileio.readlines()
                     content=[x.strip() for x in lines]
+                    #beamEArray=[(line.split()[-1]) for line in content]
                     beamEArray=[float(line.split()[-1]) for line in content]
-                    self.DataDict[runID]=beamEArray#[0:len(beamEArray)//4]
+                    # print(beamEArray)
+                    beamEArrayFilter=[]
+                    for x in beamEArray:
+                        if x > 940:
+                            beamEArrayFilter.append(x)
+                    self.DataDict[runID]=beamEArrayFilter#[0:len(beamEArray)//4]
     def BeamEPlot(self):
         self.dataframe=pd.DataFrame()
         for item in self.DataDict:

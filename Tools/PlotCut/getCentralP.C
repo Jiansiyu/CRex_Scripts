@@ -144,7 +144,7 @@ void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/C
 		std::cout<<"RHRS using the NMR value"<<std::endl;
 		//HacR_D1_NMR_SIG
 		double CentralP;
-		TH1F *HRSCentralPDetHH = new TH1F(Form("HallR_NMR_%d",runID),Form("HallR_NMR_%d",runID), 1000, 0.7, 0.9);
+		TH1F *HRSCentralPDetHH = new TH1F(Form("HallR_NMR_%d",runID),Form("HallR_NMR_%d",runID), 1000, 0.2, 0.9);
 		chain->Project(HRSCentralPDetHH->GetName(), "HacR_D1_NMR_SIG",
 				generalcut.Data());
 		HRSCentralPDetHH->Draw();

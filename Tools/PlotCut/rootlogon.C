@@ -1,7 +1,7 @@
 {
  	gStyle->SetPalette(1);
  	
- 	gROOT->LoadMacro("cutPro.C");
+ //	gROOT->LoadMacro("cutPro.C");
  //	gROOT->LoadMacro("OpticsGraphicCutPro.C");
  //	gROOT->LoadMacro("RasterGraphicCutPro.C");
 //	gROOT->LoadMacro("OpticsGraphicCutProMultiPeakFit.C");
@@ -11,4 +11,6 @@
 
 //	gROOT->LoadMacro("OpticsFocalVariableCheck.C");
 //	gROOT->LoadMacro("getCentralP.C");
+//prexOpticsCutPro.C
+	gROOT->LoadMacro("prexOpticsCutPro.C");
 }
