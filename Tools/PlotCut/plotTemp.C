@@ -20,12 +20,14 @@
 #include <TMath.h>
 #include <TF1NormSum.h>
 #include <TPaveText.h>
-
+#include <TGraphErrors.h>
+#include <TMultiGraph.h>
 #include <map>
 #include <vector>
 #include <random>
 #include <iostream>
 #include <sys/stat.h>
+#include <TLegend.h>
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
@@ -145,9 +147,61 @@ void plotTemp(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex
 	beamPosition->Draw();
 	 gPad->BuildLegend();
 
-
-
-
 }
 
+
+int plotErrors(){
+//	   auto c4 = new TCanvas("c4","c4",200,10,600,400);
+//	   double x[] = {0, 1, 2, 3, 4};
+//	   double y[] = {0, 2, 4, 1, 3};
+//	   double ex[] = {0.0, 0.0, 0.0, 0.0, 0.0};
+//	   double ey[] = {1, 0.5, 1, 0.5, 1};
+//	   auto ge = new TGraphErrors(5, x, y, ex, ey);
+//
+//	   ge->SetLineWidth(2);
+//	   ge->SetMarkerStyle(20);
+//	   ge->Draw("ap");
+
+	auto hrsangleCanv=new TCanvas("HRS Angle","HRS Angle",200,10,600,400);
+	  TMultiGraph *mg = new TMultiGraph();
+	   mg->SetTitle("Exclusion graphs");
+
+	TLegend *lgend=new TLegend(0.3,0.3);
+	double prex_x[]={-1,0,1};
+	double prex_y[]={4.748,4.84,4.846};
+	double prex_ex[]={0.0,0.0,0.0};
+	double prex_ey[]={0.153,0.151,0.151};
+
+	double crex_x[]={-1+0.1,0+0.1,1+0.1};
+	double crex_y[]={4.750,4.78,4.77};
+	double crex_ex[]={0.0,0.0,0.0};
+	double crex_ey[]={0.029,0.029,0.029};
+
+	auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
+	geprex->GetYaxis()->SetRangeUser(4.5,5.1);
+	geprex->GetXaxis()->SetRangeUser(-2,2);
+	geprex->SetTitle("PRex/CRex Pointing Measurement");
+	geprex->GetXaxis()->SetTitle("Dp Scan");
+	geprex->GetYaxis()->SetTitle("HRS Angle(Degree)");
+	geprex->SetLineWidth(2);
+	geprex->SetLineColor(6);
+	geprex->SetMarkerStyle(20);
+	geprex->SetMarkerColor(6);
+	geprex->Draw("ap");
+	lgend->AddEntry(geprex,Form("PRex HRS"));
+
+
+	auto gecrex=new TGraphErrors(5,prex_x,prex_y,prex_ex,prex_ey);
+	gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
+	gecrex->SetLineWidth(2);
+	gecrex->SetLineColor(46);
+	gecrex->SetMarkerStyle(20);
+	gecrex->SetMarkerColor(46);
+	gecrex->Draw("p same");
+	lgend->AddEntry(gecrex,Form("CRex HRS"));
+	lgend->Draw("same");
+	hrsangleCanv->Update();
+
+return 1;
+}
 

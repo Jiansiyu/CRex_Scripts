@@ -76,7 +76,7 @@ double CentralP;
 TString prepcut;
 TString generalcut;
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1";
 //TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.19";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.19";
 
@@ -542,7 +542,7 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 // input: the runID
 //        cut root file
 //TODO, need to input the size ID vs. scattered angle chart
-Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result") {
+Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TString folder="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result") {
 	CentralP=centralP;
 	TChain *chain=new TChain("T");
 	// if the folder itself is and root file
@@ -673,7 +673,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TStri
 	return 1;
 }
 
-Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
+Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -753,6 +753,10 @@ double_t getBeamE(int runID){
 	beamE[21789]=2.1762745;
 	beamE[21790]=2.1762517;
 
+	beamE[20804]=0.9504413567;
+	beamE[20805]=0.9503818932;
+	beamE[20808]=0.9504413567; // not accurate
+
 	if(beamE.find(runID)!=beamE.end()){
 		return beamE[runID];
 	}else{
@@ -812,7 +816,7 @@ void DynamicCanvas(){
 				<< std::endl;
 	} else {
 		//HacR_D1_NMR_SIG
-		TH1F *HallR_NMR = new TH1F("HallR_NMR", "HallR_NMR", 1000, 0.7, 0.9);
+		TH1F *HallR_NMR = new TH1F("HallR_NMR", "HallR_NMR", 1000, 0.2, 0.9);
 		chain->Project(HallR_NMR->GetName(), "HacR_D1_NMR_SIG",
 				generalcut.Data());
 		if (HallR_NMR->GetEntries()) {
@@ -917,7 +921,7 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F(Form("H2O gold.p run%d",eventID),Form("H2O gold.p run%d",eventID),500,2.1,2.2);
+	TH1F *momentum=new TH1F(Form("H2O gold.p run%d",eventID),Form("H2O gold.p run%d",eventID),600,0.92,0.98);
 	chain->Project(momentum->GetName(),Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
@@ -931,46 +935,45 @@ void DynamicCanvas(){
 	double_t ffirstGuasPar[3];
 	TF1 *fgroudGaus=new TF1("groudstatesgaus","gaus",CGroundp-0.0005,CGroundp+0.0005);
 	momentum->Fit("groudstatesgaus","R","ep",fgroudGaus->GetXmin(),fgroudGaus->GetXmax());
-	fgroudGaus->Draw("same");
+//	fgroudGaus->Draw("same");
 	fgroudGaus->GetParameters(fgroudGausPar);
 
 	TH1F *test=(TH1F *)momentum->Clone("fitTest");
-	test->GetXaxis()->SetRangeUser(momentum->GetXaxis()->GetXmin(),fgroudGausPar[1]-5*fgroudGausPar[2]);
+	test->GetXaxis()->SetRangeUser(momentum->GetXaxis()->GetXmin(),fgroudGausPar[1]-10*fgroudGausPar[2]);
 
 	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
 //	auto C1stp=2.1565;//CGroundp-0.016504;
 
-	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0015,C1stp+0.00155);
+	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0005,C1stp+0.001);
 	momentum->Fit("firststatesgaus","R","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
-	ffirstGuas->Draw("same");
+//	ffirstGuas->Draw("same");
 	ffirstGuas->GetParameters(ffirstGuasPar);
 
 
 	// change the gause fit to cristal ball
 	double_t fgroundCrystalballPar[5];
-	TF1 *fgroundCrystalball=new TF1("fgroundCrystal","crystalball",fgroudGausPar[1]-0.0030,fgroudGaus->GetXmax()+0.0003);
+	TF1 *fgroundCrystalball=new TF1("fgroundCrystal","crystalball",fgroudGausPar[1]-0.002,fgroudGaus->GetXmax()+0.0003);
 	fgroundCrystalball->SetParameters(fgroudGausPar[0],fgroudGausPar[1],fgroudGausPar[2],1.64,1.1615);
 	momentum->Fit("fgroundCrystal","R","same",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
 	fgroundCrystalball->GetParameters(fgroundCrystalballPar);
 
-	//fgroundCrystalball->Draw("same");
+	double_t ffirstCrystallPar[5];
+	TF1 *ffirstCrystall=new TF1 ("firststatesgaus","gaus",C1stp-0.001,C1stp+0.0008);
+	ffirstCrystall->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
+	momentum->Fit("firststatesgaus","R","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
+//	ffirstCrystall->Draw("same");
 
-	double_t ffirstCrystalPar[5];
-	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
-	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
-	momentum->Fit("ffirstCrystal","R","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
-	ffirstCrystal->GetParameters(ffirstCrystalPar);
-	//	ffirstCrystal->Draw("same");
-	// fit together
-	double_t fCrystalMomentumPar[10];
-	TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
+
+
+
+	double_t fCrystalMomentumPar[8];
+	TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+gaus(5)",ffirstGuas->GetXmin(),fgroundCrystalball->GetXmax());
 	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
-	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
+	std::copy(ffirstGuasPar,ffirstGuasPar+3,fCrystalMomentumPar+5);
 	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
 	momentum->Fit("fCrystalMomentum","","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
 	fCrystalMomentum->Draw("same");
 	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
-
 
 
 	SieveRecCanvas->Update();
