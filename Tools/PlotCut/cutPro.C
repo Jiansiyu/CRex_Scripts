@@ -468,11 +468,11 @@ inline  int16_t getUID(UInt_t KineID,UInt_t Col, UInt_t Row){
 // take the cut file and  the root file as input, and generate the average value the parameters on the focal plane
 Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		TString cutFile =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/GroundMomCut",
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Final_Cut/LHRS_Cut20200322/LHRS/WithOutMomCut",
 		TString folder =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200526/RHRS/rootfiles") {
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Final_Cut/LHRS_Cut20200322/LHRS_RootFile") {
 
-	TFile *rootFileIO=new TFile(Form("./OpticsFocalDiagnose_run%d.root",runID),"recreate");
+	TFile *rootFileIO=new TFile(Form("./FinalData/OpticsFocalDiagnose_run%d.root",runID),"recreate");
 	TChain *chain=new TChain("T");
 	// if the folder itself is and root file
 	TString HRS="R";
@@ -554,7 +554,11 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 	// searching for the cut file
 	//if the cut file is the path pointing to the cut file, it will automaticly searching for the cut file according to name rule
 	if(!cutFile.EndsWith(".root")){
-		cutFile=Form("%s/prexRHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
+		if(HRS == 'R'){
+			cutFile=Form("%s/prexRHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
+		}else{
+			cutFile=Form("%s/prexLHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
+		}
 	}
 
 	TFile *cutFileIO=new TFile(cutFile.Data(),"READ");
@@ -575,7 +579,6 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				sieveCut[col][row]->SetLineColor(kRed);
 				sieveCut[col][row]->Draw("same");
 				sieveAllHoleCut=sieveAllHoleCut||TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
-
 				//get the data for this canvas
 				TH2F *selectedSievehh=(TH2F *)  gROOT->FindObject("Sieve_Selected_th_ph");
 				if (selectedSievehh) {

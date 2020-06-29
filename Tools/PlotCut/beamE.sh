@@ -46,6 +46,9 @@ myget -b "2019-06-26 22:54:59" -e "2019-06-26 23:06:06" -c HALLA:p > RHRS_20824_
 myget -b "2019-06-26 23:12:33" -e "2019-06-26 23:23:26" -c HALLA:p > RHRS_20825_BeamE.txt
 myget -b "2019-06-27 00:47:23" -e "2019-06-27 00:53:16" -c HALLA:p > RHRS_20826_BeamE.txt
 
+myget -b "2019-09-01 03:40:10" -e "2019-01-01 03:50:07" -c HALLA:p > RHRS_21371_BeamE.txt
+myget -b "2019-09-01 06:07:43" -e "2019-01-01 06:21:57" -c HALLA:p > RHRS_21380_BeamE.txt
+myget -b "2019-09-01 07:16:24" -e "2019-01-01 07:21:13" -c HALLA:p > RHRS_21381_BeamE.txt
 
 
 
