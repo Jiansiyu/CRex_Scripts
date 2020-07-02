@@ -494,4 +494,5 @@ void septumCheck(){
 	}
 
 	canv->Update();
+	canv->SaveAs(Form("./%s.root",canv->GetName()));
 }
