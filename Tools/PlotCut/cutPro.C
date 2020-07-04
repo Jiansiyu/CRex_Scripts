@@ -65,7 +65,7 @@ TString generalcut;
 
 //CRex C-12
 TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && L.gold.p > 2.13 && L.gold.p < 2.18";
+TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && L.gold.dp<1 && L.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
 
 // CRex Water
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
@@ -74,10 +74,6 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
-
-//TString WorkDir = "Result/Test/";
-//TString WorkDir = "/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result/RHRS_Feb292020/";
-//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/RHRS_20200311/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200311/RHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200322/LHRS/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200413/RHRS/";
@@ -475,9 +471,9 @@ inline  int16_t getUID(UInt_t KineID,UInt_t Col, UInt_t Row){
 // take the cut file and  the root file as input, and generate the average value the parameters on the focal plane
 Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		TString cutFile =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Final_Cut/LHRS_Cut20200322/LHRS/WithOutMomCut",
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200701/water/WithOutMomCut",
 		TString folder =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Final_Cut/LHRS_Cut20200322/LHRS_RootFile") {
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200701/rootfiles") {
 
 	TFile *rootFileIO=new TFile(Form("./FinalData/OpticsFocalDiagnose_run%d.root",runID),"recreate");
 	TChain *chain=new TChain("T");
@@ -541,6 +537,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 	}else{
 		mainPatternCanvas->Clear();
 	}
+
 	mainPatternCanvas->Divide(1,3);
 	mainPatternCanvas->cd(1)->Divide(3,1);
 	mainPatternCanvas->cd(2)->Divide(4,1);
@@ -566,7 +563,10 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		}else{
 			cutFile=Form("%s/prexLHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
 		}
+	}else{
+		cutFile=Form("%s",cutFile.Data());
 	}
+
 
 	TFile *cutFileIO=new TFile(cutFile.Data(),"READ");
 	if(cutFileIO->IsZombie()){
@@ -748,15 +748,12 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				bpmXinforh[col][row]->Draw();
 				bpmX=bpmXinforh[col][row]->GetFunction("gaus")->GetParameter(1);
 
-
 				mainPatternCanvas->cd(3)->cd(2);
 				chain->Project(bpmYinforh[col][row]->GetName(),Form("targy"),sieveHoleCut);
 			    bpmYinforh[col][row]->GetXaxis()->SetRangeUser(bpmYinforh[col][row]->GetBinCenter(bpmYinforh[col][row]->GetMaximumBin())-1,bpmYinforh[col][row]->GetBinCenter(bpmYinforh[col][row]->GetMaximumBin())+1);
 			    bpmYinforh[col][row]->Fit("gaus","","",bpmYinforh[col][row]->GetBinCenter(bpmYinforh[col][row]->GetMaximumBin())-1,bpmYinforh[col][row]->GetBinCenter(bpmYinforh[col][row]->GetMaximumBin())+1);
 			    bpmYinforh[col][row]->Draw();
 				bpmY=bpmYinforh[col][row]->GetFunction("gaus")->GetParameter(1);
-
-
 
 				// draw the theta and phi on the canvas
 				mainPatternCanvas->cd(3)->cd(3);
@@ -772,8 +769,8 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 			}
 		}
 	}
-f51OutPut.close();
-mainPatternCanvas->Close();
+	f51OutPut.close();
+	mainPatternCanvas->Close();
 	return 1;
 }
 

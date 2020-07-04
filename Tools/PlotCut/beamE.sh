@@ -51,7 +51,13 @@ myget -b "2019-09-01 06:07:43" -e "2019-01-01 06:21:57" -c HALLA:p > RHRS_21380_
 myget -b "2019-09-01 07:16:24" -e "2019-01-01 07:21:13" -c HALLA:p > RHRS_21381_BeamE.txt
 
 
+# get the LHRS informations
+myget -b "2019-12-08 21:21:37" -e "2019-12-08 21:30:30" -c HALLA:p > LHRS_2566_BeamE.txt
+myget -b "2019-12-08 20:46:13" -e "2019-12-08 20:50:13" -c HALLA:p > LHRS_2565_BeamE.txt
+myget -b "2019-12-08 19:00:54" -e "2019-12-08 19:04:25" -c HALLA:p > LHRS_2556_BeamE.txt
+myget -b "2019-12-08 16:36:57" -e "2019-12-08 16:40:49" -c HALLA:p > LHRS_2550_BeamE.txt
 
-
-
-
+# get the Water target information
+myget -b "2019-12-16 04:10:28" -e "2019-12-16 04:14:12" -c HALLA:p > LHRS_2674_BeamE.txt
+myget -b "2019-12-16 13:59:50" -e "2019-12-16 14:05:08" -c HALLA:p > LHRS_2697_BeamE.txt
+myget -b "2019-12-16 22:00:04" -e "2019-12-16 22:02:02" -c HALLA:p > LHRS_2726_BeamE.txt
