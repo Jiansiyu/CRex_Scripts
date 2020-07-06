@@ -33,21 +33,32 @@ import pandas as pd
 #     21790:'H20 -1%_1'
 #     }
 
+
 runList={
-    20804:'H2O -1%',
-    20805:'H2O +1%',
-#    20808:'H2O 0%',
-    20825:'C12 1%',
-    20826:'C12 -1%',
-    20827:'C12 0%'
+    2566:'C_12 -2%',
+    2565:'C_12 -1%',
+    2556:'C_12 +1%',
+    2550:'C_12  0%',
+    2674:'H2O_0%',
+    2697:'H2O_1%',
+    2726:'H2O_-1%'
     }
+
+# runList={
+#     20804:'H2O -1%',
+#     20805:'H2O +1%',
+# #    20808:'H2O 0%',
+#     20825:'C12 1%',
+#     20826:'C12 -1%',
+#     20827:'C12 0%'
+#     }
 
 class beamInfor(object):
     def __init__(self):
         self.DataDict={}
         pass
 
-    def ReadRawFile(self,Path='',nameTemplate="RHRS_{}_BeamE.txt"):
+    def ReadRawFile(self,Path='',nameTemplate="LHRS_{}_BeamE.txt"):
         for runID in runList:
             fullPath=os.path.join(Path,nameTemplate.format(runID))
             if os.path.isfile(fullPath):

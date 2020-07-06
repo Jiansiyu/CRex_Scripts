@@ -753,6 +753,20 @@ double_t getBeamE(int runID){
 	beamE[21789]=2.1762745;
 	beamE[21790]=2.1762517;
 
+	beamE[2566]=2.175918588;
+	beamE[2565]=2.175984498;
+	beamE[2550]=2.17560073;
+	beamE[2556]=2.1762867;
+
+	beamE[2674]=2.1763062;
+
+	beamE[2697]=2.1763254;
+
+	beamE[2726]=2.1762729;
+
+
+
+
 	if(beamE.find(runID)!=beamE.end()){
 		return beamE[runID];
 	}else{
@@ -997,7 +1011,31 @@ void DynamicCanvas(){
 		//calculate the Dp with +/x 10^-4 change
 		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
 		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
-		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID))));
+		// get the error
+		double DeltaEMax=deltaE+deltaErr;
+		double DeltaE200=deltaE+200.0/1000000.0;
+		double DeltaEMin=deltaE-deltaErr;
+		double AngleMax=GetPointingAngle(DeltaEMax,getBeamE(eventID));
+		double AngleMin=GetPointingAngle(DeltaEMin,getBeamE(eventID));
+		double Angletemp=GetPointingAngle(deltaE,getBeamE(eventID));
+		double errorAngle=0;
+		if(abs(AngleMax-Angletemp) >abs(Angletemp-AngleMin) ){
+			errorAngle=abs(AngleMax-Angletemp);
+		}else{
+			errorAngle=abs(AngleMin-Angletemp);
+		}
+
+		double errorAngle1=abs(GetPointingAngle(DeltaE200,getBeamE(eventID)))-Angletemp;
+
+		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID)),errorAngle,errorAngle1));
+		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
+		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
+		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");
+
+		//calculate the Dp with +/x 10^-4 change
+		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
+		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
+//		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID))));
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
 		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
 		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");

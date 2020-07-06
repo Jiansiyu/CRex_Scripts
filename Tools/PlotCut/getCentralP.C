@@ -43,7 +43,6 @@
 #include <TApplication.h>
 #include <TArrow.h>
 
-
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 // cut options
@@ -108,21 +107,28 @@ TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Resear
 		return chain;
 }
 
+// central momentum information
 void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/"){
 	TString HRS="R";
 	if(runID<20000){
 		HRS="L";
 	}
 
+
+
 	std::cout<<"Working on HRS :"<<HRS.Data() <<"("<<runID<<")"<<std::endl;
 	// load the data
 	auto chain= LoadrootFile(runID,folder);
 
 	TCanvas *centralMomCanv=new TCanvas("Central Momentum Diagnose","Central Momentum Diagnose",1960,1080);
-	centralMomCanv->cd();
+	centralMomCanv->Divide(2,1);
+
 	centralMomCanv->Draw();
+	centralMomCanv->cd(1);
+
 	//for the HRS
 	TH1F *HRSCentralPDetHH;
+
 	if(HRS == "L"){
 		std::cout<<"LHRS using the Hall Probe value "<<std::endl;
 		HRSCentralPDetHH = new TH1F(Form("HallLProb_%d",runID),Form("HallLProb_%d",runID), 1000, -0.81, 0.82);
@@ -133,6 +139,14 @@ void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/C
 
 		if (HRSCentralPDetHH->GetEntries() != 0) {
 			double CentralP = std::abs((HRSCentralPDetHH->GetMean()) * 0.95282 / 0.33930);
+
+			HRSCentralPDetHH->GetXaxis()->SetRangeUser(HRSCentralPDetHH->GetMean()-0.005,HRSCentralPDetHH->GetMean()+0.005);
+			TPaveText  *text=new TPaveText(0.1,0.6,0.4,0.9,"NDC");
+
+			text->AddText(Form("LHRS     Probe: %f",HRSCentralPDetHH->GetMean()));
+			text->AddText(Form("LHRS Central P: %f",CentralP));
+			text->AddText(Form("LHRS Equation: Probe*0.95282/0.33930"));
+			text->Draw("same");
 			std::cout << "CentralMomentum is ::" << (CentralP) << std::endl;
 
 		}else{
@@ -160,17 +174,59 @@ void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/C
 			text->AddText(Form("RHRS  Equation: %s","2.702 * (Mag) - 1.6e-03 * (Mag)^{3} "));
 //			text->SetTextColor(kRed);
 			text->Draw("same");
-
 		} else {
 			std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
 					<< std::endl;
 		}
 	}
 
+	// get the bpm informations
+	double beamposX;
+	double beamposY;
+
+	centralMomCanv->cd(2)->Divide(1,2);
+	{
+		centralMomCanv->cd(2)->cd(1);
+		TH1F *targx=new TH1F(Form("targx_%d",runID),Form("targx_%d",runID),500,-3,3);
+		chain->Project(targx->GetName(),Form("targx"),generalcut.Data());
+		targx->Draw();
+		targx->Fit("gaus");
+		beamposX=targx->GetFunction("gaus")->GetParameter(1);
+		TLatex *txtPosx=new TLatex(targx->GetFunction("gaus")->GetParameter(1),targx->GetFunction("gaus")->GetParameter(0),Form("X:%f",beamposX));
+		txtPosx->Draw("same");
+
+		centralMomCanv->cd(2)->cd(2);
+		TH1F *targy=new TH1F(Form("targy_%d",runID),Form("targy_%d",runID),500,-3,3);
+		chain->Project(targy->GetName(),Form("targy"),generalcut.Data());
+		targy->Draw();
+		targy->Fit("gaus");
+		beamposY=targy->GetFunction("gaus")->GetParameter(1);
+
+		TLatex *txtPosy=new TLatex(targy->GetFunction("gaus")->GetParameter(1),targy->GetFunction("gaus")->GetParameter(0),Form("X:%f",beamposY));
+		txtPosy->Draw("same");
+
+	}
+
+
+
 	centralMomCanv->Update();
 	centralMomCanv->SaveAs(Form("DiagnosePlot/CentralP_%d.png",runID));
-	// get the start and the end time stamp for the run
 
+
+	// write the beam position infomation to file
+	std::ofstream outfile;
+	outfile.open("file.dat", std::ios::app);
+
+	std::string outPut(Form("if(inputFilename.find(\"%d\")!=std::string::npos){\n d[5]=%f;\n d[6]=%f;}\n\n",runID, beamposX,beamposY));
+
+	outfile << outPut.c_str()<<std::endl;
+
+
+	// get the start and the end time stamp for the run
 }
 
 
+void getBeamPos(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/"){
+
+
+}

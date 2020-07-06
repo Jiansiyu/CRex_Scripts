@@ -18,6 +18,7 @@
 #include <map>
 #include <iostream>
 
+
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
 	  return (stat (name.c_str(), &buffer) == 0);
@@ -63,33 +64,7 @@ int getRunInfor(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CR
 			std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
 		}
 	}
-
-	chain->GetTree();
-	//THaEvent        *Event_Branch;
-	ULong64_t fEvtHdr_fEvtTime;
-	UInt_t fEvtHdr_fEvtNum;
-	Int_t fEvtHdr_fEvtType;
-	Int_t fEvtHdr_fEvtLen;
-	Int_t fEvtHdr_fHelicity;
-	Int_t fEvtHdr_fTargetPol;
-	Int_t fEvtHdr_fRun;
-
-	// project the branched
-	chain->SetBranchAddress("fEvtHdr.fEvtTime", &fEvtHdr_fEvtTime);
-	chain->SetBranchAddress("fEvtHdr.fEvtNum", &fEvtHdr_fEvtNum);
-	chain->SetBranchAddress("fEvtHdr.fEvtType", &fEvtHdr_fEvtType);
-	chain->SetBranchAddress("fEvtHdr.fEvtLen", &fEvtHdr_fEvtLen);
-	chain->SetBranchAddress("fEvtHdr.fHelicity", &fEvtHdr_fHelicity);
-	chain->SetBranchAddress("fEvtHdr.fTargetPol", &fEvtHdr_fTargetPol);
-	chain->SetBranchAddress("fEvtHdr.fRun", &fEvtHdr_fRun);
-	chain->SetMakeClass(1);
-
-	// get the minimum and the maximum timestamp
-	Long64_t nentries = chain->GetEntries();
-	for (Long64_t jentry = 0; jentry < nentries; jentry++) {
-		chain->GetEntry(jentry);
-		std::cout << "time stamp::" << fEvtHdr_fEvtTime << std::endl;
-	}
+	// get the beam and HRS central momentum information
 
 
 
