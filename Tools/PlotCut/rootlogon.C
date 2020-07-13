@@ -13,5 +13,6 @@
 //	gROOT->LoadMacro("getCentralP.C");
 //	gROOT->LoadMacro("plotTemp.C");
 //	gROOT->LoadMacro("bpmCheck.C");
-	gROOT->LoadMacro("septumCheck.C");
+//	gROOT->LoadMacro("septumCheck.C");
+	gROOT->LoadMacro("TargetCheck.C");
 }
