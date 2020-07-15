@@ -5,16 +5,6 @@
  *      Author: newdriver
  */
 
-
-
-
-/*
- * cutPro.C
- *
- *  Created on: Dec 12, 2019
- *      Author: newdriver
- */
-
 #include <TROOT.h>
 #include <TStyle.h>
 #include <TCanvas.h>

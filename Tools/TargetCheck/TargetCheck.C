@@ -132,7 +132,7 @@ struct MeshStruc{
 /// \param chain
 /// \param DrawMesh
 /// \return
-std::map<int,std::map<int,int>> MeshRasterCurrent(TChain *chain,bool DrawMesh= true){
+std::map<int,std::map<int,int>> MeshRasterCurrent(TChain *chain,bool DrawMesh= true,TString resultFolder="./carbonCheck"){
 
     const double MeshXMin=25000;
     const double MeshXMax=70000;
@@ -276,7 +276,7 @@ std::map<int,std::map<int,int>> MeshRasterCurrent(TChain *chain,bool DrawMesh= t
     loQadcref->SetLineColor(42);
     loQadcref->Draw("same");
     canv->Update();
-    canv->SaveAs(Form("carbonCheck/target_check_run%d.png",runID));
+    canv->SaveAs(Form("%s/target_check_run%d.png",resultFolder.Data(),runID));
 
     return MeshCellEntryList;
 }
@@ -329,16 +329,16 @@ double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int
     return  ratio;
 }
 
-void TargetThicknessCal(TString folder="/home/newdriver/pyQuant/prex_replayed/rootfile"){
-
-
+///
+/// \param runFile
+/// \param folder
+void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQuant/prex_replayed/rootfile"){
     std::map<int,int> runList;
-
-    if(folder.EndsWith(".txt")){
+    if(!runFile.IsNull()){
         // if the input the run list file
         std::string  line;
         std::ifstream fin;
-        fin.open(folder.Data());
+        fin.open(runFile.Data());
         if (fin.is_open()){
             while (getline(fin,line)){
                 line=line.substr(0,line.find("#",0));// remove the commend line
@@ -355,7 +355,7 @@ void TargetThicknessCal(TString folder="/home/newdriver/pyQuant/prex_replayed/ro
                 }
             }
         }else{
-            std::cout << "\033[1;31m [ERROR]\033[0m"<<"  Can NOT load file:: "<<folder.Data();
+            std::cout << "\033[1;31m [ERROR]\033[0m"<<"  Can NOT load file:: "<<runFile.Data();
         }
         fin.close();
         if(runList.find(0)==runList.end()){
@@ -371,15 +371,11 @@ void TargetThicknessCal(TString folder="/home/newdriver/pyQuant/prex_replayed/ro
         runList[4]=2299;
         runList[5]=2300;
     }
+
     std::cout<<"Run Lis"<<std::endl;
     for (auto i = runList.begin(); i!=runList.end();i++){
         std::cout<<'\t'<<i->first<<"   "<<i->second<<std::endl;
-
-
     }
-
-    exit(0);
-
 
     std::map<int,double> reletiveThickness;
     reletiveThickness[0]=1.000;
@@ -453,74 +449,10 @@ void TargetThicknessCal(TString folder="/home/newdriver/pyQuant/prex_replayed/ro
 
 
 ///
-/// \param runID
-/// \param folder
-void TargetCheck(UInt_t runID, TString folder="/home/newdriver/pyQuant/prex_replayed/rootfile"){
-
+/// \param runID, the run number that want to check file. It will look for the root file that matches the runID
+/// \param folde, root file location
+/// \param resultFolder: folders that used for save the generated plot
+void TargetCheck(UInt_t runID, TString folder="/home/newdriver/pyQuant/prex_replayed/rootfile",TString resultFolder="./carbonCheck"){
     auto chain=LoadrootFile(runID,folder);
-
-    MeshRasterCurrent(chain, false);
-
-
-
-    /*TString HRS="L";
-    if(runID>20000){ //RHRS
-        HRS="R";
-    }
-    auto chain=LoadrootFile(runID,folder);
-
-    std::cout<<(int)chain->GetMaximum("fEvtHdr.fRun")<<std::endl;
-    //Quartz cut
-    double loadc_cutL = 600;
-    double loadc_cutR = 565;
-
-    double upadc_cutL = 485;
-    double upadc_cutR = 505;
-
-    double loadc_cut=loadc_cutL;
-    double upadc_cut=upadc_cutL;
-
-    if(HRS=="R"){
-        loadc_cut=loadc_cutR;
-        upadc_cut=upadc_cutR;
-    }
-
-    TH2F *currenthh=new TH2F("frawcurx2 vs. frawcury2","frawcurx2 vs. frawcury2",100,0,100000,100,-10000,120000);
-    TH2F *currentCuthh=new TH2F("frawcurx2 vs. frawcury2 cut","frawcurx2 vs. frawcury2 cut",100,0,100000,100,-10000,120000);
-    TH1F *upQadc=new TH1F("upQadc","upQadc",1000,400,900);
-    TH1F *loQadc=new TH1F("loQadc","loQadc",1000,400,900);
-
-    TString QadcCut(Form("P.upQadc%s> %f && P.loQadc%s> %f",HRS.Data(), upadc_cut,HRS.Data(),loadc_cut));
-
-    // check whether need to add the general cut
-
-    chain->Project(currenthh->GetName(),"frawcurx2:frawcury2");
-    chain->Project(currentCuthh->GetName(),"frawcurx2:frawcury2",QadcCut.Data());
-    chain->Project(upQadc->GetName(),Form("P.upQadc%s",HRS.Data()));
-    chain->Project(loQadc->GetName(),Form("P.loQadc%s",HRS.Data()));
-
-    TCanvas *canv=new TCanvas("Canv","Canv",1960,1080);
-    canv->Divide(2,2);
-    canv->cd(1);
-    currenthh->Draw("zcol");
-
-    canv->cd(2);
-    currentCuthh->Draw("zcol");
-
-
-    canv->cd(3);
-    upQadc->Draw();
-    TLine *upQadcref=new TLine(upadc_cut,0,upadc_cut,upQadc->GetMaximum());
-    upQadcref->SetLineWidth(2);
-    upQadcref->SetLineColor(42);
-    upQadcref->Draw("same");
-
-    canv->cd(4);
-    loQadc->Draw();
-    TLine *loQadcref=new TLine(loadc_cut,0,loadc_cut,loQadc->GetMaximum());
-    loQadcref->SetLineWidth(2);
-    loQadcref->SetLineColor(42);
-    loQadcref->Draw("same");
-    canv->Update();
-    canv->SaveAs(Form("carbonCheck/target_check_run%d.png",runID));*/
+    MeshRasterCurrent(chain, false,resultFolder.Data());
 }
