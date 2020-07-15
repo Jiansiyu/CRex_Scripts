@@ -40,3 +40,15 @@ modify the cutPro code, to handle both PRex and CRex data
 Other change 
 * plot the origional cut if exist
 * after the user click the central, select a more accurate center before pass to the cunter selection 
+
+
+
+
+
+
+
+
+# Other reference 
+
+### Target Thickness Check 
+* Logbook[https://prex.jlab.org/wiki/index.php/Target_density_variation_check]
