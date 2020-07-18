@@ -10,27 +10,15 @@
 #include <TString.h>
 #include <TChain.h>
 #include <TCut.h>
-#include <TCutG.h>
-#include <TPad.h>
-#include <TMath.h>
-#include <TH1F.h>
 #include <TH2F.h>
 #include <TH1.h>
 #include <TF1.h>
-#include <TMath.h>
-#include <TF1NormSum.h>
 #include <TPaveText.h>
 #include <map>
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
-#include <sstream>
-#include <TComplex.h>
-#include <TVirtualPad.h>
 
-#include <TSpectrum2.h>
-#include <TF2.h>
 #include <TObject.h>
 #include "TMinuit.h"
 #include <TFile.h>
@@ -38,13 +26,11 @@
 #include <TSystem.h>
 #include <TApplication.h>
 #include <TLatex.h>
-#include "iostream"
-#include "TSystem.h"
 #include "TGraphErrors.h"
 #include "iostream"
 #include "fstream"
 #include "sstream"
-
+#include "TColor.h"
 
 TString prepcut;
 TString generalcut;
@@ -127,6 +113,9 @@ struct MeshStruc{
 
     int Entries=0;
 };
+
+
+
 
 ///
 /// \param chain
@@ -214,6 +203,9 @@ std::map<int,std::map<int,int>> MeshRasterCurrent(TChain *chain,bool DrawMesh= t
     canv->Divide(2,2);
     canv->cd(1);
     currenthh->Draw("zcol");
+//    currenthh->GetXaxis()->SetRangeUser(22000,70000);
+//    currenthh->GetYaxis()->SetRangeUser(2000,95000);
+
 
     canv->cd(2);
     currentCuthh->Draw("zcol");
@@ -282,21 +274,234 @@ std::map<int,std::map<int,int>> MeshRasterCurrent(TChain *chain,bool DrawMesh= t
 }
 
 
-/// \param referenceMesh
-/// \param targetMesh
+///
+/// \param chain
+/// \param DrawMesh
 /// \return
-std::map<int,std::map<int,int>> NormalizeCell(std::map<int,std::map<int,int>> referenceMesh,std::map<int,std::map<int,int>> targetMesh){
+std::map<int,std::map<int,int>> RasterCurrent(TChain *chain,bool DrawMesh= true,TString resultFolder="./carbonCheck"){
 
-    std::map<int,std::map<int,int>> a ;
-    return  a;
+    const double MeshXMin=25000;
+    const double MeshXMax=70000;
+    const double MeshXNBin=10;
 
+    const double MeshYMin=13000;
+    const double MeshYMax=80000;
+    const double MeshYNBin=10;
+
+    //Quartz cut
+    const double loadc_cutL = 600;
+    const double loadc_cutR = 565;
+
+    const double upadc_cutL = 485;
+    const double upadc_cutR = 505;
+
+
+    std::map<int,std::map<int,int>> MeshCellEntryList;
+
+    double loadc_cut=loadc_cutL;
+    double upadc_cut=upadc_cutL;
+
+    int runID = (int)chain->GetMaximum("fEvtHdr.fRun");
+    TString HRS="L";
+    if(runID>20000){ //RHRS
+        HRS="R";
+    }
+    if(HRS=="R"){
+        loadc_cut=loadc_cutR;
+        upadc_cut=upadc_cutR;
+    }
+
+    int RangeYmin=(int)chain->GetMinimum(Form("%srb.Raster2.rawcur.y",HRS.Data()));
+    int RangeYmax=(int)chain->GetMaximum(Form("%srb.Raster2.rawcur.y",HRS.Data()));
+    int RangeXmin=(int)chain->GetMinimum(Form("%srb.Raster2.rawcur.x",HRS.Data()));
+    int RangeXmax=(int)chain->GetMaximum(Form("%srb.Raster2.rawcur.x",HRS.Data()));
+
+    std::cout<<"X dimension:: "<<RangeXmin<<"   "<<RangeXmax<<std::endl;
+    std::cout<<"Y dimension:: "<<RangeYmin<<"   "<<RangeYmax<<std::endl;
+
+    // generate the range for the histogram
+    int PlotRangeXmin=RangeXmin-(RangeXmax-RangeXmin)/10;
+    int PlotRangeXmax=RangeXmax+(RangeXmax-RangeXmin)/10;
+    int  PlotRangeYmin=RangeYmin-(RangeYmax-RangeYmin)/10;
+    int  PlotRangeYmax=RangeYmax+(RangeYmax-RangeYmin)/10;
+
+
+    int EdgeCutXmin=RangeXmin+(RangeXmax-RangeXmin)/20;
+    int EdgeCutXmax=RangeXmax-(RangeXmax-RangeXmin)/20;
+    int EdgeCutYmin=RangeYmin+(RangeYmax-RangeYmin)/20;
+    int EdgeCutYmax=RangeYmax-(RangeYmax-RangeYmin)/20;
+
+
+
+    // Initial plot without cut
+    TH2F *currenthh=(TH2F *)gROOT->FindObject("frawcurx2 vs. frawcury2");
+    if(currenthh) currenthh->Delete();
+    currenthh=new TH2F("frawcurx2 vs. frawcury2","frawcurx2 vs. frawcury2",100,PlotRangeXmin,PlotRangeXmax,100,PlotRangeYmin,PlotRangeYmax);
+    currenthh->GetXaxis()->SetTitle(Form("%srb.Raster2.rawcur.x",HRS.Data()));
+    currenthh->GetYaxis()->SetTitle(Form("%srb.Raster2.rawcur.y",HRS.Data()));
+
+    //Cut with only the adge cut
+    TH2F *currentEdgeCuthh=(TH2F *)gROOT->FindObject(Form("rawCurX2 vs. rawCury2 edge Cut %d",runID));
+    if(currentEdgeCuthh) currentEdgeCuthh->Delete();
+    currentEdgeCuthh=new TH2F(Form("rawCurX2 vs. rawCury2 edge Cut %d",runID),Form("rawCurX2 vs. rawCury2 edge Cut %d",runID),100,PlotRangeXmin,PlotRangeXmax,100,PlotRangeYmin,PlotRangeYmax);
+    currentEdgeCuthh->GetXaxis()->SetTitle(Form("%srb.Raster2.rawcur.x",HRS.Data()));
+    currentEdgeCuthh->GetYaxis()->SetTitle(Form("%srb.Raster2.rawcur.y",HRS.Data()));
+    currentEdgeCuthh->GetXaxis()->SetRangeUser(EdgeCutXmin,EdgeCutXmax);
+    currentEdgeCuthh->GetYaxis()->SetRangeUser(EdgeCutYmin,EdgeCutYmax);
+
+    TH2F *currentEdgePedhh=(TH2F *)gROOT->FindObject(Form("rawCurX2 vs. rawCury2 edge Ped %d",runID));
+    if(currentEdgePedhh) currentEdgePedhh->Delete();
+    currentEdgePedhh=new TH2F(Form("rawCurX2 vs. rawCury2 edge Ped %d",runID),Form("rawCurX2 vs. rawCury2 edge Ped %d",runID),100,PlotRangeXmin,PlotRangeXmax,100,PlotRangeYmin,PlotRangeYmax);
+    currentEdgePedhh->GetXaxis()->SetTitle(Form("%srb.Raster2.rawcur.x",HRS.Data()));
+    currentEdgePedhh->GetYaxis()->SetTitle(Form("%srb.Raster2.rawcur.y",HRS.Data()));
+    currentEdgePedhh->GetXaxis()->SetRangeUser(EdgeCutXmin,EdgeCutXmax);
+    currentEdgePedhh->GetYaxis()->SetRangeUser(EdgeCutYmin,EdgeCutYmax);
+
+    // Start the Edge cut and the lower the Qadc cut
+    TH2F *currentEdgePedCuthh=(TH2F *)gROOT->FindObject(Form("rawCurX2 vs. rawCury2 edge Ped Cut %d",runID));
+    if(currentEdgePedCuthh) currentEdgePedCuthh->Delete();
+    currentEdgePedCuthh=new TH2F(Form("rawCurX2 vs. rawCury2 edge Ped Cut %d",runID),Form("rawCurX2 vs. rawCury2 edge Ped Cut %d",runID),100,PlotRangeXmin,PlotRangeXmax,100,PlotRangeYmin,PlotRangeYmax);
+    currentEdgePedCuthh->GetXaxis()->SetTitle(Form("%srb.Raster2.rawcur.x",HRS.Data()));
+    currentEdgePedCuthh->GetYaxis()->SetTitle(Form("%srb.Raster2.rawcur.y",HRS.Data()));
+    currentEdgePedCuthh->GetXaxis()->SetRangeUser(EdgeCutXmin,EdgeCutXmax);
+    currentEdgePedCuthh->GetYaxis()->SetRangeUser(EdgeCutYmin,EdgeCutYmax);
+
+
+    TH2F *meshcellhh=(TH2F *) gROOT->FindObject("MeshCell");
+    if(meshcellhh) meshcellhh->Delete();
+    meshcellhh=new TH2F("MeshCell","MeshCell",100,PlotRangeXmin,PlotRangeXmax,100,PlotRangeYmin,PlotRangeYmax);
+    meshcellhh->GetXaxis()->SetTitle(Form("%srb.Raster2.rawcur.x",HRS.Data()));
+    meshcellhh->GetYaxis()->SetTitle(Form("%srb.Raster2.rawcur.y",HRS.Data()));
+    meshcellhh->GetXaxis()->SetRangeUser(EdgeCutXmin,EdgeCutXmax);
+    meshcellhh->GetYaxis()->SetRangeUser(EdgeCutYmin,EdgeCutYmax);
+
+
+    TH1F *upQadc=(TH1F *)gROOT->FindObject("upQadc");
+    if(upQadc) upQadc->Delete();
+    upQadc=new TH1F("upQadc","upQadc",1000,400,900);
+
+    TH1F *loQadc=(TH1F *)gROOT->FindObject("loQadc");
+    if (loQadc)loQadc->Delete();
+    loQadc=new TH1F("loQadc","loQadc",1000,400,900);
+
+    TString edgeCut(Form("%srb.Raster2.rawcur.x > %d && %srb.Raster2.rawcur.x < %d && %srb.Raster2.rawcur.y > %d && %srb.Raster2.rawcur.y < %d",HRS.Data(),EdgeCutXmin,HRS.Data(),EdgeCutXmax,HRS.Data(),EdgeCutYmin,HRS.Data(),EdgeCutYmax));
+    TString QadcPedCut(Form("P.upQadc%s < %f && P.loQadc%s < %f",HRS.Data(), upadc_cut,HRS.Data(),loadc_cut));
+    TString QadcCut(Form("P.upQadc%s> %f && P.loQadc%s> %f",HRS.Data(), upadc_cut,HRS.Data(),loadc_cut));
+
+    chain->Project(currenthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()));
+    chain->Project(currentEdgeCuthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()));
+    chain->Project(currentEdgePedCuthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s",QadcCut.Data()));
+    chain->Project(currentEdgePedhh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s",QadcPedCut.Data()));
+
+    chain->Project(upQadc->GetName(),Form("P.upQadc%s",HRS.Data()));
+    chain->Project(loQadc->GetName(),Form("P.loQadc%s",HRS.Data()));
+
+    TCanvas *canv=(TCanvas *)gROOT->GetListOfCanvases()->FindObject(Form("Canv_runID%d",runID));
+    if(!canv){
+        canv=new TCanvas(Form("Canv_runID%d",runID),Form("Canv_runID%d",runID),1960,1080);
+    }else{
+        canv->Clear();
+    }
+    canv->Divide(4,2);
+    canv->cd(1);
+    currenthh->Draw("zcol");
+    {
+        TLine *line0=new TLine(EdgeCutXmin,EdgeCutYmin,EdgeCutXmax,EdgeCutYmin);
+        line0->SetLineColor(2);
+        line0->Draw("same");
+
+        TLine *line1=new TLine(EdgeCutXmin,EdgeCutYmax,EdgeCutXmax,EdgeCutYmax);
+        line1->SetLineColor(2);
+        line1->Draw("same");
+
+        TLine *line2=new TLine(EdgeCutXmin,EdgeCutYmin,EdgeCutXmin,EdgeCutYmax);
+        line2->SetLineColor(2);
+        line2->Draw("same");
+
+        TLine *line3=new TLine(EdgeCutXmax,EdgeCutYmin,EdgeCutXmax,EdgeCutYmax);
+        line3->SetLineColor(2);
+        line3->Draw("same");
+    }
+
+    canv->cd(2);
+    currentEdgeCuthh->Draw("zcol");
+
+    canv->cd(3);
+    currentEdgePedCuthh->Draw("zcol");
+
+    if(DrawMesh)
+    {
+        for(int xIter=0; xIter<=MeshXNBin; xIter++){
+            double bin=(MeshXMax-MeshXMin)/MeshXNBin;
+            TLine *line=new TLine(MeshXMin+xIter*bin,MeshYMin,MeshXMin+xIter*bin,MeshYMax);
+            line->SetLineColor(kRed);
+            line->Draw("same");
+        }
+        // draw the mess on the Y dimension
+        for (int yIter=0; yIter<=MeshXNBin;yIter++){
+            double bin=(MeshYMax-MeshYMin)/MeshYNBin;
+            TLine *line=new TLine(MeshXMin,MeshYMin+yIter*bin,MeshXMax,MeshYMin+yIter*bin);
+            line->SetLineColor(kRed);
+            line->Draw("same");
+        }
+        // get the entries with cut
+        for(int xIter=0; xIter<MeshXNBin; xIter++){
+            for (int yIter=0; yIter<MeshXNBin;yIter++) {
+                double xbin=(MeshXMax-MeshXMin)/MeshXNBin;
+                double ybin=(MeshYMax-MeshYMin)/MeshYNBin;
+
+                double boundaryXmin=MeshXMin+xIter*xbin;
+                double boundaryXmax=MeshXMin+xIter*xbin+xbin;
+
+                double boundaryYmin=MeshYMin+yIter*ybin;
+                double boundaryYmax=MeshYMin+yIter*ybin+ybin;
+
+                TString MeshCellCut(Form("%srb.Raster2.rawcur.y > %f && %srb.Raster2.rawcur.y < %f && %srb.Raster2.rawcur.x >%f && %srb.Raster2.rawcur.x < %f",HRS.Data(),boundaryYmin,HRS.Data(),boundaryYmax,HRS.Data(),boundaryXmin,HRS.Data(),boundaryXmax));
+                MeshCellEntryList[xIter][yIter]=chain->GetEntries(Form("%s && %s",QadcCut.Data(),MeshCellCut.Data()));
+
+                chain->Project(meshcellhh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s && %s",QadcCut.Data(),MeshCellCut.Data()));
+                meshcellhh->Draw("same");
+
+                // draw the number of Entries on the Canvas
+                if (true){
+                    TLatex *text=new TLatex(boundaryXmin+0.2*xbin, boundaryYmin+0.2*ybin,Form("%d",MeshCellEntryList[xIter][yIter]));
+                    text->SetTextSize(0.03);
+                    text->SetTextColor(96);
+                    text->Draw("same");
+                }
+                canv->Update();
+
+            }
+        }
+    }
+
+    canv->cd(4);
+    currentEdgePedhh->Draw("zcol");
+
+
+    canv->cd(5);
+    upQadc->Draw();
+    TLine *upQadcref=new TLine(upadc_cut,0,upadc_cut,upQadc->GetMaximum());
+    upQadcref->SetLineWidth(2);
+    upQadcref->SetLineColor(42);
+    upQadcref->Draw("same");
+
+    canv->cd(6);
+    loQadc->Draw();
+    TLine *loQadcref=new TLine(loadc_cut,0,loadc_cut,loQadc->GetMaximum());
+    loQadcref->SetLineWidth(2);
+    loQadcref->SetLineColor(42);
+    loQadcref->Draw("same");
+
+    return MeshCellEntryList;
 }
+
 
 
 /// \param referenceMesh, the Initial Mesh(The target is not damanged)
 /// \param targetMesh ,
 /// \return    thickness ratio
-double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int,std::map<int,int>> targetMesh){
+double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int,std::map<int,int>> targetMesh,std::map<int,std::map<int,int>> & meshedRatio){
 
     int ref_EdgeSum=0;
     int tag_EdgeSum=0;
@@ -323,11 +528,13 @@ double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int
 
     //calculate the ratio
     double NomalizeFact=(double )ref_EdgeSum/tag_EdgeSum;
-
     double ratio=(double)ref_CenterSum/(tag_CenterSum*NomalizeFact);
     std::cout<<ratio<<std::endl;
     return  ratio;
 }
+
+
+
 
 ///
 /// \param runFile
@@ -380,13 +587,14 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
     std::map<int,double> reletiveThickness;
     reletiveThickness[0]=1.000;
 
-    auto referenceMesh=MeshRasterCurrent(LoadrootFile(runList[0],folder));
+    auto referenceMesh=RasterCurrent(LoadrootFile(runList[0],folder));
     auto runIter=(runList.begin());
     for (runIter++;runIter!=runList.end();runIter++){
         std::cout<<runIter->second<<std::endl;
-        auto meshInfor=MeshRasterCurrent(LoadrootFile(runIter->second,folder));
+        auto meshInfor=RasterCurrent(LoadrootFile(runIter->second,folder));
 
-        double thickness=NormalizeRatio(referenceMesh,meshInfor);
+        std::map<int,std::map<int,int>> meshedCellRatio;
+        double thickness=NormalizeRatio(referenceMesh,meshInfor, meshedCellRatio);
         std::cout<<"runID"<<runIter->second<<"   "<<thickness<<std::endl;
         reletiveThickness[runIter->first]=thickness;
     }
@@ -418,7 +626,6 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
     geprex->SetMarkerStyle(20);
     geprex->SetMarkerColor(6);
     geprex->Draw("ap");
-
     {
         if (true){
 
@@ -454,5 +661,5 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
 /// \param resultFolder: folders that used for save the generated plot
 void TargetCheck(UInt_t runID, TString folder="/home/newdriver/pyQuant/prex_replayed/rootfile",TString resultFolder="./carbonCheck"){
     auto chain=LoadrootFile(runID,folder);
-    MeshRasterCurrent(chain, false,resultFolder.Data());
+    RasterCurrent(chain, false,resultFolder.Data());
 }
