@@ -113,7 +113,6 @@ void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/C
 	if(runID<20000){
 		HRS="L";
 	}
-
 	std::cout<<"Working on HRS :"<<HRS.Data() <<"("<<runID<<")"<<std::endl;
 	// load the data
 	auto chain= LoadrootFile(runID,folder);
@@ -128,12 +127,17 @@ void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/C
 		HRSCentralPDetHH = new TH1F(Form("HallLProb_%d",runID),Form("HallLProb_%d",runID), 1000, -0.81, 0.82);
 		chain->Project(HRSCentralPDetHH->GetName(),
 							"HacL_D_LS450_FLD_DATA", generalcut.Data());
-
 		HRSCentralPDetHH->Draw();
-
 		if (HRSCentralPDetHH->GetEntries() != 0) {
 			double CentralP = std::abs((HRSCentralPDetHH->GetMean()) * 0.95282 / 0.33930);
 			std::cout << "CentralMomentum is ::" << (CentralP) << std::endl;
+
+			TPaveText *text=new TPaveText(0.1,0.6,0.4,0.9,"NDC");
+			text->SetFillColor(3025);
+			text->AddText(Form("LHRS Hall Probe: %f",HRSCentralPDetHH->GetMean()));
+			text->AddText(Form("LHRS  CenntralP: %f",CentralP));
+			text->AddText(Form("LHRS   Equation: %s","probe* 0.95282 / 0.33930"));
+			text->Draw("same");
 
 		}else{
 			std::cout << "\033[1;33m [Warning]\033[0m Missing HallLProb:"
@@ -170,7 +174,6 @@ void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/C
 	centralMomCanv->Update();
 	centralMomCanv->SaveAs(Form("DiagnosePlot/CentralP_%d.png",runID));
 	// get the start and the end time stamp for the run
-
 }
 
 

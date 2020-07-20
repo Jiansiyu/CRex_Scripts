@@ -26,12 +26,24 @@ import pandas as pd
 #     21785:'C_12 -1%_4'
 #     }
 
+
+# runList={ 
+#     21739:'H2O_ 0%_0',
+#     21740:'H2O_ 0%_1',
+#     21789:'H2O -1%_0',
+#     21790:'H20 -1%_1'
+#     }
+
+# prex RHRS
 runList={ 
-    21739:'H2O_ 0%_0',
-    21740:'H2O_ 0%_1',
-    21789:'H2O -1%_0',
-    21790:'H20 -1%_1'
+    1694:'C12_ +1%_1',
+    1695:'C12 -1%_0',
+    1696:'C12  0%_1',
+    1672: 'H20_-1%',
+    1673: 'H20_+1%'
+    #1676: 'H20_0%'
     }
+
 
 class beamInfor(object):
     def __init__(self):
@@ -43,9 +55,11 @@ class beamInfor(object):
             fullPath=os.path.join(Path,nameTemplate.format(runID))
             if os.path.isfile(fullPath):
                 with open (fullPath) as flileio:
+                    print(fullPath)
                     lines=flileio.readlines()
                     content=[x.strip() for x in lines]
                     beamEArray=[float(line.split()[-1]) for line in content]
+                    beamEArray=beamEArray[0:1300]
                     self.DataDict[runID]=beamEArray#[0:len(beamEArray)//4]
     def BeamEPlot(self):
         self.dataframe=pd.DataFrame()

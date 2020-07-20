@@ -63,14 +63,15 @@ const UInt_t NSieveRow = 7;
 TString prepcut;
 TString generalcut;
 
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p<0.98 && R.gold.p > 0.94 && fEvtHdr.fEvtType==1";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p < 0.98 && R.gold.p > 0.94 && fEvtHdr.fEvtType==1";
+TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && L.gold.p > 0.94 && L.gold.p < 0.98 && fEvtHdr.fEvtType==1";
 
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
 
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200618";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/junk";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -85,15 +86,14 @@ double_t defaultMomMin=0.94;
 double_t defaultMomMax=1.0;
 
 
-//CRex Experiment
+//PRex Experiment
 //LHRS
-//int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
-//int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
-
-//RHRS
 int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
 int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
+//RHRS
+//int numberofSieveHoles[13]={0,0,0,5,6,5,5,6,5,5,4,3,2};
+//int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
 
 inline Bool_t IsFileExist (const std::string& name) {
@@ -1247,7 +1247,7 @@ void DynamicCanvas(){
 			std::cout << "Save Button Clicked" << std::endl;
 			SavePatternHole();
 			SavePatternHole(300000); // with out the groud momentum cut
-			SavePatternHole_P1();
+//			SavePatternHole_P1();
 			break;
 		case 'q':
 			{std::cout << "Quit Button Clicked" << std::endl;
@@ -1353,7 +1353,7 @@ void DynamicCanvas(){
 					"contours");
 			if (!conts)
 				return;
-			TList *lcontour1 = (TList*) conts->At(1);
+			TList *lcontour1 = (TList*) conts->At(2);
 			if (!lcontour1)
 				return;
 			TGraph *gc1 = (TGraph*) lcontour1->First();
@@ -1532,7 +1532,7 @@ Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
 	mainPatternCanvas->Draw();
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.025,0.015,1000,-0.047,0.045);
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",500,-0.015,0.025,500,-0.047,0.045);
 
 	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
