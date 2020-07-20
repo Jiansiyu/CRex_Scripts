@@ -27,15 +27,14 @@
 #include <TApplication.h>
 #include <TLatex.h>
 #include "TGraphErrors.h"
-#include "iostream"
-#include "fstream"
-#include "sstream"
 #include "TColor.h"
-
+#include "TLegend.h"
 TString prepcut;
 TString generalcut;
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p > 2.14 && R.gold.p < 2.2 && fEvtHdr.fEvtType==1 ";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.2 && fEvtHdr.fEvtType==1";
+//TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 ";
+//TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1";
+TString generalcutR="fEvtHdr.fEvtType==1 ";
+TString generalcutL="fEvtHdr.fEvtType==1";
 
 std::string DataSavePath="carbonCheck/";
 
@@ -303,9 +302,13 @@ std::map<int,std::map<int,int>> RasterCurrent(TChain *chain,bool DrawMesh= true,
 
     int runID = (int)chain->GetMaximum("fEvtHdr.fRun");
     TString HRS="L";
+    generalcut=generalcutL;
     if(runID>20000){ //RHRS
         HRS="R";
+        generalcut=generalcutR;
     }
+
+
     if(HRS=="R"){
         loadc_cut=loadc_cutR;
         upadc_cut=upadc_cutR;
@@ -375,6 +378,22 @@ std::map<int,std::map<int,int>> RasterCurrent(TChain *chain,bool DrawMesh= true,
     meshcellhh->GetXaxis()->SetRangeUser(EdgeCutXmin,EdgeCutXmax);
     meshcellhh->GetYaxis()->SetRangeUser(EdgeCutYmin,EdgeCutYmax);
 
+    TH2F *targetPoshh=(TH2F *)gROOT->FindObject("targX_vs_targY");
+    if (targetPoshh) targetPoshh->Delete();
+    targetPoshh=new TH2F("targX_vs_targY","targX_vs_targY",500,-8,8,500,-8,8);
+    targetPoshh->GetYaxis()->SetTitle("TargetY");
+    targetPoshh->GetXaxis()->SetTitle("TargetX");
+
+    TH1F *targetXPoshh=(TH1F *)gROOT->FindObject("targX");
+    if(targetXPoshh) targetXPoshh->Delete();
+    targetXPoshh=new TH1F("targX","targX",500,-8,8);
+
+
+    TH1F *targetYPoshh=(TH1F *)gROOT->FindObject("targY");
+    if(targetYPoshh) targetYPoshh->Delete();
+    targetYPoshh=new TH1F("targY","targY",500,-8,8);
+
+
 
     TH1F *upQadc=(TH1F *)gROOT->FindObject("upQadc");
     if(upQadc) upQadc->Delete();
@@ -388,17 +407,20 @@ std::map<int,std::map<int,int>> RasterCurrent(TChain *chain,bool DrawMesh= true,
     TString QadcPedCut(Form("P.upQadc%s < %f && P.loQadc%s < %f",HRS.Data(), upadc_cut,HRS.Data(),loadc_cut));
     TString QadcCut(Form("P.upQadc%s> %f && P.loQadc%s> %f",HRS.Data(), upadc_cut,HRS.Data(),loadc_cut));
 
-    chain->Project(currenthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()));
-    chain->Project(currentEdgeCuthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()));
-    chain->Project(currentEdgePedCuthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s",QadcCut.Data()));
-    chain->Project(currentEdgePedhh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s",QadcPedCut.Data()));
 
-    chain->Project(upQadc->GetName(),Form("P.upQadc%s",HRS.Data()));
-    chain->Project(loQadc->GetName(),Form("P.loQadc%s",HRS.Data()));
+    chain->Project(currenthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s",generalcut.Data()));
+    chain->Project(currentEdgeCuthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s",generalcut.Data()));
+    chain->Project(currentEdgePedCuthh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s && %s",QadcCut.Data(),generalcut.Data()));
+    chain->Project(currentEdgePedhh->GetName(),Form("%srb.Raster2.rawcur.y:%srb.Raster2.rawcur.x",HRS.Data(),HRS.Data()),Form("%s && %s",QadcPedCut.Data(),generalcut.Data()));
+    chain->Project(upQadc->GetName(),Form("P.upQadc%s",HRS.Data()),Form("%s",generalcut.Data()));
+    chain->Project(loQadc->GetName(),Form("P.loQadc%s",HRS.Data()),Form("%s",generalcut.Data()));
+    chain->Project(targetPoshh->GetName(),"targy:targx",Form("%s",generalcut.Data()));
+    chain->Project(targetXPoshh->GetName(),"targx",Form("%s",generalcut.Data()));
+    chain->Project(targetYPoshh->GetName(),"targy",Form("%s",generalcut.Data()));
 
     TCanvas *canv=(TCanvas *)gROOT->GetListOfCanvases()->FindObject(Form("Canv_runID%d",runID));
     if(!canv){
-        canv=new TCanvas(Form("Canv_runID%d",runID),Form("Canv_runID%d",runID),1960,1080);
+        canv=new TCanvas(Form("Canv_runID%d",runID),Form("Canv_runID%d",runID),3680,2080);
     }else{
         canv->Clear();
     }
@@ -493,15 +515,39 @@ std::map<int,std::map<int,int>> RasterCurrent(TChain *chain,bool DrawMesh= true,
     loQadcref->SetLineColor(42);
     loQadcref->Draw("same");
 
+
+    canv->cd(7);
+    canv->cd(7)->SetGridx();
+    canv->cd(7)->SetGridy();
+    targetPoshh->Draw("zcol");
+
+    canv->cd(8)->Divide(1,2);
+    canv->cd(8)->cd(1);
+    targetXPoshh->Draw();
+    targetXPoshh->Fit("gaus");
+    TLatex *text1=new TLatex(targetXPoshh->GetFunction("gaus")->GetParameter(1),targetXPoshh->GetFunction("gaus")->GetParameter(0),Form("%1.3f",targetXPoshh->GetFunction("gaus")->GetParameter(1)));
+    text1->Draw("same");
+
+    canv->cd(8)->cd(2);
+    targetYPoshh->Draw();
+    targetYPoshh->Fit("gaus");
+    TLatex *text2=new TLatex(targetYPoshh->GetFunction("gaus")->GetParameter(1),targetYPoshh->GetFunction("gaus")->GetParameter(0),Form("%1.3f",targetYPoshh->GetFunction("gaus")->GetParameter(1)));
+    text2->Draw("same");
+
+    canv->SaveAs(Form("%s/target_%d.jpg",resultFolder.Data(),runID));
     return MeshCellEntryList;
 }
 
+double GetCharge(int runID){
+    double TotalCharge=0.0;
 
+    return TotalCharge;
+}
 
 /// \param referenceMesh, the Initial Mesh(The target is not damanged)
 /// \param targetMesh ,
 /// \return    thickness ratio
-double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int,std::map<int,int>> targetMesh,std::map<int,std::map<int,int>> & meshedRatio){
+double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int,std::map<int,int>> targetMesh,std::map<int,std::map<int,double>> & meshedRatio){
 
     int ref_EdgeSum=0;
     int tag_EdgeSum=0;
@@ -510,30 +556,38 @@ double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int
     int tag_CenterSum=0;
 
     for(auto xIter=referenceMesh.begin();xIter!=referenceMesh.end();xIter++){
-        for(auto yItter=xIter->second.begin(); yItter!=xIter->second.end();yItter++){
-
+        for(auto yItter=(xIter->second).begin(); yItter!=(xIter->second).end();yItter++){
             int xMeshID=xIter->first;
             int yMeshID=yItter->first;
 
+            //used for calculate the ratio
             if((xIter->first==0)||(xIter->first==9)||(yItter->first==0)||(yItter->first==9)){
                 ref_EdgeSum+=yItter->second;
                 tag_EdgeSum+=targetMesh[xIter->first][yItter->first];
             }
+
             if((xMeshID>2 && xMeshID <6)&&(yMeshID>2 && yMeshID <6)){
-             ref_CenterSum+=yItter->second;
-             tag_CenterSum+=targetMesh[xIter->first][yItter->first];
+                //calculate the ratio
+                ref_CenterSum+=yItter->second;
+                tag_CenterSum+=targetMesh[xIter->first][yItter->first];
             }
         }
     }
 
-    //calculate the ratio
-    double NomalizeFact=(double )ref_EdgeSum/tag_EdgeSum;
-    double ratio=(double)ref_CenterSum/(tag_CenterSum*NomalizeFact);
-    std::cout<<ratio<<std::endl;
+    double referenceFactor=(double ) tag_EdgeSum/ref_EdgeSum;
+    double ratio=(double ) tag_CenterSum/(ref_CenterSum*referenceFactor);
+    // used for calculate the ratio
+    for(auto xIter=referenceMesh.begin();xIter!=referenceMesh.end();xIter++) {
+        for (auto yItter = xIter->second.begin(); yItter != xIter->second.end(); yItter++) {
+            //calculate the ratio
+            int refEntries= yItter->second;
+            int targEntries=targetMesh[xIter->first][yItter->first];
+            // fill the value ratio
+            meshedRatio[xIter->first][yItter->first]=(double ) targEntries/(refEntries*referenceFactor);
+        }
+    }
     return  ratio;
 }
-
-
 
 
 ///
@@ -579,28 +633,94 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
         runList[5]=2300;
     }
 
+    std::map<int, std::map<int, std::map<int, double>>> TargThicknessRationList;
+
     std::cout<<"Run Lis"<<std::endl;
     for (auto i = runList.begin(); i!=runList.end();i++){
         std::cout<<'\t'<<i->first<<"   "<<i->second<<std::endl;
     }
 
     std::map<int,double> reletiveThickness;
-    reletiveThickness[0]=1.000;
+//    reletiveThickness[0]=1.000;
 
     auto referenceMesh=RasterCurrent(LoadrootFile(runList[0],folder));
     auto runIter=(runList.begin());
-    for (runIter++;runIter!=runList.end();runIter++){
+    for (runIter;runIter!=runList.end();runIter++){
         std::cout<<runIter->second<<std::endl;
+        int runID=runIter->second;
         auto meshInfor=RasterCurrent(LoadrootFile(runIter->second,folder));
 
-        std::map<int,std::map<int,int>> meshedCellRatio;
+        std::map<int,std::map<int,double>> meshedCellRatio;
         double thickness=NormalizeRatio(referenceMesh,meshInfor, meshedCellRatio);
         std::cout<<"runID"<<runIter->second<<"   "<<thickness<<std::endl;
         reletiveThickness[runIter->first]=thickness;
+        TargThicknessRationList[runIter->first]=meshedCellRatio;
+
+        //TODO, need to get the plot and write to PDF
+
+        //plot the Data row by row
+        // get the maximumnumber of X-and-Y
+        {
+            int NcellX=meshedCellRatio.size();
+            int NcellY=0;
+            for (auto xIter=meshedCellRatio.begin();xIter!=meshedCellRatio.end();xIter++) {
+                if (NcellY < xIter->second.size()) NcellY=xIter->second.size();
+            }
+            // write the data into the
+            // Y iter    Histo on X dimension
+            std::map<int,TH1F *> thicknesshh;
+
+            //initialize the plot
+            int colorTemp=17;
+            for (auto xIter=meshedCellRatio.begin();xIter!=meshedCellRatio.end();xIter++) {
+                for(auto yItter=xIter->second.begin();yItter!=xIter->second.end();yItter++){
+                    //
+                    if(thicknesshh.find(yItter->first)==thicknesshh.end()){
+
+                        TString plotName(Form("run%d_Y_%c_hh", runID, char(yItter->first+65)));
+                        std::cout<<yItter->first<<"    "<<plotName.Data()<<std::endl;
+
+                        thicknesshh[yItter->first]=(TH1F *) gROOT->FindObject(plotName.Data());
+                        if(thicknesshh[yItter->first]) thicknesshh[yItter->first]->Delete();
+                        thicknesshh[yItter->first]=new TH1F(plotName.Data(),plotName.Data(),15,-3,12);
+                        thicknesshh[yItter->first]->SetLineColor(colorTemp+10);
+                        thicknesshh[yItter->first]->SetLineWidth(2);
+                        thicknesshh[yItter->first]->SetMarkerStyle(20);
+                        thicknesshh[yItter->first]->SetMarkerColor(colorTemp+10);
+                        thicknesshh[yItter->first]->GetYaxis()->SetRangeUser(0.7,1.2);
+                        colorTemp=colorTemp+10;
+                    }// if not initilized, initialLize the plot
+                    thicknesshh[yItter->first]->Fill(xIter->first,meshedCellRatio[xIter->first][yItter->first]);
+                    std::cout<<"y"<<yItter->first<<"  x "<<xIter->first<<"  value"<<meshedCellRatio[xIter->first][yItter->first]<<std::endl;
+                    thicknesshh[yItter->first]->SetBinError(xIter->first,meshedCellRatio[xIter->first][yItter->first]*0.015);
+                }
+            }
+            // draw the plot in canvas
+            TCanvas *meshedCanv=(TCanvas *)gROOT->GetListOfCanvases()->FindObject(Form("MeshedCellCanv_runID%d",runID));
+            if(!meshedCanv){
+                meshedCanv=new TCanvas(Form("MeshedCellCanv_runID%d",runID),Form("MeshedCellCanv_runID%d",runID),1960,1080);
+            }else{
+                meshedCanv->Clear();
+            }
+            meshedCanv->Draw();
+            meshedCanv->cd();
+            TLegend *lgend=new TLegend(0.1,0.7,0.48,0.9);
+            for (auto iter=thicknesshh.begin();iter!=thicknesshh.end();iter++){
+                lgend->AddEntry(iter->second,iter->second->GetName());
+                if(iter==thicknesshh.begin()){
+                    iter->second->Draw("HIST P");
+                }else{
+                    iter->second->Draw("same HIST P");
+                }
+            }
+            lgend->Draw("same");
+            meshedCanv->Update();
+            meshedCanv->SaveAs(Form("carbonCheck/%s.jpg",meshedCanv->GetName()));
+        }
+
     }
 
     // plot the Error canvas
-
     TCanvas *targetThicknessCanv=new TCanvas(Form("Run%d",runList[0]),Form("Run%d",runList[0]),2080,1960);
     double thicknessX[runList.size()];
     double thicknessY[runList.size()];
@@ -651,6 +771,7 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
             line3->Draw("same");
         }
     }
+    // plot all calv and save it into pdf files
 }
 
 
