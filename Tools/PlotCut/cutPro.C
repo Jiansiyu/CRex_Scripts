@@ -491,9 +491,9 @@ inline  int16_t getUID(UInt_t KineID,UInt_t Col, UInt_t Row){
 // take the cut file and  the root file as input, and generate the average value the parameters on the focal plane
 Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		TString cutFile =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200618/GroundMomCut",
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/WithOutMomCut",
 		TString folder =
-				"/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result") {
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles") {
 
 	TFile *rootFileIO=new TFile(Form("./OpticsFocalDiagnose_run%d.root",runID),"recreate");
 	TChain *chain=new TChain("T");
@@ -518,6 +518,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 					chain->Add(filename.Data());
 					split++;
 					filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+					if (split > 2) break;
 				}
 			}else{
 				std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
@@ -536,6 +537,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 					chain->Add(filename.Data());
 					split++;
 					filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+					if (split > 2) break;
 				}
 			}else{
 				std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
@@ -577,7 +579,11 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 	// searching for the cut file
 	//if the cut file is the path pointing to the cut file, it will automaticly searching for the cut file according to name rule
 	if(!cutFile.EndsWith(".root")){
-		cutFile=Form("%s/prexRHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
+		if(runID > 20000){
+			cutFile=Form("%s/prexRHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
+		}else{
+			cutFile=Form("%s/prexLHRS_%d_-1.root.FullCut.root",cutFile.Data(),runID);
+		}
 	}
 
 	TFile *cutFileIO=new TFile(cutFile.Data(),"READ");
@@ -647,6 +653,8 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 	TH2F *SieveThetaPhiCuthh;
 	for (int16_t col = 0; col < NSieveCol; col++) {
 		for (int16_t row = 0; row < NSieveRow; row++) {
+			// skip the third one
+			if((col==3)&&(row==3)) continue;
 			// get the informations
 			//focal plane x, focal plane Y , focal plane theta, focal plane Y
 			//kCutID, kx, ky, kTh, KPHi, Kurb_e, kbeamX, kbeamY, kBeamvz

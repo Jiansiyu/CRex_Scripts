@@ -151,4 +151,39 @@ void bpmCheck(UInt_t runID,TString folder){
 	canv->Update();
 }
 
+void Getbpm(UInt_t runID, TString folder="/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles"){
 
+	// project the parameters
+	TH1F *target_x=new TH1F(Form("target_%d_x",runID),Form("target_%d_x",runID),1000,-5,5);
+	TH1F *target_y=new TH1F(Form("target_%d_y",runID),Form("target_%d_y",runID),1000,-5,5);
+
+	auto chain= LoadRootFiles(runID,folder);
+	chain->Project(target_x->GetName(),"targx");
+	chain->Project(target_y->GetName(),"targy");
+
+	TCanvas *canv=new TCanvas("targx","targy",1960,1080);
+	canv->Divide(1,2);
+
+	canv->cd(1);
+	target_x->Draw();
+	target_x->Fit("gaus");
+	double meanx=target_x->GetFunction("gaus")->GetParameter(1);
+	double sigmax=target_x->GetFunction("gaus")->GetParameter(2);
+	target_x->GetXaxis()->SetRangeUser(meanx-8*sigmax,meanx+8*sigmax);
+	TLatex *text1=new TLatex(target_x->GetFunction("gaus")->GetParameter(1),target_x->GetFunction("gaus")->GetParameter(0),Form("%f",target_x->GetFunction("gaus")->GetParameter(1)));
+	text1->Draw("same");
+
+	canv->cd(2);
+	target_y->Draw();
+	target_y->Fit("gaus");
+	TLatex *text2=new TLatex(target_y->GetFunction("gaus")->GetParameter(1),target_y->GetFunction("gaus")->GetParameter(0),Form("%f",target_y->GetFunction("gaus")->GetParameter(1)));
+	target_y->GetXaxis()->SetRangeUser(target_y->GetFunction("gaus")->GetParameter(1)-8*target_y->GetFunction("gaus")->GetParameter(2),target_y->GetFunction("gaus")->GetParameter(1)+8*target_y->GetFunction("gaus")->GetParameter(2));
+	text2->Draw("same");
+	canv->Update();
+	canv->SaveAs(Form("bpmInform%d.jpg",runID));
+
+
+
+
+
+}
