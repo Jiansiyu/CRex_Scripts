@@ -618,10 +618,10 @@ void  GetBoundary(std::map<int,int> runList, TString folder="/home/newdriver/pyQ
         int  PlotRangeYmin=RangeYmin-(RangeYmax-RangeYmin)/10;
         int  PlotRangeYmax=RangeYmax+(RangeYmax-RangeYmin)/10;
 
-        int EdgeCutXmin=RangeXmin+(RangeXmax-RangeXmin)/20;
-        int EdgeCutXmax=RangeXmax-(RangeXmax-RangeXmin)/20;
-        int EdgeCutYmin=RangeYmin+(RangeYmax-RangeYmin)/20;
-        int EdgeCutYmax=RangeYmax-(RangeYmax-RangeYmin)/20;
+        int EdgeCutXmin=RangeXmin+(RangeXmax-RangeXmin)/50;
+        int EdgeCutXmax=RangeXmax-(RangeXmax-RangeXmin)/50;
+        int EdgeCutYmin=RangeYmin+(RangeYmax-RangeYmin)/50;
+        int EdgeCutYmax=RangeYmax-(RangeYmax-RangeYmin)/50;
 
         std::cout<<"Xmin:"<<EdgeCutXmin<<"  xMax:"<<EdgeCutXmax<<"   Ymin:"<<EdgeCutYmin<<"   Ymax:"<<EdgeCutYmax<<std::endl;
 
@@ -847,7 +847,7 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
 
         }
 
-    }
+    } // end of run List loop
 
     // plot the Error canvas
     {
@@ -905,6 +905,36 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
         }
     }
 
+    //loop on each sieve holes and search for the
+    {
+        TFile *fileio=new TFile("meshCellEff.root","recreate");
+        std::map<int,std::map<int, TH1F *>> cellThicknessh;
+        for (auto iter= TargThicknessRationList.begin(); iter!=TargThicknessRationList.end();iter++){
+            auto runIter=iter->first;
+
+            auto Nrums=cellThicknessh.size()+5;
+
+            for (auto xIter= (iter->second).begin(); xIter!=(iter->second).end(); xIter++){
+                for(auto yIter=(xIter->second).begin(); yIter!=(xIter->second).end(); yIter++){
+                    auto xID=xIter->first;
+                    auto yID=yIter->first;
+                    if ((cellThicknessh.find(xID) == cellThicknessh.end()) || (cellThicknessh[xID].find(yID)==cellThicknessh[xID].end())){
+                        // initiallize the cellthickness
+                        cellThicknessh[xID][yID]=new TH1F(Form("MeshCell_%c_%d",char(yIter->first+65),xIter->first),Form("MeshCell_%c_%d",char(yIter->first+65),xIter->first),Nrums,-1, Nrums-1);
+                    }
+                    // fill the Mesh cell reletive thickness
+                    cellThicknessh[xID][yID]->Fill(runIter,yIter->second);
+                }
+            }
+        }
+        for(auto xIter=cellThicknessh.begin();xIter!=cellThicknessh.end();xIter++){
+            for(auto yIter=xIter->second.begin();yIter!=xIter->second.end();yIter++){
+                yIter->second->Write();
+            }
+        }
+        fileio->Write();
+        fileio->Close();
+    }
     // plot all calv and save it into pdf files
 /*    {
 
