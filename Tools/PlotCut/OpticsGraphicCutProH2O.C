@@ -78,7 +78,7 @@ TString generalcut;
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
 TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1";
 //TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.19";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.19";
+TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1";
 
 
 //
@@ -757,6 +757,12 @@ double_t getBeamE(int runID){
 	beamE[20805]=0.9503818932;
 	beamE[20808]=0.9504413567; // not accurate
 
+	beamE[1672]=0.95043818;
+	beamE[1673]=0.95038349;
+	beamE[1676]=0.9504413567; // not accurate
+
+
+
 	if(beamE.find(runID)!=beamE.end()){
 		return beamE[runID];
 	}else{
@@ -807,7 +813,7 @@ void DynamicCanvas(){
 //		std::cout<<"CentralMomentum is ::"<<(CentralP)<<std::endl;
 //
 	double CentralP;
-	if (HRS == "L") {
+/*	if (HRS == "L") {
 		TH1F *HallProbHH = new TH1F("HallLProb", "HallLProb", 1000, -1, 0);
 		chain->Project(HallProbHH->GetName(), "HacL_D_LS450_FLD_DATA",
 				generalcut.Data());
@@ -829,8 +835,21 @@ void DynamicCanvas(){
 			std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
 					<< std::endl;
 		}
-	}
+	}*/
 
+	{
+		TH1F *HRSCentralPDetHH;
+		HRSCentralPDetHH = new TH1F(Form("Hall%s_NMR",HRS.Data()),Form("Hall%s_NMR",HRS.Data()), 1000, -0.7, 0.9);
+		chain->Project(HRSCentralPDetHH->GetName(), Form("Hac%s_D1_NMR_SIG",HRS.Data()),generalcut.Data());
+		if (HRSCentralPDetHH->GetEntries()){
+			double Mag = HRSCentralPDetHH->GetMean();
+			CentralP = 2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
+			HRSCentralPDetHH->GetXaxis()->SetRangeUser(HRSCentralPDetHH->GetMean()-0.01,HRSCentralPDetHH->GetMean()+0.01);
+		}else{
+			std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
+							<< std::endl;
+		}
+	}
 
 
 	TH1F *eventIDhh=new TH1F("eventID","eventID",800000,0,800000);

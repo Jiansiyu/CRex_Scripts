@@ -151,24 +151,13 @@ void plotTemp(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex
 
 
 int plotErrorsL(){
-//	   auto c4 = new TCanvas("c4","c4",200,10,600,400);
-//	   double x[] = {0, 1, 2, 3, 4};
-//	   double y[] = {0, 2, 4, 1, 3};
-//	   double ex[] = {0.0, 0.0, 0.0, 0.0, 0.0};
-//	   double ey[] = {1, 0.5, 1, 0.5, 1};
-//	   auto ge = new TGraphErrors(5, x, y, ex, ey);
-//
-//	   ge->SetLineWidth(2);
-//	   ge->SetMarkerStyle(20);
-//	   ge->Draw("ap");
-
 	auto hrsangleCanv=new TCanvas("HRS Angle","HRS Angle",200,10,600,400);
 	  TMultiGraph *mg = new TMultiGraph();
 	   mg->SetTitle("Exclusion graphs");
 
 	TLegend *lgend=new TLegend(0.3,0.3);
 	double prex_x[]={-1,0,1};
-	double prex_y[]={4.755,4.84,4.846};
+	double prex_y[]={4.819,4.792,4.756};
 	double prex_ex[]={0.0,0.0,0.0};
 	double prex_ey[]={0.153,0.151,0.151};
 
@@ -180,7 +169,8 @@ int plotErrorsL(){
 	auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
 	geprex->GetYaxis()->SetRangeUser(4.5,5.1);
 	geprex->GetXaxis()->SetRangeUser(-2,2);
-	geprex->SetTitle("PRex/CRex Pointing Measurement");
+
+	geprex->SetTitle("PRex/CRex LHRS Pointing Measurement");
 	geprex->GetXaxis()->SetTitle("Dp Scan");
 	geprex->GetYaxis()->SetTitle("HRS Angle(Degree)");
 	geprex->SetLineWidth(2);
@@ -188,7 +178,7 @@ int plotErrorsL(){
 	geprex->SetMarkerStyle(20);
 	geprex->SetMarkerColor(6);
 	geprex->Draw("ap");
-	lgend->AddEntry(geprex,Form("PRex HRS"));
+	lgend->AddEntry(geprex,Form("CRex LHRS"));
 
 	TLine *line=new TLine(-2,4.7469,2,4.7469);
 	line->SetLineWidth(2);
@@ -196,9 +186,9 @@ int plotErrorsL(){
 	line->Draw("same");
 
 
-	TLatex *text1= new TLatex(-2,4.7469+0.07,Form("Theoretical: 4.7469 + 0.06"));
+	TLatex *text1= new TLatex(-2,4.7469+0.07,Form("Survey: 4.7469 + 0.06#circ"));
 
-	TLatex *text2= new TLatex(-2,4.7469-0.09,Form("Theoretical: 4.7469 - 0.06"));
+	TLatex *text2= new TLatex(-2,4.7469-0.09,Form("Survey: 4.7469 - 0.06#circ"));
 
 	text1->Draw("same");
 	text2->Draw("same");
@@ -213,35 +203,25 @@ int plotErrorsL(){
 			line2->SetLineColor(93);
 			line2->Draw("same");
 
-//	auto gecrex=new TGraphErrors(5,prex_x,prex_y,prex_ex,prex_ey);
-//	gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
-//	gecrex->SetLineWidth(2);
-//	gecrex->SetLineColor(46);
-//	gecrex->SetMarkerStyle(20);
-//	gecrex->SetMarkerColor(46);
-//	gecrex->Draw("ap ");
-//	lgend->AddEntry(gecrex,Form("CRex HRS"));
-//	lgend->Draw("same");
+	auto gecrex=new TGraphErrors(5,prex_x,prex_y,prex_ex,prex_ey);
+	gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
+	gecrex->SetLineWidth(2);
+	gecrex->SetLineColor(46);
+	gecrex->SetMarkerStyle(20);
+	gecrex->SetMarkerColor(46);
+	gecrex->Draw("p same");
+	lgend->AddEntry(gecrex,Form("PRex LHRS"));
+	lgend->Draw("same");
+
 	hrsangleCanv->Update();
 
 return 1;
 }
 
-int plotErrors(){
-//	   auto c4 = new TCanvas("c4","c4",200,10,600,400);
-//	   double x[] = {0, 1, 2, 3, 4};
-//	   double y[] = {0, 2, 4, 1, 3};
-//	   double ex[] = {0.0, 0.0, 0.0, 0.0, 0.0};
-//	   double ey[] = {1, 0.5, 1, 0.5, 1};
-//	   auto ge = new TGraphErrors(5, x, y, ex, ey);
-//
-//	   ge->SetLineWidth(2);
-//	   ge->SetMarkerStyle(20);
-//	   ge->Draw("ap");
-
+int plotErrorsR(){
 	auto hrsangleCanv=new TCanvas("HRS Angle","HRS Angle",200,10,600,400);
-	  TMultiGraph *mg = new TMultiGraph();
-	   mg->SetTitle("Exclusion graphs");
+	TMultiGraph *mg = new TMultiGraph();
+	mg->SetTitle("Exclusion graphs");
 
 	TLegend *lgend=new TLegend(0.3,0.3);
 	double prex_x[]={-1,0,1};
@@ -257,7 +237,7 @@ int plotErrors(){
 	auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
 	geprex->GetYaxis()->SetRangeUser(4.5,5.1);
 	geprex->GetXaxis()->SetRangeUser(-2,2);
-	geprex->SetTitle("PRex/CRex Pointing Measurement");
+	geprex->SetTitle("PRex/CRex RHRS Pointing Measurement");
 	geprex->GetXaxis()->SetTitle("Dp Scan");
 	geprex->GetYaxis()->SetTitle("HRS Angle(Degree)");
 	geprex->SetLineWidth(2);
@@ -265,7 +245,7 @@ int plotErrors(){
 	geprex->SetMarkerStyle(20);
 	geprex->SetMarkerColor(6);
 	geprex->Draw("ap");
-	lgend->AddEntry(geprex,Form("PRex HRS"));
+	lgend->AddEntry(geprex,Form("CRex HRS"));
 
 
 	auto gecrex=new TGraphErrors(5,prex_x,prex_y,prex_ex,prex_ey);
@@ -275,19 +255,19 @@ int plotErrors(){
 	gecrex->SetMarkerStyle(20);
 	gecrex->SetMarkerColor(46);
 	gecrex->Draw("p same");
-	lgend->AddEntry(gecrex,Form("CRex RHRS"));
+	lgend->AddEntry(gecrex,Form("PRex RHRS"));
 	lgend->Draw("same");
 	
 	
-		TLine *line=new TLine(-2,4.7572,2,4.7572);
+	TLine *line=new TLine(-2,4.7572,2,4.7572);
 	line->SetLineWidth(2);
 	line->SetLineColor(3);
 	line->Draw("same");
 
 
-	TLatex *text1= new TLatex(-2,4.7572+0.07,Form("Theoretical: 4.7572 + 0.06"));
+	TLatex *text1= new TLatex(-2,4.7572+0.07,Form("Survey: 4.7572 + 0.06"));
 
-	TLatex *text2= new TLatex(-2,4.7572-0.09,Form("Theoretical: 4.7572 - 0.06"));
+	TLatex *text2= new TLatex(-2,4.7572-0.09,Form("Survey: 4.7572 - 0.06"));
 
 	text1->Draw("same");
 	text2->Draw("same");

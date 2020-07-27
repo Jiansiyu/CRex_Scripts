@@ -67,8 +67,8 @@ const UInt_t NSieveRow = 7;
 //////////////////////////////////////////////////////////////////////////////
 TString prepcut;
 TString generalcut;
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p > 2.14 && R.gold.p < 2.2  ";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.2";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1  "; //&& R.gold.p > 2.14 && R.gold.p < 2.2
+TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 "; //&& L.gold.p > 2.14 && L.gold.p < 2.2
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
@@ -275,11 +275,11 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",500,2.16,2.178);
+	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",170,0.94,0.954);
 	chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
-	auto C1stp=CGroundp-0.00443891;
+
 	momentum->GetXaxis()->SetRangeUser(CGroundp-0.0044*3,CGroundp+0.0044*2);
 	momentum->GetXaxis()->SetTitle("gold.p");
 	momentum->GetYaxis()->SetTitle("#");
@@ -292,7 +292,12 @@ void DynamicCanvas(){
 	//fgroudGaus->Draw("same");
 	fgroudGaus->GetParameters(fgroudGausPar);
 
+	auto C1stp=fgroudGausPar[1]-0.00443891;
+
+
 	{
+		TLine *line=new TLine(C1stp,0,C1stp,10000);
+		line->Draw("same");
 		// check the first excited states
 		TH1F *firstexcited_temp=new TH1F("C-12 gold.p_temp","C-12 gold.p_temp",2000,2.1,2.2);
 		chain->Project(firstexcited_temp->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s && %s.gold.p> %f && %s.gold.p < %f ",generalcut.Data(),cutg->GetName(), HRS.Data(),CGroundp-0.0044*3,HRS.Data(),fgroudGausPar[1]-0.003));
@@ -300,9 +305,9 @@ void DynamicCanvas(){
 		firstexcited_temp->Delete();
 	}
 
-	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0006,C1stp+0.0004);
+	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.001,C1stp+0.001);
 	momentum->Fit("firststatesgaus","R","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
-	//ffirstGuas->Draw("same");
+	ffirstGuas->Draw("same");
 	ffirstGuas->GetParameters(ffirstGuasPar);
 
 	// change the gause fit to cristal ball
