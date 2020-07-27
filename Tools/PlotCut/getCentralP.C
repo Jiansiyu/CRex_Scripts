@@ -108,7 +108,56 @@ TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Resear
 		return chain;
 }
 
-void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/"){
+
+void prexGetCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles/"){
+	TString HRS="R";
+	if(runID<20000){
+		HRS="L";
+	}
+	std::cout<<"Working on HRS :"<<HRS.Data() <<"("<<runID<<")"<<std::endl;
+
+	// load the data
+	auto chain= LoadrootFile(runID,folder);
+
+	TCanvas *centralMomCanv=new TCanvas(Form("CentralP_%sHRS_run%d",HRS.Data(),runID),Form("CentralP_%sHRS_run%d",HRS.Data(),runID),1960,1080);
+	centralMomCanv->cd();
+	centralMomCanv->Draw();
+	//for the HRS
+	TH1F *HRSCentralPDetHH;
+
+
+	std::cout<<"For PRex use NMR for both HRS"<<std::endl;
+
+	double CentralP;
+
+
+	HRSCentralPDetHH = new TH1F(Form("Hall%s_NMR_%d",HRS.Data(),runID),Form("Hall%s_NMR_%d",HRS.Data(),runID), 1000, -0.7, 0.9);
+	chain->Project(HRSCentralPDetHH->GetName(), Form("Hac%s_D1_NMR_SIG",HRS.Data()),generalcut.Data());
+
+	HRSCentralPDetHH->Draw();
+
+	if (HRSCentralPDetHH->GetEntries()){
+		double Mag = HRSCentralPDetHH->GetMean();
+		CentralP = 2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
+
+		HRSCentralPDetHH->GetXaxis()->SetRangeUser(HRSCentralPDetHH->GetMean()-0.01,HRSCentralPDetHH->GetMean()+0.01);
+
+		TPaveText *text=new TPaveText(0.1,0.6,0.4,0.9,"NDC");
+		text->SetFillColor(20);
+		text->AddText(Form("%sHRS       NMR: %f",HRS.Data(),Mag));
+		text->AddText(Form("%sHRS CenntralP: %f",HRS.Data(),CentralP));
+		text->AddText(Form("HRS  Equation: %s","2.702 * (Mag) - 1.6e-03 * (Mag)^{3} "));
+//			text->SetTextColor(kRed);
+		text->Draw("same");
+	}else{
+		std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
+				<< std::endl;
+	}
+	centralMomCanv->SaveAs(Form("./BeamE/%s.jpg",centralMomCanv->GetName()));
+}
+
+
+void getCentralP(UInt_t runID,TString folder="/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles/"){
 	TString HRS="R";
 	if(runID<20000){
 		HRS="L";

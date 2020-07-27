@@ -10,9 +10,9 @@
 //	gROOT->LoadMacro("OpticsPointingDpCheck.C");
 
 //	gROOT->LoadMacro("OpticsFocalVariableCheck.C");
-//	gROOT->LoadMacro("getCentralP.C");
+	gROOT->LoadMacro("getCentralP.C");
 //	gROOT->LoadMacro("plotTemp.C");
-	gROOT->LoadMacro("bpmCheck.C");
+//	gROOT->LoadMacro("bpmCheck.C");
 //	gROOT->LoadMacro("septumCheck.C");
 //	gROOT->LoadMacro("TargetCheck.C");
 }

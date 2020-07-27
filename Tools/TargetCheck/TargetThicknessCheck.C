@@ -60,54 +60,54 @@ inline Bool_t IsFileExist (const std::string& name) {
 
 
 TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result", int logLevel=0){
-	TChain *chain=new TChain("T");
-	TString HRS="R";
-		if(runID<20000){HRS="L";};
+    TChain *chain=new TChain("T");
+    TString HRS="R";
+    if(runID<20000){HRS="L";};
 
-		if(folder.EndsWith(".root")){
-			chain->Add(folder.Data());
-		}else{
-			TString rootDir(folder.Data());
-			if(runID>20000){ //RHRS
-				if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
-					if(logLevel > 2)
-				    std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-					chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
+    if(folder.EndsWith(".root")){
+        chain->Add(folder.Data());
+    }else{
+        TString rootDir(folder.Data());
+        if(runID>20000){ //RHRS
+            if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
+                if(logLevel > 2)
+                    std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+                chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
 
-					TString filename;
-					int16_t split=1;
-					filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-					while (IsFileExist(filename.Data())){
-                        if(logLevel > 2)
-					    std::cout<<"Add File::"<<filename.Data()<<std::endl;
-						chain->Add(filename.Data());
-						split++;
-						filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-					}
-				}else{
-					std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-				}
-			}else{
-				HRS="L";
-				if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
-                    if(logLevel > 2)std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-					chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
+                TString filename;
+                int16_t split=1;
+                filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                while (IsFileExist(filename.Data())){
+                    if(logLevel > 2)
+                        std::cout<<"Add File::"<<filename.Data()<<std::endl;
+                    chain->Add(filename.Data());
+                    split++;
+                    filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                }
+            }else{
+                std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+            }
+        }else{
+            HRS="L";
+            if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
+                if(logLevel > 2)std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+                chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
 
-					TString filename;
-					int16_t split=1;
-					filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-					while (IsFileExist(filename.Data())){
-                        if(logLevel > 2)std::cout<<"Add File::"<<filename.Data()<<std::endl;
-						chain->Add(filename.Data());
-						split++;
-						filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-					}
-				}else{
-					std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-				}
-			}
-		}
-		return chain;
+                TString filename;
+                int16_t split=1;
+                filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                while (IsFileExist(filename.Data())){
+                    if(logLevel > 2)std::cout<<"Add File::"<<filename.Data()<<std::endl;
+                    chain->Add(filename.Data());
+                    split++;
+                    filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                }
+            }else{
+                std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+            }
+        }
+    }
+    return chain;
 }
 
 
@@ -575,59 +575,6 @@ double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int
 }
 
 
-
-/// \param referenceMesh, the Initial Mesh(The target is not damanged)
-/// \param targetMesh ,
-/// \return    thickness ratio[0] and statistic error[1]
-double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int,std::map<int,int>> targetMesh,std::map<int,std::map<int,double>> & meshedRatio,std::map<int,std::map<int,std::vector<double>>> & meshedRatioError){
-
-    int ref_EdgeSum=0;
-    int tag_EdgeSum=0;
-
-    int ref_CenterSum=0;
-    int tag_CenterSum=0;
-
-    for(auto xIter=referenceMesh.begin();xIter!=referenceMesh.end();xIter++){
-        for(auto yItter=(xIter->second).begin(); yItter!=(xIter->second).end();yItter++){
-            int xMeshID=xIter->first;
-            int yMeshID=yItter->first;
-
-            //used for calculate the ratio
-            {
-                ref_EdgeSum+=yItter->second;
-                tag_EdgeSum+=targetMesh[xIter->first][yItter->first];
-            }
-
-            if((xMeshID>2 && xMeshID <6)&&(yMeshID>2 && yMeshID <6)){
-                //calculate the ratio
-                ref_CenterSum+=yItter->second;
-                tag_CenterSum+=targetMesh[xIter->first][yItter->first];
-            }
-        }
-    }
-
-    double referenceFactor=(double ) tag_EdgeSum/ref_EdgeSum;
-    double ratio=(double ) tag_CenterSum/((double )ref_CenterSum*referenceFactor);
-    // used for calculate the ratio
-    for(auto xIter=referenceMesh.begin();xIter!=referenceMesh.end();xIter++) {
-        for (auto yItter = xIter->second.begin(); yItter != xIter->second.end(); yItter++) {
-            //calculate the ratio
-            int refEntries= yItter->second;
-            int targEntries=targetMesh[xIter->first][yItter->first];
-            // fill the value ratio
-            double targSigma=TMath::Sqrt(targEntries)/(double)targEntries;
-            double refSigma=TMath::Sqrt(refEntries)/(double )refEntries;
-            double error2=(targSigma/(refEntries*referenceFactor))*(targSigma/(refEntries*referenceFactor))+(targEntries*refSigma/(refEntries*refEntries*referenceFactor)*(targEntries*refSigma/(refEntries*refEntries*referenceFactor)));
-            double error=TMath::Sqrt(error2);
-            meshedRatio[xIter->first][yItter->first]=((double ) targEntries/(refEntries*referenceFactor));
-            meshedRatioError[xIter->first][yItter->first].push_back((double ) targEntries/(refEntries*referenceFactor));
-            meshedRatioError[xIter->first][yItter->first].push_back(error);
-        }
-    }
-    return  ratio;
-}
-
-
 void  GetBoundary(std::map<int,int> runList, TString folder="/home/newdriver/pyQuant/prex_replayed/rootfile",TString resultFolder="./carbonCheck"){
 
     std::vector<int> runIDs;
@@ -727,16 +674,16 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
         fin.close();
         if(runList.find(0)==runList.end()){
             std::cout<<"\033[1;31m [ERROR]\033[0m"<< "Input file format error\n"<<
-            "\t ===> Accept Format: \n"<<
-            " \t\t\tID, runID \n \t\t\tID=0 will be used as reference run!!"<<std::endl;
+                     "\t ===> Accept Format: \n"<<
+                     " \t\t\tID, runID \n \t\t\tID=0 will be used as reference run!!"<<std::endl;
         }
     } else{
 
-        runList[0]=2140;
-        runList[1]=2182;
-        runList[2]=2204;
+//        runList[0]=2140;
+//        runList[1]=2182;
+//        runList[2]=2204;
 //        runList[3]=2291;
-        runList[4]=2300;
+//        runList[4]=2300;
 
 //        runList[0]=21179;
 //        runList[1]=21181;
@@ -749,20 +696,17 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
 //        runList[1]=21180;
 //        runList[2]=21195;
 //        runList[3]=21290;
-
-//        runList[0]=2140;
-//        runList[1]=2140;
-//        runList[2]=2141;
-//        runList[3]=2291;
-//        runList[4]=2299;
-//        runList[5]=2300;
+        runList[0]=2140;
+        runList[1]=2140;
+        runList[2]=2141;
+        runList[3]=2291;
+        runList[4]=2299;
+        runList[5]=2300;
     }
 
     GetBoundary(runList);
 
     std::map<int, std::map<int, std::map<int, double>>> TargThicknessRationList;
-    std::map<int, std::map<int, std::map<int, std::vector<double>>>> TargThicknessRationErrorList;
-
 
     std::cout<<"Run Lis"<<std::endl;
     for (auto i = runList.begin(); i!=runList.end();i++){
@@ -774,19 +718,16 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
 
     auto referenceMesh=RasterCurrent(LoadrootFile(runList[0],folder));
     auto runIter=(runList.begin());
-    for (runIter;runIter!=runList.end();runIter++){
+    for (runIter++;runIter!=runList.end();runIter++){
         std::cout<<runIter->second<<std::endl;
         int runID=runIter->second;
         auto meshInfor=RasterCurrent(LoadrootFile(runIter->second,folder));
 
         std::map<int,std::map<int,double>> meshedCellRatio;
-        std::map<int,std::map<int,std::vector<double>>> meshedCellRatioError;
-
-        double thickness=NormalizeRatio(referenceMesh,meshInfor, meshedCellRatio,meshedCellRatioError);
+        double thickness=NormalizeRatio(referenceMesh,meshInfor, meshedCellRatio);
         std::cout<<"runID"<<runIter->second<<"   "<<thickness<<std::endl;
         reletiveThickness[runIter->first]=thickness;
         TargThicknessRationList[runIter->first]=meshedCellRatio;
-        TargThicknessRationErrorList[runIter->first]= meshedCellRatioError;
 
         //TODO, need to get the plot and write to PDF
 
@@ -894,8 +835,8 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
                     double  yMax = currentEdgePedhh->GetYaxis()->GetXmax();
                     double  yMin = currentEdgePedhh->GetYaxis()->GetXmin();
 
-                //    thicknessMaphh->GetXaxis()->SetRange(xMin,xMax);
-                //    thicknessMaphh->GetYaxis()->SetRange(yMin,yMax);
+                    //    thicknessMaphh->GetXaxis()->SetRange(xMin,xMax);
+                    //    thicknessMaphh->GetYaxis()->SetRange(yMin,yMax);
                 }
 
                 thicknessMaphh->Draw("zcol");
@@ -966,7 +907,7 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
 
     //loop on each sieve holes and search for the
     {
-        TFile *fileio=new TFile(Form("meshCellEff_%d.root",runList[0]),"recreate");
+//        TFile *fileio=new TFile(Form("meshCellEff_%d.root",runList[0]),"recreate");
         std::map<int,std::map<int, TH1F *>> cellThicknessh;
         for (auto iter= TargThicknessRationList.begin(); iter!=TargThicknessRationList.end();iter++){
             auto runIter=iter->first;
@@ -986,29 +927,21 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
                     // fill the Mesh cell reletive thickness
                     std::cout<<"Working on "<<runIter<<std::endl;
                     cellThicknessh[xID][yID]->Fill(runIter,yIter->second);
-                    std::cout<<TargThicknessRationErrorList[iter->first][xIter->first][yIter->first][1]<<std::endl;
-                    cellThicknessh[xID][yID]->SetBinError(runIter,TargThicknessRationErrorList[iter->first][xIter->first][yIter->first][1]);
                 }
             }
         }
 
         // draw the canvas and plot the data set
         for(auto xIter=cellThicknessh.begin();xIter!=cellThicknessh.end();xIter++){
-            TCanvas *canv=(TCanvas *)gROOT->GetListOfCanvases()->FindObject(Form("Canv_%d",xIter->first));
-            if(!canv){
-                canv=new TCanvas(Form("Canv_%d",xIter->first),Form("Canv_%d",xIter->first),1960,1080);
-            }else{
-                canv->Clear();
-            }
-            canv->Divide(2,(xIter->second.size())/2);
-
             for(auto yIter=xIter->second.begin();yIter!=xIter->second.end();yIter++){
-
-                canv->cd(yIter->first+1);
-                yIter->second->Draw("HIST P");
-                yIter->second->SetMarkerStyle(20);
-                yIter->second->SetLineWidth(2);
-                yIter->second->GetYaxis()->SetRangeUser(0.8,1.2);
+                TCanvas *canv=(TCanvas *)gROOT->GetListOfCanvases()->FindObject(Form("Canv_%c_%d",char(yIter->first+65),xIter->first));
+                if(!canv){
+                    canv=new TCanvas(Form("Canv_%c_%d",char(yIter->first+65),xIter->first),Form("Canv_%c_%d",char(yIter->first+65),xIter->first),1960,1080);
+                }else{
+                    canv->Clear();
+                }
+                canv->cd();
+                yIter->second->Draw();
 
                 if(true){
                     TLine *line1=new TLine(yIter->second->GetXaxis()->GetXmin(),1.0,yIter->second->GetXaxis()->GetXmax(),1.0);
@@ -1020,16 +953,17 @@ void TargetThicknessCal(TString runFile="",TString folder="/home/newdriver/pyQua
                     TLine *line3=new TLine(yIter->second->GetXaxis()->GetXmin(),0.95,yIter->second->GetXaxis()->GetXmax(),0.95);
                     line3->SetLineColor(92);
 
-                    line1->Draw();
+                    line1->Draw("same");
                     line2->Draw("same");
                     line3->Draw("same");
                 }
+
                 canv->Update();
+                canv->Write();
             }
-            canv->Write();
         }
-        fileio->Write();
-        fileio->Close();
+//        fileio->Write();
+//        fileio->Close();
     }
     // plot all calv and save it into pdf files
 /*    {
