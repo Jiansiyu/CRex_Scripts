@@ -617,6 +617,7 @@ double NormalizeRatio(std::map<int,std::map<int,int>> referenceMesh,std::map<int
             // fill the value ratio
             double targSigma=TMath::Sqrt(targEntries)/(double)targEntries;
             double refSigma=TMath::Sqrt(refEntries)/(double )refEntries;
+
             double error2=(targSigma/(refEntries*referenceFactor))*(targSigma/(refEntries*referenceFactor))+(targEntries*refSigma/(refEntries*refEntries*referenceFactor)*(targEntries*refSigma/(refEntries*refEntries*referenceFactor)));
             double error=TMath::Sqrt(error2);
             meshedRatio[xIter->first][yItter->first]=((double ) targEntries/(refEntries*referenceFactor));
