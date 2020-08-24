@@ -2,7 +2,31 @@
 
 Most of the code are root or Hall A analyzer micros
 
-## Plot the focal Plane Variables with Cut 
+1. [Optics automatic cut tool](#cutpro-c)
+
+
+# Usage
+
+#### cutPro.C
+Used for cut the Sieve Holes. It also can search for the ground state peak, and first excited state peak, and apply cut on it. It also have the scripts to generate the average focal plane variables.
+
+```c
+analyzer 
+.L cutPro.C
+cuPro()
+
+```
+
+#### Get the HRS Pointing Measurement Result 
+Optional requrements:
+1. Get the average Beam E information [file](https://github.com/Jiansiyu/GeneralScripts/blob/master/halog/beamE.txt). 
+
+```shell script
+OpticsGraphicCutPro()
+```
+
+#### Plot the focal Plane Variables with Cut 
+
 ```
 OpticsFocalVariableCheck.C
 ```
@@ -15,7 +39,8 @@ OpticsFocalVariableCheck.C
 
 
 
-## plot the beam E information 
+#### plot the beam E information (Moved to [scripts](https://github.com/Jiansiyu/GeneralScripts/tree/master/halog))
+![beamE](https://github.com/Jiansiyu/GeneralScripts/blob/master/halog/result/BeamE1696.jpg)
 * Before 2020, the beam E information is not write to the data file. To extract the beam E information
 on apar@aonl:
 
@@ -30,7 +55,6 @@ myget -b "2019-12-16 04:11:14" -e "2019-12-16 04:14:12" -c HALLA:p > RHRS_21739_
 ```
 python3 getBeamE.py
 ```
-
 
 
 ##PRexCRex_cut branch 

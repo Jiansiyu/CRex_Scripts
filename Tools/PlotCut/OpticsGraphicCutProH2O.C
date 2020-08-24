@@ -76,7 +76,7 @@ double CentralP;
 TString prepcut;
 TString generalcut;
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p > 2.14 && R.gold.p < 2.19";
 //TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.19";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.19";
 
@@ -103,14 +103,6 @@ inline double GetPointingAngle(double DeltaE, double BeamE=2.17568){
 	return HRSAngleReal;
 }
 
-//
-//inline double GetHRSAngle(double ScatteredAngle){
-//	double HRSAngle=0.0;
-//
-//
-//
-//	return HRSAngle;
-//}
 
 inline Bool_t IsFileExist (const std::string& name) {
 	  struct stat buffer;
@@ -746,7 +738,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storag
 }
 
 
-double_t getBeamE(int runID){
+double_t getBeamE(int runID,TString beamEfname="/home/newdriver/Learning/GeneralScripts/halog/beamE.txt"){
 	std::map<int, double_t> beamE;
 	beamE[21739]=2.1763077;
 	beamE[21740]=2.1763047;
@@ -757,20 +749,36 @@ double_t getBeamE(int runID){
 	beamE[2565]=2.175984498;
 	beamE[2550]=2.17560073;
 	beamE[2556]=2.1762867;
-
 	beamE[2674]=2.1763062;
-
 	beamE[2697]=2.1763254;
-
 	beamE[2726]=2.1762729;
 
 
+	//read in the beamE information and parser
+	if ((!beamEfname.IsNull()) && IsFileExist(beamEfname.Data())){
+		std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E file: "<<beamEfname.Data()<<std::endl;
+
+		std::ifstream infile(beamEfname.Data());
+
+		int runID_temp;
+		float beamE_temp;
+		while (infile >> runID_temp >> beamE_temp){
+//			std::cout<<"runID:"<<runID_temp<<"   ->   "<<beamE_temp<<std::endl;
+			beamE[runID_temp]=beamE_temp/1000.0;
+		}
+
+
+	}else{
+		std::cout<<"\033[1;33m [Warning]\033[0m can not find file "<<beamEfname.Data()<<" Skip the beamE file!!!"<<std::endl;
+
+	}
 
 
 	if(beamE.find(runID)!=beamE.end()){
+
 		return beamE[runID];
 	}else{
-
+		std::cout<<"\033[1;31m [CAUTION]\033[0m Can not find the Beam E for run"<<runID<<" Using default value!!!["<<__func__<<"("<<__LINE__<<")]"<<std::endl;
 		return 2.17568;
 	}
 
@@ -1035,7 +1043,7 @@ void DynamicCanvas(){
 		//calculate the Dp with +/x 10^-4 change
 		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
 		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
-//		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID))));
+        //pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID))));
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
 		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
 		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");
