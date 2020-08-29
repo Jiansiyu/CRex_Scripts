@@ -6,7 +6,7 @@
  //	gROOT->LoadMacro("RasterGraphicCutPro.C");
 //	gROOT->LoadMacro("OpticsGraphicCutProMultiPeakFit.C");
 //	gROOT->LoadMacro("OpticsCrossValidation.C");
-	gROOT->LoadMacro("OpticsGraphicCutProH2O.C");
+	gROOT->LoadMacro("pointingCheck.C");
 //	gROOT->LoadMacro("OpticsPointingDpCheck.C");
 
 //	gROOT->LoadMacro("OpticsFocalVariableCheck.C");

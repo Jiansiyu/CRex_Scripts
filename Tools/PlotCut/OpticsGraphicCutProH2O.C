@@ -767,7 +767,6 @@ double_t getBeamE(int runID,TString beamEfname="/home/newdriver/Learning/General
 			beamE[runID_temp]=beamE_temp/1000.0;
 		}
 
-
 	}else{
 		std::cout<<"\033[1;33m [Warning]\033[0m can not find file "<<beamEfname.Data()<<" Skip the beamE file!!!"<<std::endl;
 
@@ -819,11 +818,6 @@ void DynamicCanvas(){
 	}
 
 	// try to extract the hall prob if this is LHRS
-//		TH1F *HallProbHH=new TH1F("HallLProb","HallLProb",1000,-1,0);
-//		chain->Project(HallProbHH->GetName(),"HacL_D_LS450_FLD_DATA",generalcut.Data());
-//		CentralP=std::abs((HallProbHH->GetMean())*0.95282/0.33930);
-//		std::cout<<"CentralMomentum is ::"<<(CentralP)<<std::endl;
-//
 	double CentralP;
 	if (HRS == "L") {
 		TH1F *HallProbHH = new TH1F("HallLProb", "HallLProb", 1000, -1, 0);
@@ -869,7 +863,6 @@ void DynamicCanvas(){
 			"SieveRecCanvas");
 	if (SieveRecCanvas) {
 		SieveRecCanvas->Clear();
-//		delete SieveRecCanvas->GetPrimitive("Projection");
 	} else
 		SieveRecCanvas = new TCanvas("SieveRecCanvas", "Projection Canvas",
 				1000, 1000);
