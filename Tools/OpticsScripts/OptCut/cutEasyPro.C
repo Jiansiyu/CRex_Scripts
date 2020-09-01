@@ -71,8 +71,6 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
-//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200530/RHRS/";
-//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200701/";
 TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200701/water";
 
 
@@ -163,12 +161,282 @@ TChain *LoadRootFiles(UInt_t runID,UInt_t maxFiles=999,TString folder="/home/new
 /// \param chain
 /// \return runID from the root file
 UInt_t getRunID(TChain *chain){
+    auto runID=int(chain->GetMaximum("fEvtHdr.fRun"));
+    return runID;
+}
 
-    return 1;
+TString getHRS(TChain *chain){
+    if (getRunID(chain) > 20000){
+        return  "R";
+    }else{
+        return  "L";
+    }
 }
 
 
+void DynamicCanvas(){
+    //check which button is clicked
+    //if the S button clicked, save the current  cut
+    //if the the d button clicked, skip the current hole and continue with the next one
 
+    int event = gPad->GetEvent();
+    if (event == kNoEvent)
+        return;
+
+    TObject *select = gPad->GetSelected();
+    if (!select)
+        return;
+    if (!select->InheritsFrom(TH2::Class())) {
+        gPad->SetUniqueID(0);
+        return;
+    }
+    TFile *tempfile=new TFile("temp.root","RECREATE");
+
+    // link the root tree and check which HRS we are working on
+    TChain *chain = (TChain *) gROOT->FindObject("T");
+    TString HRS("R");
+    TString filename(chain->GetFile()->GetName());
+    if (filename.Contains("RHRS")) {
+    } else if (filename.Contains("LHRS")) {
+        HRS = "L";
+    }
+
+    // check the input keys
+    if(event == kKeyPress) {
+
+        std::cout<<"Key Pressed::"<<(gPad->GetEventX())<<std::endl;
+        switch ((int) (gPad->GetEventX())) {
+            case '+':
+                row++;
+//                CurrentStatus();
+                break;
+            case '-':
+                row--;
+//                CurrentStatus();
+                break;
+            case 's':
+                std::cout << "Save Button Clicked" << std::endl;
+//			SavePatternHole();
+//                SavePatternHole(300000); // with out the groud momentum cut
+//			SavePatternHole_P1();
+                break;
+            case 'q':
+            {std::cout << "Quit Button Clicked" << std::endl;
+                gApplication->Clear();
+                gApplication->Terminate();
+                break;}
+            default:
+                std::cout<<(char)(gPad->GetEventX())<<std::endl;
+        }
+    }else
+    if (event==kButton1Down) {
+        TH2 *h = (TH2*) select;
+        gPad->GetCanvas()->FeedbackMode(kTRUE);
+
+
+        // if the button is clicked
+        //Rec the sieve pattern
+        // get the mouse click position in histogram
+        double_t x = (gPad->PadtoX(gPad->AbsPixeltoX(gPad->GetEventX())));
+        double_t y = (gPad->PadtoY(gPad->AbsPixeltoY(gPad->GetEventY())));
+
+        // before load to contour algorithm, get the more accurate center first
+        // create new canvas
+        TCanvas *SieveRecCanvas = (TCanvas*) gROOT->GetListOfCanvases()->FindObject("SieveRecCanvas");
+        if(SieveRecCanvas){
+            SieveRecCanvas->Clear();
+            delete SieveRecCanvas->GetPrimitive("Projection");
+        }else
+            SieveRecCanvas = new TCanvas("SieveRecCanvas","Projection Canvas", 1000,1000);
+
+        SieveRecCanvas->Divide(1,2);
+        SieveRecCanvas->cd(1)->Divide(2,1);
+        SieveRecCanvas->cd(2)->Divide(4,1);
+
+        SieveRecCanvas->cd(1)->cd(2)->Divide(1,3);
+
+        SieveRecCanvas->cd(1)->cd(2)->cd(1);
+        //preCut
+        TH2F *selectedSievePreCuthh = (TH2F *) gROOT->FindObject(
+                "Sieve_Selected_th_ph_PreCut");
+        if (selectedSievePreCuthh) {
+            selectedSievePreCuthh->Clear();
+        } else {
+            selectedSievePreCuthh= new TH2F("Sieve_Selected_th_ph_PreCut",
+                                            "Sieve_Selected_th_ph_PreCut", 100, h->GetXaxis()->GetXmin(),
+                                            h->GetXaxis()->GetXmax(), 100, h->GetYaxis()->GetXmin(),
+                                            h->GetYaxis()->GetXmax());
+        }
+
+        chain->Project(selectedSievePreCuthh->GetName(),
+                       Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
+                       Form("sqrt((%s.gold.th-%f)^2+ (%s.gold.ph-%f)^2)<0.003 && %s ",
+                            HRS.Data(), y, HRS.Data(), x, generalcut.Data()));
+        selectedSievePreCuthh->GetXaxis()->SetTitle(Form("%s.gold.ph",HRS.Data()));
+        selectedSievePreCuthh->GetYaxis()->SetTitle(Form("%s.gold.th",HRS.Data()));
+        //project to theta and phi, and start fit, get  more accurate position before pass to the counter
+        auto projectxPreCut = selectedSievePreCuthh->ProjectionX();
+        auto projectyPreCut = selectedSievePreCuthh->ProjectionY();
+        selectedSievePreCuthh->Draw("zcol");
+
+        SieveRecCanvas->cd(1)->cd(2)->cd(2);
+        projectxPreCut->Draw();
+        SieveRecCanvas->cd(1)->cd(2)->cd(3);
+        projectyPreCut->Draw();
+        //get the fit and update the position information
+        projectxPreCut->Fit("gaus","","");
+        projectyPreCut->Fit("gaus","","");
+
+        // get the updated informations
+        x=projectxPreCut->GetFunction("gaus")->GetParameter(1); //phi
+        y=projectyPreCut->GetFunction("gaus")->GetParameter(1);  //theta
+
+
+        //get the hsitogram and start rec
+        SieveRecCanvas->cd(2)->cd(1);
+
+        TH2F *selectedSievehh=(TH2F *)  gROOT->FindObject("Sieve_Selected_th_ph");
+        if(selectedSievehh){
+            selectedSievehh->Clear();
+        }else{
+            selectedSievehh = new TH2F("Sieve_Selected_th_ph",
+                                       "Sieve_Selected_th_ph",
+                                       100,
+                                       h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(),
+                                       100,
+                                       h->GetYaxis()->GetXmin(),h->GetYaxis()->GetXmax());
+        }
+
+        chain->Project(selectedSievehh->GetName(),
+                       Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),
+                       Form("sqrt((%s.gold.th-%f)^2+ (%s.gold.ph-%f)^2)<0.003 && %s ",
+                            HRS.Data(), y, HRS.Data(), x,generalcut.Data()));
+        selectedSievehh->SetContour(10);
+        selectedSievehh->GetXaxis()->SetTitle(Form("%s.gold.ph",HRS.Data()));
+        selectedSievehh->GetYaxis()->SetTitle(Form("%s.gold.th",HRS.Data()));
+        selectedSievehh->Draw("CONT LIST");
+
+        SieveRecCanvas->Update(); // update the canvas to let the pattern buffer in root
+
+        // extract the contour
+        TObjArray *conts = (TObjArray*) gROOT->GetListOfSpecials()->FindObject(
+                "contours");
+        if (!conts)
+            return;
+        TList *lcontour1 = (TList*) conts->At(1);
+        if (!lcontour1)
+            return;
+        TGraph *gc1 = (TGraph*) lcontour1->First();
+        if (!gc1)
+            return;
+        if (gc1->GetN() < 10)
+            return;
+
+        //TODO need to change the name of
+        TCutG *cutg = new TCutG(Form("hcut_R_%d_%d_%d", FoilID, col, row), gc1->GetN(), gc1->GetX(), gc1->GetY());
+        cutg->SetLineColor(kRed);
+        cutg->SetName(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+        cutg->SetVarX(Form("%s.gold.ph",HRS.Data()));
+        cutg->SetVarY(Form("%s.gold.th",HRS.Data()));
+        cutg->Draw("same");
+
+        SieveRecCanvas->cd(2)->cd(2);
+        auto projectx = selectedSievehh->ProjectionX();
+        projectx->Draw();
+        projectx->Fit("gaus");
+
+        SieveRecCanvas->cd(2)->cd(3);
+        auto projecty = selectedSievehh->ProjectionY();
+        projecty->Draw();
+        projecty->Fit("gaus");
+
+        // plot the cut on the canvas
+        SieveRecCanvas->cd(1)->cd(1);
+
+        TH2F *patternCheck=(TH2F *)  gROOT->FindObject("Sieve_Pattern_Check");
+        if(patternCheck){
+            patternCheck->Clear();
+        }
+        patternCheck = new TH2F("Sieve_Pattern_Check",
+                                "Sieve_Pattern_Check", h->GetXaxis()->GetNbins(),
+                                h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(),
+                                h->GetYaxis()->GetNbins(), h->GetYaxis()->GetXmin(),
+                                h->GetYaxis()->GetXmax());
+        chain->Project(patternCheck->GetName(),
+                       Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()),Form("%s",generalcut.Data()));
+        patternCheck->Draw("zcol");
+        cutg->Draw("same");
+        SieveRecCanvas->Update(); // update the canvas to let the pattern buffer in root
+
+        TLatex *label=new TLatex(selectedSievehh->GetMean(1),selectedSievehh->GetMean(2),Form("(%d %d)",col,row));
+        label->SetTextSize(0.04);
+        label->SetTextColor(2);
+        label->Draw("same");
+
+        row++;
+        SieveRecCanvas->Update();
+
+        SieveRecCanvas->cd(2)->cd(4);
+        TH1F *sieveholemomentum=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum_check", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum_check", FoilID, col, row),600,2.1,2.25);
+        chain->Project(sieveholemomentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",cutg->GetName(),generalcut.Data()));
+        sieveholemomentum->GetXaxis()->SetRangeUser(
+                sieveholemomentum->GetXaxis()->GetBinCenter(
+                        sieveholemomentum->GetMaximumBin())
+                - 0.009,
+                sieveholemomentum->GetXaxis()->GetBinCenter(
+                        sieveholemomentum->GetMaximumBin())
+                + 0.004);
+        sieveholemomentum->Draw();
+        SieveRecCanvas->Update();
+        SieveRecCanvas->Write();
+    }
+    tempfile->Write();
+    tempfile->Close();
+}
+
+///
+/// \param chain
+/// \return
+TVector getSieveThetaPhi(TChain *chain){
+      auto runID= getRunID(chain);
+      TString HRS=getHRS(chain);
+
+      //create the canvas qnd return value
+    TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
+    if(!mainPatternCanvas){
+        mainPatternCanvas=new TCanvas("cutProGetSieve","cutProGetSieve",1000,1200);
+    }else{
+        mainPatternCanvas->Clear();
+    }
+
+    mainPatternCanvas->Draw();
+    TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph_getThetaPhi");
+    if(TargetThPhHH) TargetThPhHH->Delete();
+    TargetThPhHH=new TH2F("th_vs_ph_getThetaPhi","th_vs_ph_getThetaPhi",1000,-0.025,0.025,1000,-0.047,0.045);
+
+    chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
+    TargetThPhHH->Draw("zcol");
+    mainPatternCanvas->SetGridx(10);
+    mainPatternCanvas->SetGridy(10);
+
+    //update the valueS
+    //    TLatex *text = new TLatex (0.8,0.1,"Please Click the Sieve Center");
+    //    text->SetTextColor(6);
+    //    text->Draw("same");
+
+    mainPatternCanvas->Update();
+    mainPatternCanvas->ToggleAutoExec();
+    mainPatternCanvas->AddExec("ex","DynamicCanvas()");
+
+    //Draw
+    TVector a;
+    return  a;
+}
+
+void test(){
+    auto chain = LoadRootFiles(22114,999,"/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result");
+    getSieveThetaPhi(chain);
+}
 
 ///
 /// \param runID
@@ -224,8 +492,3 @@ void cutProTemplate(UInt_t runID=22114,
 }
 
 
-
-TVector * GetCentralSievePos(TChain *chain){
-    TVector a(1.0,1.0);
-    return a;
-}
