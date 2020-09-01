@@ -174,6 +174,7 @@ TString getHRS(TChain *chain){
 }
 
 
+
 void DynamicCanvas(){
     //check which button is clicked
     //if the S button clicked, save the current  cut
@@ -182,7 +183,6 @@ void DynamicCanvas(){
     int event = gPad->GetEvent();
     if (event == kNoEvent)
         return;
-
     TObject *select = gPad->GetSelected();
     if (!select)
         return;
@@ -190,49 +190,23 @@ void DynamicCanvas(){
         gPad->SetUniqueID(0);
         return;
     }
+
     TFile *tempfile=new TFile("temp.root","RECREATE");
 
     // link the root tree and check which HRS we are working on
     TChain *chain = (TChain *) gROOT->FindObject("T");
     TString HRS("R");
     TString filename(chain->GetFile()->GetName());
+
     if (filename.Contains("RHRS")) {
     } else if (filename.Contains("LHRS")) {
         HRS = "L";
     }
 
-    // check the input keys
-    if(event == kKeyPress) {
-
-        std::cout<<"Key Pressed::"<<(gPad->GetEventX())<<std::endl;
-        switch ((int) (gPad->GetEventX())) {
-            case '+':
-                row++;
-//                CurrentStatus();
-                break;
-            case '-':
-                row--;
-//                CurrentStatus();
-                break;
-            case 's':
-                std::cout << "Save Button Clicked" << std::endl;
-//			SavePatternHole();
-//                SavePatternHole(300000); // with out the groud momentum cut
-//			SavePatternHole_P1();
-                break;
-            case 'q':
-            {std::cout << "Quit Button Clicked" << std::endl;
-                gApplication->Clear();
-                gApplication->Terminate();
-                break;}
-            default:
-                std::cout<<(char)(gPad->GetEventX())<<std::endl;
-        }
-    }else
     if (event==kButton1Down) {
         TH2 *h = (TH2*) select;
-        gPad->GetCanvas()->FeedbackMode(kTRUE);
 
+        gPad->GetCanvas()->FeedbackMode(kTRUE);
 
         // if the button is clicked
         //Rec the sieve pattern
@@ -398,45 +372,45 @@ void DynamicCanvas(){
 /// \param chain
 /// \return
 TVector getSieveThetaPhi(TChain *chain){
-      auto runID= getRunID(chain);
-      TString HRS=getHRS(chain);
 
-      //create the canvas qnd return value
+    gStyle->SetOptStat(0);
+
+    TString HRS=getHRS(chain);
+
+    if(HRS=="L"){
+        generalcut=generalcutL;
+    }else{
+        generalcut=generalcutR;
+    }
+
     TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
     if(!mainPatternCanvas){
-        mainPatternCanvas=new TCanvas("cutProGetSieve","cutProGetSieve",1000,1200);
+        mainPatternCanvas=new TCanvas("cutProGetSieve","cutProGetSieve",1000,1000);
     }else{
         mainPatternCanvas->Clear();
     }
 
+    //	TCanvas *mainPatternCanvas=new TCanvas("cut","cut",600,600);
     mainPatternCanvas->Draw();
-    TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph_getThetaPhi");
+    TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
     if(TargetThPhHH) TargetThPhHH->Delete();
-    TargetThPhHH=new TH2F("th_vs_ph_getThetaPhi","th_vs_ph_getThetaPhi",1000,-0.025,0.025,1000,-0.047,0.045);
+    TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.025,0.025,1000,-0.047,0.05);
 
     chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
     TargetThPhHH->Draw("zcol");
     mainPatternCanvas->SetGridx(10);
     mainPatternCanvas->SetGridy(10);
 
-    //update the valueS
-    //    TLatex *text = new TLatex (0.8,0.1,"Please Click the Sieve Center");
-    //    text->SetTextColor(6);
-    //    text->Draw("same");
 
     mainPatternCanvas->Update();
-    mainPatternCanvas->ToggleAutoExec();
-    mainPatternCanvas->AddExec("ex","DynamicCanvas()");
+    mainPatternCanvas->ToggleEventStatus();
+    mainPatternCanvas->AddExec("ex", "DynamicCanvas()");
 
     //Draw
     TVector a;
     return  a;
 }
 
-void test(){
-    auto chain = LoadRootFiles(22114,999,"/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result");
-    getSieveThetaPhi(chain);
-}
 
 ///
 /// \param runID
@@ -492,3 +466,7 @@ void cutProTemplate(UInt_t runID=22114,
 }
 
 
+void test(){
+    auto chain = LoadRootFiles(22114,999,"/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result");
+    getSieveThetaPhi(chain);
+}
