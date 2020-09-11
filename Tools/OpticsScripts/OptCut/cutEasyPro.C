@@ -52,6 +52,10 @@ int row_count=10;
 const UInt_t NSieveCol = 13;
 const UInt_t NSieveRow = 7;
 
+
+double clickedPosX=9999.99;
+double clickedPosY=9999.99;
+
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 // cut options
@@ -191,8 +195,6 @@ void DynamicCanvas(){
         return;
     }
 
-    TFile *tempfile=new TFile("temp.root","RECREATE");
-
     // link the root tree and check which HRS we are working on
     TChain *chain = (TChain *) gROOT->FindObject("T");
     TString HRS("R");
@@ -205,9 +207,7 @@ void DynamicCanvas(){
 
     if (event==kButton1Down) {
         TH2 *h = (TH2*) select;
-
         gPad->GetCanvas()->FeedbackMode(kTRUE);
-
         // if the button is clicked
         //Rec the sieve pattern
         // get the mouse click position in histogram
@@ -230,6 +230,7 @@ void DynamicCanvas(){
         SieveRecCanvas->cd(1)->cd(2)->Divide(1,3);
 
         SieveRecCanvas->cd(1)->cd(2)->cd(1);
+
         //preCut
         TH2F *selectedSievePreCuthh = (TH2F *) gROOT->FindObject(
                 "Sieve_Selected_th_ph_PreCut");
@@ -363,9 +364,13 @@ void DynamicCanvas(){
         sieveholemomentum->Draw();
         SieveRecCanvas->Update();
         SieveRecCanvas->Write();
+
+        double centerPosX=0,centerPosY=0;
+        cutg->Center(centerPosX, centerPosY);
+
+        clickedPosX=centerPosX;
+        clickedPosY=centerPosY;
     }
-    tempfile->Write();
-    tempfile->Close();
 }
 
 ///
@@ -406,6 +411,7 @@ TVector getSieveThetaPhi(TChain *chain){
     mainPatternCanvas->ToggleEventStatus();
     mainPatternCanvas->AddExec("ex", "DynamicCanvas()");
 
+    std::cout<<"This is an test position"<<std::endl;
     //Draw
     TVector a;
     return  a;
@@ -469,4 +475,5 @@ void cutProTemplate(UInt_t runID=22114,
 void test(){
     auto chain = LoadRootFiles(22114,999,"/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result");
     getSieveThetaPhi(chain);
+    std::cout<<__FUNCTION__ <<":: Test Position"<<std::endl;
 }
