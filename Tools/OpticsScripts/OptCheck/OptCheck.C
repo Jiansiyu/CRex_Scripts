@@ -66,8 +66,8 @@ TString generalcut;
 
 //CRex C-12
 TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1";
-
+///TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1";
+TString generalcutL="";
 // CRex Water
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
 //TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && L.gold.p > 2.14 && L.gold.p < 2.19";
@@ -177,9 +177,12 @@ TString getHRS(TChain *chain){
     }
 }
 
+/// Check the target variables on the target coordination system
+/// \param runID
+/// \param folder
+void checkThetaPhi(UInt_t runID, TString folder="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result") {
 
-void checkThetaPhi(UInt_t runID, TString folder="") {
-    auto chain = LoadRootFiles(runID);
+    auto chain = LoadRootFiles(runID,999,folder);
 
     TString HRS(getHRS(chain));
     //load the cut profile
@@ -195,20 +198,16 @@ void checkThetaPhi(UInt_t runID, TString folder="") {
     canv->cd(2)->Divide(1, 2);
     canv->Draw();
     canv->cd(1);
-    //plot target theta and phi on canvas
-    TCanvas *mainPatternCanvas = (TCanvas *) gROOT->GetListOfCanvases()->FindObject("cutPro");
-    if (!mainPatternCanvas) {
-        mainPatternCanvas = new TCanvas("cutPro", "cutPro", 1000, 1200);
-    } else {
-        mainPatternCanvas->Clear();
-    }
-    //	TCanvas *mainPatternCanvas=new TCanvas("cut","cut",600,600);
-    mainPatternCanvas->Draw();
+    canv->cd(1)->SetGridx();
+    canv->cd(1)->SetGridy();
+
+
     TH2F *TargetThPhHH = (TH2F *) gROOT->FindObject("th_vs_ph");
     if (TargetThPhHH) TargetThPhHH->Delete();
     TargetThPhHH = new TH2F("th_vs_ph", "th_vs_ph", 1000, -0.045, 0.045, 1000, -0.045, 0.045);
 
     chain->Project(TargetThPhHH->GetName(), Form("%s.gold.th:%s.gold.ph", HRS.Data(), HRS.Data()), generalcut.Data());
+    TargetThPhHH->SetTitle(Form("Targ_Theta_Phi_run%d",runID));
     TargetThPhHH->Draw("zcol");
 
     //create plot
@@ -223,7 +222,7 @@ void checkThetaPhi(UInt_t runID, TString folder="") {
    canv->cd(2)->cd(2)->SetGridx();
    canv->cd(2)->cd(2)->SetGridy();
    tgPhih->Draw();
-    canv->Update();
+   canv->Update();
 
 
 }

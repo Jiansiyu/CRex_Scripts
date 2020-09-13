@@ -7,6 +7,9 @@ Most of the code are root or Hall A analyzer micros
 
 # Usage
 
+#### Optics Dp check Scripts
+Used for check the Carbon with the Water Target Pointing Measurement
+
 #### cutPro.C
 Used for cut the Sieve Holes. It also can search for the ground state peak, and first excited state peak, and apply cut on it. It also have the scripts to generate the average focal plane variables.
 
@@ -57,7 +60,7 @@ python3 getBeamE.py
 ```
 
 
-##PRexCRex_cut branch 
+## PRexCRex_cut branch 
 
 modify the cutPro code, to handle both PRex and CRex data
 
