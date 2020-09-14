@@ -739,6 +739,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storag
 
 
 double_t getBeamE(int runID,TString beamEfname="/home/newdriver/Learning/GeneralScripts/halog/beamE.txt"){
+
 	std::map<int, double_t> beamE;
 	beamE[21739]=2.1763077;
 	beamE[21740]=2.1763047;
@@ -753,6 +754,7 @@ double_t getBeamE(int runID,TString beamEfname="/home/newdriver/Learning/General
 	beamE[2697]=2.1763254;
 	beamE[2726]=2.1762729;
 
+	//TODO check the root file, if it contains the hallp information, need to use this value
 
 	//read in the beamE information and parser
 	if ((!beamEfname.IsNull()) && IsFileExist(beamEfname.Data())){
@@ -1000,7 +1002,7 @@ void DynamicCanvas(){
 	firstposLine->SetLineWidth(2);
 	firstposLine->Draw("same");
 
-	TPaveText *pt = new TPaveText(0.1,0.8,0.3,0.9,"NDC");
+	TPaveText *pt = new TPaveText(0.1,0.8,0.6,0.9,"NDC");
 	double_t deltaE=fCrystalMomentumPar[1]-fCrystalMomentumPar[6];
 	double_t deltaErr=TMath::Sqrt( (fCrystalMomentum->GetParError(1))*(fCrystalMomentum->GetParError(1))+(fCrystalMomentum->GetParError(6))*(fCrystalMomentum->GetParError(6)));
 
