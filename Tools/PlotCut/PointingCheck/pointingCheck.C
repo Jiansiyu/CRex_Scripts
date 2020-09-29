@@ -168,12 +168,18 @@ int plotErrorsL(){
 
 
 	double crex2_x[]={0-0.2,0-0.1,0+0.2,0+0.3,0+0.4};
-	double crex2_y[]={4.717, 4.830, 4.831,4.710,4.779};
+	double crex2_y[]={4.775, 4.835, 4.831,4.710,4.779};
 	double crex2_ex[]={0.0,0.0,0.0,0.0,0.0};
 	double crex2_ey[]={0.036,0.034,0.037,0.037,0.037};
 
+    double crex3_x[]={0-0.25, 0-0.15, 0+0.25, 0+0.35, 0+0.45, 0+0.55, 1+0.2, -1.7 };
+    double crex3_y[]={4.717,  4.830,  4.831,  4.728,  4.760,  4.787,  4.800, 4.737 };
+    double crex3_ex[]={0.0,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,   0.0};
+    double crex3_ey[]={0.036, 0.034,  0.037,  0.037,  0.037,  0.037,  0.037, 0.037};
 
-	auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
+
+
+    auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
 	geprex->GetYaxis()->SetRangeUser(4.5,5.1);
 	geprex->GetXaxis()->SetRangeUser(-2,2);
 
@@ -232,6 +238,18 @@ int plotErrorsL(){
 	lgend->Draw("same");
 
 
+	int number = sizeof(crex3_y)/sizeof(double );
+    auto gecrex3=new TGraphErrors(8,crex3_x,crex3_y,crex3_ex,crex3_ey);
+    gecrex3->GetYaxis()->SetRangeUser(4.5,5.1);
+    gecrex3->SetLineWidth(2);
+    gecrex3->SetLineColor(70);
+    gecrex3->SetMarkerStyle(20);
+    gecrex3->SetMarkerColor(70);
+    gecrex3->Draw("p same");
+    lgend->AddEntry(gecrex3,Form("CRex3 LHRS"));
+    lgend->Draw("same");
+
+
 	hrsangleCanv->Update();
 
 return 1;
@@ -263,7 +281,13 @@ int plotErrorsR(){
 	double crex2_ex[]={0.0,0.0,0.0,0.0,0.0};
 	double crex2_ey[]={0.032,0.033,0.032,0.032,0.032};
 
-	auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
+    double crex3_x[]={0-0.25, 0-0.15, 0+0.25, 0+0.35, 0+0.45, 0+0.55, 1+0.2, -1.7 };
+    double crex3_y[]={4.794,  4.730,  4.840,  4.795,  4.795,  4.812,  4.794, 4.737 };
+    double crex3_ex[]={0.0,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,   0.0};
+    double crex3_ey[]={0.036, 0.034,  0.037,  0.037,  0.037,  0.037,  0.037, 0.037};
+
+
+    auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
 	geprex->GetYaxis()->SetRangeUser(4.5,5.1);
 	geprex->GetXaxis()->SetRangeUser(-2,2);
 	geprex->SetTitle("PRex/CRex RHRS Pointing Measurement");
@@ -298,7 +322,15 @@ int plotErrorsR(){
 	lgend->AddEntry(gecrex2,Form("CRex2 RHRS"));
 	lgend->Draw("same");
 
-
+    auto gecrex3=new TGraphErrors(8,crex3_x,crex3_y,crex3_ex,crex3_ey);
+    gecrex3->GetYaxis()->SetRangeUser(4.5,5.1);
+    gecrex3->SetLineWidth(2);
+    gecrex3->SetLineColor(70);
+    gecrex3->SetMarkerStyle(20);
+    gecrex3->SetMarkerColor(70);
+    gecrex3->Draw("p same");
+    lgend->AddEntry(gecrex3,Form("CRex3 LHRS"));
+    lgend->Draw("same");
 
 	TLine *line=new TLine(-2,4.7572,2,4.7572);
 	line->SetLineWidth(2);
@@ -363,10 +395,22 @@ int plotErrorsAverage(){
 	double crex2_ex[]={0.0,0.0,0.0,0.0,0.0};
 	double crex2_ey[]={0.032,0.033,0.032,0.032,0.032};
 
-	auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
+
+    double crex3_x[]={0-0.25, 0-0.15, 0+0.25, 0+0.35, 0+0.45, 0+0.55, 1+0.2, -1.7 };
+    double crex3_y[]={4.794,  4.730,  4.840,  4.795,  4.795,  4.812,  4.794, 4.737 };
+    for (int i = 0; i < 5 ; i ++){
+        double temp[]={4.717,  4.830,  4.831,  4.728,  4.760,  4.787,  4.800, 4.737};
+        crex3_y[i]=0.5*(crex2_y[i]+temp[i]);
+    }
+    double crex3_ex[]={0.0,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,   0.0};
+    double crex3_ey[]={0.036, 0.034,  0.037,  0.037,  0.037,  0.037,  0.037, 0.037};
+
+
+
+    auto geprex=new TGraphErrors(5,crex_x,crex_y,crex_ex,crex_ey);
 	geprex->GetYaxis()->SetRangeUser(4.5,5.1);
 	geprex->GetXaxis()->SetRangeUser(-2,2);
-	geprex->SetTitle("PRex/CRex RHRS Pointing Measurement");
+	geprex->SetTitle("PRex/CRex (RHRS+LHRS)/2 Pointing Measurement");
 	geprex->GetXaxis()->SetTitle("Dp Scan");
 	geprex->GetYaxis()->SetTitle("HRS Angle(Degree)");
 	geprex->SetLineWidth(2);
@@ -398,6 +442,16 @@ int plotErrorsAverage(){
 	lgend->AddEntry(gecrex2,Form("CRex2 Average"));
 	lgend->Draw("same");
 
+
+    auto gecrex3=new TGraphErrors(8,crex3_x,crex3_y,crex3_ex,crex3_ey);
+    gecrex3->GetYaxis()->SetRangeUser(4.5,5.1);
+    gecrex3->SetLineWidth(2);
+    gecrex3->SetLineColor(70);
+    gecrex3->SetMarkerStyle(20);
+    gecrex3->SetMarkerColor(70);
+    gecrex3->Draw("p same");
+    lgend->AddEntry(gecrex3,Form("CRex3 LHRS"));
+    lgend->Draw("same");
 
 
 	TLine *line=new TLine(-2,4.7572,2,4.7572);

@@ -76,9 +76,9 @@ double CentralP;
 TString prepcut;
 TString generalcut;
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p > 2.14 && R.gold.p < 2.19";
+TString generalcutR="R.tr.n==1";// && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p > 2.14 && R.gold.p < 2.19";
 //TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && L.gold.p > 2.14 && L.gold.p < 2.19";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.19";
+TString generalcutL="L.tr.n==1";// && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.19";
 
 
 //
@@ -738,7 +738,8 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storag
 }
 
 
-double_t getBeamE(int runID,TString beamEfname="/home/newdriver/Learning/GeneralScripts/halog/beamE.txt"){
+double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Learning/GeneralScripts/halog/beamE.txt"){
+
 
 	std::map<int, double_t> beamE;
 	beamE[21739]=2.1763077;
@@ -755,6 +756,24 @@ double_t getBeamE(int runID,TString beamEfname="/home/newdriver/Learning/General
 	beamE[2726]=2.1762729;
 
 	//TODO check the root file, if it contains the hallp information, need to use this value
+    {
+        double beamERangeMin=2100;
+        double beamERangeMax=2200;
+        chain->GetListOfBranches()->Contains("HALLA_p");
+        TH1F *HallEpicsBeamE = new TH1F("HallEpicsBeamE", "HallEpicsBeamE", 1000, beamERangeMin, beamERangeMax);
+        chain->Project(HallEpicsBeamE->GetName(),"HALLA_p");
+        double epicsBeamE=HallEpicsBeamE->GetMean();
+        if ((epicsBeamE > 2170)&&(epicsBeamE < 2180)){
+            std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E in ROOT file: "<<epicsBeamE<<std::endl;
+            return  epicsBeamE/1000.0;
+        }else{
+            std::cout<<"\033[1;31m [CAUTION]\033[0m Can not read reasonable Beam E from ROOT file:: "<<runID<<" ( "<<epicsBeamE/1000.0<<")"<<std::endl;
+        }
+    }
+
+
+
+
 
 	//read in the beamE information and parser
 	if ((!beamEfname.IsNull()) && IsFileExist(beamEfname.Data())){
@@ -1018,9 +1037,9 @@ void DynamicCanvas(){
 		double DeltaEMax=deltaE+deltaErr;
 		double DeltaE200=deltaE+200.0/1000000.0;
 		double DeltaEMin=deltaE-deltaErr;
-		double AngleMax=GetPointingAngle(DeltaEMax,getBeamE(eventID));
-		double AngleMin=GetPointingAngle(DeltaEMin,getBeamE(eventID));
-		double Angletemp=GetPointingAngle(deltaE,getBeamE(eventID));
+		double AngleMax=GetPointingAngle(DeltaEMax,getBeamE(eventID,chain));
+		double AngleMin=GetPointingAngle(DeltaEMin,getBeamE(eventID,chain));
+		double Angletemp=GetPointingAngle(deltaE,getBeamE(eventID,chain));
 		double errorAngle=0;
 		if(abs(AngleMax-Angletemp) >abs(Angletemp-AngleMin) ){
 			errorAngle=abs(AngleMax-Angletemp);
@@ -1028,9 +1047,9 @@ void DynamicCanvas(){
 			errorAngle=abs(AngleMin-Angletemp);
 		}
 
-		double errorAngle1=abs(GetPointingAngle(DeltaE200,getBeamE(eventID)))-Angletemp;
+		double errorAngle1=abs(GetPointingAngle(DeltaE200,getBeamE(eventID,chain)))-Angletemp;
 
-		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID)),errorAngle,errorAngle1));
+		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID,chain)),errorAngle,errorAngle1));
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
 		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
 		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");
@@ -1038,7 +1057,7 @@ void DynamicCanvas(){
 		//calculate the Dp with +/x 10^-4 change
 		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
 		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
-        //pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID))));
+        //pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID,chain))));
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
 		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
 		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");
