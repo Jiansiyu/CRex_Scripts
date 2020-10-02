@@ -63,14 +63,15 @@ const UInt_t NSieveRow = 7;
 TString prepcut;
 TString generalcut;
 
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p < 0.98 && R.gold.p > 0.94 && fEvtHdr.fEvtType==1";
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1 ";//&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && R.gold.p < 0.98 && R.gold.p > 0.94 && fEvtHdr.fEvtType==1";
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && L.gold.p > 0.94 && L.gold.p < 0.98 && fEvtHdr.fEvtType==1";
 
 //////////////////////////////////////////////////////////////////////////////
 // Work Directory
 //////////////////////////////////////////////////////////////////////////////
 
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/LHRS";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/junk";
 
 TString CutSuf = ".FullCut.root";
@@ -108,11 +109,10 @@ inline Bool_t IsFileExist (const std::string& name) {
 void ExperimentConfigure(TString experiment, TString HRS){
 
 	if(experiment =="PRex"){
-		defaultDataPath="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result";
-
+//		defaultDataPath="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result";
+        defaultDataPath="/home/newdriver/pyQuant/prex_replayed/optroot";
 		defaultMomMin=0.94;
 		defaultMomMax=0.973;
-
 	}else{
 		defaultDataPath="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result/";
 	}
@@ -228,7 +228,7 @@ Int_t cutPro(UInt_t runID,UInt_t current_col=3,TString folder="") {
 	mainPatternCanvas->Draw();
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.025,0.025,1000,-0.047,0.05);
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",500,-0.03,0.03,500,-0.045,0.045);
 
 	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
@@ -489,11 +489,16 @@ inline  int16_t getUID(UInt_t KineID,UInt_t Col, UInt_t Row){
 
 
 // take the cut file and  the root file as input, and generate the average value the parameters on the focal plane
+//TString cutFile =
+//        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/WithOutMomCut",
+//        TString folder =
+//"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles")
 Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		TString cutFile =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/WithOutMomCut",
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/LHRS/WithOutMomCut",
 		TString folder =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles") {
+				"/home/newdriver/pyQuant/prex_replayed/optroot")
+				{
 
 	TFile *rootFileIO=new TFile(Form("./OpticsFocalDiagnose_run%d.root",runID),"recreate");
 	TChain *chain=new TChain("T");
@@ -682,6 +687,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				sieveholemomentum[col][row]->Fit("gaus","","",sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())-0.001,sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())+0.001);
 				double SieveMomFitPar[3];
 				sieveholemomentum[col][row]->GetFunction("gaus")->GetParameters(SieveMomFitPar);
+                sieveholemomentum[col][row]->GetXaxis()->SetRangeUser(SieveMomFitPar[1]-10*SieveMomFitPar[2],SieveMomFitPar[1]+10*SieveMomFitPar[2]);
 				sieveholemomentum[col][row]->Draw();
 
 
@@ -729,7 +735,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				// get the focal plane variables
 				mainPatternCanvas->cd(2)->cd(1);
 				chain->Project(focalXh[col][row]->GetName(),Form("%s.tr.r_x",HRS.Data()),sieveHoleCut);
-				focalXh[col][row]->GetXaxis()->SetRangeUser(focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.05,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.03);
+				focalXh[col][row]->GetXaxis()->SetRangeUser(focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.03,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.03);
 				focalXh[col][row]->Fit("gaus","","",focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.01,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.01);
 				focalXh[col][row]->Draw();
 				focal_x=focalXh[col][row]->GetFunction("gaus")->GetParameter(1);
@@ -1253,7 +1259,7 @@ void DynamicCanvas(){
 			break;
 		case 's':
 			std::cout << "Save Button Clicked" << std::endl;
-			SavePatternHole();
+//			SavePatternHole();
 			SavePatternHole(300000); // with out the groud momentum cut
 //			SavePatternHole_P1();
 			break;
@@ -1300,8 +1306,8 @@ void DynamicCanvas(){
 				selectedSievePreCuthh->Clear();
 			} else {
 				selectedSievePreCuthh= new TH2F("Sieve_Selected_th_ph_PreCut",
-						"Sieve_Selected_th_ph_PreCut", 100, h->GetXaxis()->GetXmin(),
-						h->GetXaxis()->GetXmax(), 100, h->GetYaxis()->GetXmin(),
+						"Sieve_Selected_th_ph_PreCut", 200, h->GetXaxis()->GetXmin(),
+						h->GetXaxis()->GetXmax(), 200, h->GetYaxis()->GetXmin(),
 						h->GetYaxis()->GetXmax());
 			}
 
@@ -1540,7 +1546,7 @@ Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
 	mainPatternCanvas->Draw();
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",500,-0.015,0.025,500,-0.047,0.045);
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",500,-0.03,0.03,500,-0.045,0.045);
 
 	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
@@ -1584,9 +1590,23 @@ Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
 		cutg->SetVarY(Form("%s.gold.th", HRS.Data()));
 		cutg->Draw("PL");
 		mainPatternCanvas->Update();
+        //create the plot
+//        TCanvas *SieveRecCheckCanvas = (TCanvas*) gROOT->GetListOfCanvases()->FindObject("cutManualCheckCanv");
+//        if (SieveRecCheckCanvas){
+//            SieveRecCheckCanvas->Clear();
+//        }else{
+//            SieveRecCheckCanvas = new TCanvas("cutManualCheckCanv","cutManualCheckCanv", 1000,1000);
+//        }
+//        //create the canvas, and get the target theta phi,
+//        SieveRecCheckCanvas->Divide(1,2);
+//        SieveRecCheckCanvas->cd(1)->Divide(2,1);
+//        SieveRecCheckCanvas->cd(1);
+//        TargetThPhHH->Draw("zcol");
+//        cutg->Draw("same");
+////        SieveRecCheckCanvas->Divide(2,1);
+//        SieveRecCheckCanvas->Update();
     }
-
-  SavePatternHole();
+//  SavePatternHole();
   SavePatternHole(300000); // with out the groud momentum cut
   //SavePatternHole_P1();
   return 1;
