@@ -738,14 +738,23 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storag
 }
 
 
+double HRSAngleBPMCorrection(UInt_t runID){
+    //create the the canvas and calculate the angle correction cause the bpm
+    std::map<UInt_t, double> bpmValue;
+
+
+    std::map<UInt_t,double> bpmCorrectArray;
+
+    return 0.0;
+}
+
 double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Learning/GeneralScripts/halog/beamE.txt"){
-
-
 	std::map<int, double_t> beamE;
 	beamE[21739]=2.1763077;
 	beamE[21740]=2.1763047;
 	beamE[21789]=2.1762745;
 	beamE[21790]=2.1762517;
+    beamE[21762]=2.1763254;
 
 	beamE[2566]=2.175918588;
 	beamE[2565]=2.175984498;
@@ -766,14 +775,11 @@ double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Le
         if ((epicsBeamE > 2170)&&(epicsBeamE < 2180)){
             std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E in ROOT file: "<<epicsBeamE<<std::endl;
             return  epicsBeamE/1000.0;
-        }else{
-            std::cout<<"\033[1;31m [CAUTION]\033[0m Can not read reasonable Beam E from ROOT file:: "<<runID<<" ( "<<epicsBeamE/1000.0<<")"<<std::endl;
         }
+//        else{
+//            std::cout<<"\033[1;31m [CAUTION]\033[0m Can not read reasonable Beam E from ROOT file:: "<<runID<<" ( "<<epicsBeamE/1000.0<<")"<<std::endl;
+//        }
     }
-
-
-
-
 
 	//read in the beamE information and parser
 	if ((!beamEfname.IsNull()) && IsFileExist(beamEfname.Data())){
@@ -784,8 +790,8 @@ double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Le
 		int runID_temp;
 		float beamE_temp;
 		while (infile >> runID_temp >> beamE_temp){
-//			std::cout<<"runID:"<<runID_temp<<"   ->   "<<beamE_temp<<std::endl;
-			beamE[runID_temp]=beamE_temp/1000.0;
+        //std::cout<<"runID:"<<runID_temp<<"   ->   "<<beamE_temp<<std::endl;
+           beamE[runID_temp]=beamE_temp/1000.0;
 		}
 
 	}else{
@@ -803,6 +809,7 @@ double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Le
 	}
 
 }
+
 
 void DynamicCanvas(){
 	//check which button is clicked
@@ -888,10 +895,13 @@ void DynamicCanvas(){
 		SieveRecCanvas = new TCanvas("SieveRecCanvas", "Projection Canvas",
 				1000, 1000);
 
-	SieveRecCanvas->Divide(1, 2);
+	SieveRecCanvas->Divide(1, 3);   // on the third line, will display the bpm correction term
+
 	SieveRecCanvas->cd(2)->Divide(4, 1);
+    SieveRecCanvas->cd(3)->Divide(4,1);
 	//get the hsitogram and start rec
 	SieveRecCanvas->cd(2)->cd(2);
+
 
 	TH2F *selectedSievehh = (TH2F *) gROOT->FindObject("Sieve_Selected_th_ph");
 	if (selectedSievehh) {
@@ -1025,11 +1035,55 @@ void DynamicCanvas(){
 	double_t deltaE=fCrystalMomentumPar[1]-fCrystalMomentumPar[6];
 	double_t deltaErr=TMath::Sqrt( (fCrystalMomentum->GetParError(1))*(fCrystalMomentum->GetParError(1))+(fCrystalMomentum->GetParError(6))*(fCrystalMomentum->GetParError(6)));
 
-
-
 //	if(HallProbHH->GetEntries()!=0)
 	{
+	    //Step-1 calculate the correction
+        double HRSBPMCorrection=0.0;
 
+	        //load the BPM information from the data file. bpm on target
+	        TH1F *bpmXinforh=new TH1F(Form("BPM_X_on_targ"),Form("BPM_X_on_targ"),500,-5,5);
+            TH1F *bpmYinforh=new TH1F(Form("BPM_Y_on_targ"),Form("BPM_Y_on_targ"),500,-5,5);
+            bpmXinforh->GetXaxis()->SetTitle(Form("targx"));
+            bpmYinforh->GetXaxis()->SetTitle(Form("targy"));
+            chain->Project(bpmXinforh->GetName(),Form("targx"),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+            chain->Project(bpmYinforh->GetName(),Form("targy"),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+
+            // set the range, and do the fit on BPM
+//            bpmXinforh->GetXaxis()->SetRangeUser(bpmXinforh->GetBinCenter(bpmXinforh->GetMaximumBin())-1,bpmXinforh->GetBinCenter(bpmXinforh->GetMaximumBin())+1);
+//            bpmXinforh->Fit("gaus","","",bpmXinforh->GetBinCenter(bpmXinforh->GetMaximumBin())-1,bpmXinforh->GetBinCenter(bpmXinforh->GetMaximumBin())+1);
+
+//            bpmYinforh->GetXaxis()->SetRangeUser(bpmYinforh->GetBinCenter(bpmYinforh->GetMaximumBin())-1,bpmYinforh->GetBinCenter(bpmYinforh->GetMaximumBin())+1);
+//            bpmYinforh->Fit("gaus","","",bpmYinforh->GetBinCenter(bpmYinforh->GetMaximumBin())-1,bpmYinforh->GetBinCenter(bpmYinforh->GetMaximumBin())+1);
+
+            double bpmX=bpmXinforh->GetMean();
+            double bpmY=bpmYinforh->GetMean();
+
+
+            double sieveX=82.46;
+            double sieveY=-0.6;
+            double sieveZ=993.03;
+            if(HRS == "R"){
+                sieveX=-82.66;
+                sieveY=-0.46;
+                sieveZ=993.26;
+            }
+            // calculate the target value, and project the data to the hall-0 position
+
+
+            SieveRecCanvas->cd(3)->cd(1);
+            TLine *xMeanLine=new TLine(bpmX,0,bpmX,bpmXinforh->GetMaximumBin());
+            bpmXinforh->Draw();
+            xMeanLine->Draw("same");
+            SieveRecCanvas->cd(3)->cd(2);
+            TLine *yMeanLine=new TLine(bpmY,0,bpmY,bpmYinforh->GetMaximumBin());
+            bpmYinforh->Draw();
+            yMeanLine->Draw("same");
+
+            // calculate the angle
+            HRSBPMCorrection=TMath::ATan((bpmX)/sieveZ) * 180.0 / TMath::Pi();
+            std::cout<<"Correction angle::"<<HRSBPMCorrection<<std::endl;
+
+        SieveRecCanvas->cd(1);
 		//calculate the Dp with +/x 10^-4 change
 		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
 		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
@@ -1048,8 +1102,13 @@ void DynamicCanvas(){
 		}
 
 		double errorAngle1=abs(GetPointingAngle(DeltaE200,getBeamE(eventID,chain)))-Angletemp;
+		//add the correction
+		double HRSAngle=GetPointingAngle(deltaE,getBeamE(eventID,chain));
 
-		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID,chain)),errorAngle,errorAngle1));
+		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle,errorAngle,errorAngle1));
+        pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle-HRSBPMCorrection,errorAngle,errorAngle1));
+        pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f",bpmX,bpmY));
+
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
 		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
 		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");

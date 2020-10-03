@@ -255,6 +255,213 @@ int plotErrorsL(){
 return 1;
 }
 
+
+int plotErrorsCorrectL(){
+    auto hrsangleCanv=new TCanvas("HRS Angle","HRS Angle",200,10,600,400);
+    TMultiGraph *mg = new TMultiGraph();
+    mg->SetTitle("Exclusion graphs");
+
+    TLegend *lgend=new TLegend(0.3,0.3);
+    double prex_x[]={-1,0,1};
+    double prex_y[]={4.819,4.792,4.756};
+    double prex_ex[]={0.0,0.0,0.0};
+    double prex_ey[]={0.153,0.151,0.151};
+
+//    double crex_x[]={-1+0.1,0+0.1,1+0.1};
+//    double crex_y[]={4.755,4.779,4.791};
+//    double crex_ex[]={0.0,0.0,0.0};
+//    double crex_ey[]={0.029,0.029,0.029};
+
+
+    double crex2_x[]={0-0.2,0-0.1,0+0.2,0+0.3,0+0.4,-1+0.1};
+    double crex2_y[]={4.831, 4.834, 4.831,4.822,4.84,4.815};
+    double crex2_ex[]={0.0,0.0,0.0,0.0,0.0,0.0};
+    double crex2_ey[]={0.036,0.034,0.037,0.037,0.037,0.037};
+
+    double crex_x[]={0-0.25, 0-0.15, 0+0.25, 0+0.35, 0+0.45,  1+0.2, -1.7 };
+    double crex_y[]={4.831,  4.834,  4.829,  4.821,  4.831,    4.861, 4.798 };
+    double crex_ex[]={0.0,   0.0,    0.0,    0.0,    0.0,      0.0,   0.0};
+    double crex_ey[]={0.036, 0.034,  0.037,  0.037,  0.037,    0.037, 0.037};
+
+
+
+    auto geprex=new TGraphErrors(8,crex_x,crex_y,crex_ex,crex_ey);
+    geprex->GetYaxis()->SetRangeUser(4.5,5.1);
+    geprex->GetXaxis()->SetRangeUser(-2,2);
+
+    geprex->SetTitle("PRex/CRex LHRS Pointing Measurement");
+    geprex->GetXaxis()->SetTitle("Dp Scan");
+    geprex->GetYaxis()->SetTitle("HRS Angle(Degree)");
+    geprex->SetLineWidth(2);
+    geprex->SetLineColor(6);
+    geprex->SetMarkerStyle(20);
+    geprex->SetMarkerColor(6);
+    geprex->Draw("ap");
+    lgend->AddEntry(geprex,Form("CRex LHRS"));
+
+    TLine *line=new TLine(-2,4.7469,1.5,4.7469);
+    line->SetLineWidth(2);
+    line->SetLineColor(3);
+    line->Draw("same");
+
+
+    TLatex *text1= new TLatex(-2,4.7469+0.07,Form("Survey: 4.7469 + 0.06#circ"));
+
+    TLatex *text2= new TLatex(-2,4.7469-0.09,Form("Survey: 4.7469 - 0.06#circ"));
+
+    text1->Draw("same");
+    text2->Draw("same");
+
+    TLine *line1=new TLine(-2,4.7469+0.06,1.5,4.7469+0.06);
+    line1->SetLineWidth(2);
+    line1->SetLineColor(93);
+    line1->Draw("same");
+
+    TLine *line2=new TLine(-2,4.7469-0.06,1.5,4.7469-0.06);
+    line2->SetLineWidth(2);
+    line2->SetLineColor(93);
+    line2->Draw("same");
+
+    auto gecrex=new TGraphErrors(0,prex_x,prex_y,prex_ex,prex_ey);
+    gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
+    gecrex->SetLineWidth(2);
+    gecrex->SetLineColor(46);
+    gecrex->SetMarkerStyle(20);
+    gecrex->SetMarkerColor(46);
+    gecrex->Draw("p same");
+    lgend->AddEntry(gecrex,Form("PRex LHRS"));
+    lgend->Draw("same");
+
+
+    auto gecrex2=new TGraphErrors(5,crex2_x,crex2_y,crex2_ex,crex2_ey);
+    gecrex2->GetYaxis()->SetRangeUser(4.5,5.1);
+    gecrex2->SetLineWidth(2);
+    gecrex2->SetLineColor(56);
+    gecrex2->SetMarkerStyle(20);
+    gecrex2->SetMarkerColor(56);
+    gecrex2->Draw("p same");
+    lgend->AddEntry(gecrex2,Form("CRex2 LHRS"));
+    lgend->Draw("same");
+
+
+/*    int number = sizeof(crex3_y)/sizeof(double );
+    auto gecrex3=new TGraphErrors(8,crex3_x,crex3_y,crex3_ex,crex3_ey);
+    gecrex3->GetYaxis()->SetRangeUser(4.5,5.1);
+    gecrex3->SetLineWidth(2);
+    gecrex3->SetLineColor(70);
+    gecrex3->SetMarkerStyle(20);
+    gecrex3->SetMarkerColor(70);
+    gecrex3->Draw("p same");
+    lgend->AddEntry(gecrex3,Form("CRex3 LHRS"));
+    lgend->Draw("same");*/
+
+
+    hrsangleCanv->Update();
+
+    return 1;
+}
+
+int plotErrorsCorrectR(){
+    auto hrsangleCanv=new TCanvas("HRS Angle","HRS Angle",200,10,600,400);
+    TMultiGraph *mg = new TMultiGraph();
+    mg->SetTitle("Exclusion graphs");
+
+    TLegend *lgend=new TLegend(0.3,0.3);
+    double prex_x[]={-1,0,1};
+    double prex_y[]={4.748,4.84,4.846};
+    double prex_ex[]={0.0,0.0,0.0};
+    double prex_ey[]={0.153,0.151,0.151};
+
+//    double crex_x[]={-1+0.1,0+0.1,1+0.1};
+//    double crex_y[]={4.750,4.718,4.77};
+//    double crex_ex[]={0.0,0.0,0.0};
+//    double crex_ey[]={0.029,0.029,0.029};
+
+    double crex2_x[]={0-0.2,0-0.1,0+0.2,0+0.3,0+0.4};
+    double crex2_y[]={4.728, 4.731, 4.744,4.744,4.733};
+    double crex2_ex[]={0.0,0.0,0.0,0.0,0.0};
+    double crex2_ey[]={0.032,0.033,0.032,0.032,0.032};
+
+    double crex_x[]={0-0.25, 0-0.15, 0+0.25, 0+0.35, 0+0.45, 1+0.2, -1.7 };
+    double crex_y[]={4.732,  4.738,  4.729,  4.75,  4.732,  4.719,  4.74 };
+    double crex_ex[]={0.0,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0 };
+    double crex_ey[]={0.036, 0.034,  0.037,  0.037,  0.037,  0.037,  0.037};
+
+
+    auto geprex=new TGraphErrors(8,crex_x,crex_y,crex_ex,crex_ey);
+    geprex->GetYaxis()->SetRangeUser(4.5,5.1);
+    geprex->GetXaxis()->SetRangeUser(-2,2);
+    geprex->SetTitle("PRex/CRex RHRS Pointing Measurement");
+    geprex->GetXaxis()->SetTitle("Dp Scan");
+    geprex->GetYaxis()->SetTitle("HRS Angle(Degree)");
+    geprex->SetLineWidth(2);
+    geprex->SetLineColor(6);
+    geprex->SetMarkerStyle(20);
+    geprex->SetMarkerColor(6);
+    geprex->Draw("ap");
+    lgend->AddEntry(geprex,Form("CRex HRS"));
+
+
+    auto gecrex=new TGraphErrors(0,prex_x,prex_y,prex_ex,prex_ey);
+    gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
+    gecrex->SetLineWidth(2);
+    gecrex->SetLineColor(46);
+    gecrex->SetMarkerStyle(20);
+    gecrex->SetMarkerColor(46);
+    gecrex->Draw("p same");
+    lgend->AddEntry(gecrex,Form("PRex RHRS"));
+    lgend->Draw("same");
+
+
+    auto gecrex2=new TGraphErrors(5,crex2_x,crex2_y,crex2_ex,crex2_ey);
+    gecrex2->GetYaxis()->SetRangeUser(4.5,5.1);
+    gecrex2->SetLineWidth(2);
+    gecrex2->SetLineColor(56);
+    gecrex2->SetMarkerStyle(20);
+    gecrex2->SetMarkerColor(56);
+    gecrex2->Draw("p same");
+    lgend->AddEntry(gecrex2,Form("CRex2 RHRS"));
+    lgend->Draw("same");
+
+//    auto gecrex3=new TGraphErrors(8,crex3_x,crex3_y,crex3_ex,crex3_ey);
+//    gecrex3->GetYaxis()->SetRangeUser(4.5,5.1);
+//    gecrex3->SetLineWidth(2);
+//    gecrex3->SetLineColor(70);
+//    gecrex3->SetMarkerStyle(20);
+//    gecrex3->SetMarkerColor(70);
+//    gecrex3->Draw("p same");
+//    lgend->AddEntry(gecrex3,Form("CRex3 RHRS"));
+//    lgend->Draw("same");
+
+    TLine *line=new TLine(-2,4.7572,1.5,4.7572);
+    line->SetLineWidth(2);
+    line->SetLineColor(3);
+    line->Draw("same");
+
+
+    TLatex *text1= new TLatex(-2,4.7572+0.07,Form("Survey: 4.7572 + 0.06"));
+
+    TLatex *text2= new TLatex(-2,4.7572-0.09,Form("Survey: 4.7572 - 0.06"));
+
+    text1->Draw("same");
+    text2->Draw("same");
+
+    TLine *line1=new TLine(-2,4.7572+0.06,1.5,4.7572+0.06);
+    line1->SetLineWidth(2);
+    line1->SetLineColor(93);
+    line1->Draw("same");
+
+    TLine *line2=new TLine(-2,4.7572-0.06,1.5,4.7572-0.06);
+    line2->SetLineWidth(2);
+    line2->SetLineColor(93);
+    line2->Draw("same");
+
+    hrsangleCanv->Update();
+
+    return 1;
+}
+
+
 int plotErrorsR(){
 	auto hrsangleCanv=new TCanvas("HRS Angle","HRS Angle",200,10,600,400);
 	TMultiGraph *mg = new TMultiGraph();
