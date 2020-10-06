@@ -22,40 +22,29 @@
 #include <TChain.h>
 #include <TCut.h>
 #include <TCutG.h>
-#include <TPad.h>
 #include <TMath.h>
-#include <TH1F.h>
 #include <TH2F.h>
 #include <TH1.h>
 #include <TF1.h>
-#include <TMath.h>
-#include <TF1NormSum.h>
 #include <TPaveText.h>
 #include <map>
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
 
-#include <TComplex.h>
 #include <TVirtualPad.h>
 
-#include <TSpectrum2.h>
-#include <TF2.h>
 #include <TObject.h>
-#include "TMinuit.h"
 #include <TFile.h>
 #include <fstream>
 #include <TLatex.h>
 #include <TSystem.h>
-#include "TPaveText.h"
-#include "TText.h"
 #include <TApplication.h>
 #include <TVector3.h>
 #include <TRotation.h>
 
 #include <Math/Functor.h>
-#include <Math/RootFinderAlgorithms.h>
+
 #include "Math/RootFinder.h"
 
 int FoilID=0;
@@ -105,8 +94,9 @@ inline double GetPointingAngle(double DeltaE, double BeamE=2.17568){
 
 
 inline Bool_t IsFileExist (const std::string& name) {
-	  struct stat buffer;
-	  return (stat (name.c_str(), &buffer) == 0);
+    return !gSystem->AccessPathName(name.c_str());
+//	  struct stat buffer;
+//	  return (stat (name.c_str(), &buffer) == 0);
 }
 
 

@@ -322,15 +322,15 @@ int plotErrorsCorrectL(){
     line2->SetLineColor(93);
     line2->Draw("same");
 
-    auto gecrex=new TGraphErrors(0,prex_x,prex_y,prex_ex,prex_ey);
-    gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
-    gecrex->SetLineWidth(2);
-    gecrex->SetLineColor(46);
-    gecrex->SetMarkerStyle(20);
-    gecrex->SetMarkerColor(46);
-    gecrex->Draw("p same");
-    lgend->AddEntry(gecrex,Form("PRex LHRS"));
-    lgend->Draw("same");
+//    auto gecrex=new TGraphErrors(0,prex_x,prex_y,prex_ex,prex_ey);
+//    gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
+//    gecrex->SetLineWidth(2);
+//    gecrex->SetLineColor(46);
+//    gecrex->SetMarkerStyle(20);
+//    gecrex->SetMarkerColor(46);
+//    gecrex->Draw("p same");
+//    lgend->AddEntry(gecrex,Form("PRex LHRS"));
+//    lgend->Draw("same");
 
 
     auto gecrex2=new TGraphErrors(5,crex2_x,crex2_y,crex2_ex,crex2_ey);
@@ -402,15 +402,15 @@ int plotErrorsCorrectR(){
     lgend->AddEntry(geprex,Form("CRex HRS"));
 
 
-    auto gecrex=new TGraphErrors(0,prex_x,prex_y,prex_ex,prex_ey);
-    gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
-    gecrex->SetLineWidth(2);
-    gecrex->SetLineColor(46);
-    gecrex->SetMarkerStyle(20);
-    gecrex->SetMarkerColor(46);
-    gecrex->Draw("p same");
-    lgend->AddEntry(gecrex,Form("PRex RHRS"));
-    lgend->Draw("same");
+//    auto gecrex=new TGraphErrors(0,prex_x,prex_y,prex_ex,prex_ey);
+//    gecrex->GetYaxis()->SetRangeUser(4.5,5.1);
+//    gecrex->SetLineWidth(2);
+//    gecrex->SetLineColor(46);
+//    gecrex->SetMarkerStyle(20);
+//    gecrex->SetMarkerColor(46);
+//    gecrex->Draw("p same");
+//    lgend->AddEntry(gecrex,Form("PRex RHRS"));
+//    lgend->Draw("same");
 
 
     auto gecrex2=new TGraphErrors(5,crex2_x,crex2_y,crex2_ex,crex2_ey);

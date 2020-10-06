@@ -15,4 +15,5 @@
 //	gROOT->LoadMacro("prexOpticsCutPro.C");
 //	gROOT->LoadMacro("TargetThetaPhiManualAdj.C");
 // 	gROOT->LoadMacro("CheckRaster.C");
+//	gROOT->LoadMacro("test.C");
 }
