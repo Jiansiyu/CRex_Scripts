@@ -16,19 +16,16 @@
  */
 #include <TROOT.h>
 #include <TStyle.h>
+#include "TSystem.h"
+
 #include <TCanvas.h>
 #include <TString.h>
 #include <TChain.h>
 #include <TCut.h>
-#include <TCutG.h>
 #include <TPad.h>
 #include <TMath.h>
-#include <TH1F.h>
-#include <TH2F.h>
 #include <TH1.h>
-#include <TF1.h>
-#include <TMath.h>
-#include <TF1NormSum.h>
+
 #include <TPaveText.h>
 #include <TGraphErrors.h>
 #include <TMultiGraph.h>
@@ -36,12 +33,17 @@
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
+//#include <sys/stat.h>
 #include <TLegend.h>
 #include <TLatex.h>
+#include "fstream"
+#include "iostream"
+#include "string"
+//#include "i"
 inline Bool_t IsFileExist (const std::string& name) {
-	  struct stat buffer;
-	  return (stat (name.c_str(), &buffer) == 0);
+    return !gSystem->AccessPathName(name.c_str());
+//	  struct stat buffer;
+//	  return (stat (name.c_str(), &buffer) == 0);
 }
 
 // plot cut
@@ -478,11 +480,6 @@ int plotErrorsR(){
 	double crex_ex[]={0.0,0.0,0.0};
 	double crex_ey[]={0.029,0.029,0.029};
 
-//	double crex2_x[]={0+0.2,0+0.3,0+0.4};
-//	double crex2_y[]={4.734,4.742, 4.787};
-//	double crex2_ex[]={0.0,0.0,0.0};
-//	double crex2_ey[]={0.032,0.032,0.032};
-
 	double crex2_x[]={0-0.2,0-0.1,0+0.2,0+0.3,0+0.4};
 	double crex2_y[]={4.840, 4.730, 4.742,4.853,4.787};
 	double crex2_ex[]={0.0,0.0,0.0,0.0,0.0};
@@ -787,4 +784,165 @@ int plotErrors(){
 	hrsangleCanv->Update();
 
 return 1;
+}
+
+unsigned int ColorRequestCounter=0;
+int requestColor(){
+    int color[]={6,46,56};
+    ColorRequestCounter=ColorRequestCounter+1;
+    return color[ColorRequestCounter-1];
+}
+
+TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data,TString HRS="RHRS"){
+
+    auto hrsangleCanv=new TCanvas("HRS Angle","HRS Angle",200,10,600,400);
+    TMultiGraph *mg = new TMultiGraph();
+    mg->SetTitle("Exclusion graphs");
+
+
+    TLegend *lgend=new TLegend(0.3,0.3);
+
+    for (auto iter=data.begin(); iter!=data.end();iter++){
+        TString title=iter->first;
+        const int elemenCount=iter->second.size();
+        double x_id[elemenCount];
+        double x_err[elemenCount];
+        double y_value[elemenCount];
+        double y_err[elemenCount];
+
+
+        for(unsigned int counter=0;counter<iter->second.size();counter++){
+            x_id[counter]=iter->second[counter][0];
+            x_err[counter]=iter->second[counter][1];
+            y_value[counter]=iter->second[counter][2];
+            y_err[counter]=iter->second[counter][3];
+        }
+
+        for (int i =0 ; i < iter->second.size();i++){
+           std::cout<<x_id[i]<<" ";
+        }
+        std::cout<<std::endl;
+
+        for (int i =0 ; i < iter->second.size();i++){
+            std::cout<<x_err[i]<<" ";
+        }
+        std::cout<<std::endl;
+
+
+        auto prexplot=new TGraphErrors(iter->second.size(),x_id,y_value,x_err,y_err);
+        prexplot->GetYaxis()->SetRangeUser(4.5,5.1);
+        prexplot->GetXaxis()->SetLimits(-2,2);
+
+
+        prexplot->GetXaxis()->SetTitle("Dp Scan");
+        prexplot->GetYaxis()->SetTitle("HRS Angle(Degree)");
+        prexplot->SetLineWidth(2);
+        auto color=requestColor();
+        prexplot->SetLineColor(color);
+        prexplot->SetMarkerStyle(20);
+        prexplot->SetMarkerColor(color);
+        lgend->AddEntry(prexplot,title.Data());
+        if(iter==data.begin())
+        {
+            prexplot->SetTitle(Form("PRex/CRex %s Pointing Measurement",HRS.Data()));
+            prexplot->Draw("ap");
+        }else{
+            prexplot->Draw("p same");
+        }
+    }
+
+    {
+        double survey = 4.7469;
+        if (HRS == "RHRS"){
+            survey=4.7572;
+        }
+        TLine *line=new TLine(-1.9,survey,1.9,survey);
+        line->SetLineWidth(2);
+        line->SetLineColor(3);
+        line->Draw("same");
+
+
+        TLatex *text1= new TLatex(-2,survey+0.07,Form("Survey: %f + 0.06#circ",survey));
+
+        TLatex *text2= new TLatex(-2,survey-0.09,Form("Survey: %f - 0.06#circ",survey));
+
+        text1->Draw("same");
+        text2->Draw("same");
+
+        TLine *line1=new TLine(-1.9,survey+0.06,1.9,survey+0.06);
+        line1->SetLineWidth(2);
+        line1->SetLineColor(93);
+        line1->Draw("same");
+
+        TLine *line2=new TLine(-1.9,survey-0.06,1.9,survey-0.06);
+        line2->SetLineWidth(2);
+        line2->SetLineColor(93);
+        line2->Draw("same");
+    }
+
+    lgend->Draw("same");
+    return hrsangleCanv;
+}
+
+int plotError(TString csvfname="./crex_pointing.csv"){
+
+    if (gSystem->AccessPathName(csvfname.Data())){
+        std::cout<<"\033[1;33m [Warning]\033[0m Missing csv file::"<<csvfname.Data()<<std::endl;
+        return  -1;
+    }
+
+    //load the data information
+    std::ifstream csvStream(csvfname.Data());
+
+    std::string line;
+
+    std::map<std::string,std::vector<std::vector<double>>> pointDataR;
+    std::map<std::string,std::vector<std::vector<double>>> pointDataL;
+
+    while (std::getline(csvStream,line)){
+        std::istringstream  s(line);
+        std::string field;
+
+        std::vector<double> LData;
+        std::vector<double> RData;
+
+        getline(s,field,',');
+        TString  title=field;
+        if(title.Contains("CRex_")) {
+            getline(s, field, ',');
+            LData.push_back( std::stof(field.c_str()));
+            RData.push_back(std::stof(field.c_str()));
+
+            getline(s, field, ',');
+            LData.push_back( std::stof(field.c_str()));
+            RData.push_back(std::stof(field.c_str()));
+
+            getline(s, field, ',');
+            LData.push_back( std::stof(field.c_str()));
+
+            getline(s, field, ',');
+            LData.push_back( std::stof(field.c_str()));
+
+            getline(s, field, ',');
+            RData.push_back(std::stof(field.c_str()));
+
+            getline(s, field, ',');
+            RData.push_back(std::stof(field.c_str()));
+        }
+
+//        std::cout<<title.Data()<<","<<LData[0]<<","<<LData[1]<<","<<LData[2]<<","<<LData[3]<<"::"<<RData[0]<<","<<RData[1]<<","<<RData[2]<<","<<RData[3]<<std::endl;
+        if(title.Contains("CRex_")) {
+        pointDataR[title.Data()].push_back(RData);
+        pointDataL[title.Data()].push_back(LData);
+        }
+    }
+
+
+    plotHRSCanv(pointDataL,"LHRS");
+//    plotHRSCanv(pointDataR,"RHRS");
+
+
+
+    return  1;
+
 }

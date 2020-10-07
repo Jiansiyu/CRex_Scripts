@@ -1,14 +1,4 @@
 /*
- * OpticsGraphicCutPro.C
- *
- *  Created on: Jan 9, 2020
- *      Author: newdriver
- */
-
-
-
-
-/*
  * cutPro.C
  *
  *  Created on: Dec 12, 2019
@@ -42,7 +32,7 @@
 #include <TApplication.h>
 #include <TVector3.h>
 #include <TRotation.h>
-
+#include "TImage.h"
 #include <Math/Functor.h>
 
 #include "Math/RootFinder.h"
@@ -155,7 +145,7 @@ TF1 *SpectroCrystalFit_H2O(TH1F*momentumSpectro){
 	double_t ffirstCrystalPar[5];
 	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
 	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
-	momentumSpectro->Fit("ffirstCrystal","R","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
+	momentumSpectro->Fit("ffirstCrystal","RQ0","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
 	ffirstCrystal->GetParameters(ffirstCrystalPar);
 
 	double_t fCrystalMomentumPar[10];
@@ -163,7 +153,7 @@ TF1 *SpectroCrystalFit_H2O(TH1F*momentumSpectro){
 	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
 	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
 	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
-	momentumSpectro->Fit("fCrystalMomentum","","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+	momentumSpectro->Fit("fCrystalMomentum","RQ0","ep",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
 
 	return fCrystalMomentum;
 }
@@ -966,7 +956,7 @@ void DynamicCanvas(){
 	double_t fgroudGausPar[3];
 	double_t ffirstGuasPar[3];
 	TF1 *fgroudGaus=new TF1("groudstatesgaus","gaus",CGroundp-0.0005,CGroundp+0.0005);
-	momentum->Fit("groudstatesgaus","R","ep",fgroudGaus->GetXmin(),fgroudGaus->GetXmax());
+	momentum->Fit("groudstatesgaus","RQ0","ep",fgroudGaus->GetXmin(),fgroudGaus->GetXmax());
 	fgroudGaus->Draw("same");
 	fgroudGaus->GetParameters(fgroudGausPar);
 
@@ -977,7 +967,7 @@ void DynamicCanvas(){
 //	auto C1stp=2.1565;//CGroundp-0.016504;
 
 	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0015,C1stp+0.00155);
-	momentum->Fit("firststatesgaus","R","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
+	momentum->Fit("firststatesgaus","RQ0","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
 	ffirstGuas->Draw("same");
 	ffirstGuas->GetParameters(ffirstGuasPar);
 
@@ -986,7 +976,7 @@ void DynamicCanvas(){
 	double_t fgroundCrystalballPar[5];
 	TF1 *fgroundCrystalball=new TF1("fgroundCrystal","crystalball",fgroudGausPar[1]-0.0030,fgroudGaus->GetXmax()+0.0003);
 	fgroundCrystalball->SetParameters(fgroudGausPar[0],fgroudGausPar[1],fgroudGausPar[2],1.64,1.1615);
-	momentum->Fit("fgroundCrystal","R","same",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
+	momentum->Fit("fgroundCrystal","RQ0","same",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
 	fgroundCrystalball->GetParameters(fgroundCrystalballPar);
 
 	//fgroundCrystalball->Draw("same");
@@ -994,7 +984,7 @@ void DynamicCanvas(){
 	double_t ffirstCrystalPar[5];
 	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
 	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
-	momentum->Fit("ffirstCrystal","R","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
+	momentum->Fit("ffirstCrystal","RQ0","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
 	ffirstCrystal->GetParameters(ffirstCrystalPar);
 	//	ffirstCrystal->Draw("same");
 	// fit together
@@ -1003,7 +993,7 @@ void DynamicCanvas(){
 	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
 	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
 	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
-	momentum->Fit("fCrystalMomentum","","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+	momentum->Fit("fCrystalMomentum","R","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
 	fCrystalMomentum->Draw("same");
 	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
 
@@ -1073,6 +1063,22 @@ void DynamicCanvas(){
             HRSBPMCorrection=TMath::ATan((bpmX)/sieveZ) * 180.0 / TMath::Pi();
             std::cout<<"Correction angle::"<<HRSBPMCorrection<<std::endl;
 
+            SieveRecCanvas->cd(3)->cd(3);
+            TString imgfname=Form("/home/newdriver/Learning/GeneralScripts/halog/result/BeamE%d.jpg",eventID);
+            if(!gSystem->AccessPathName(imgfname.Data())){
+                TImage *img=TImage::Open(imgfname.Data());
+                img->Draw();
+            }
+
+            // get the equantion and the equation that used for calculate the correction angle
+            SieveRecCanvas->cd(3)->cd(4);
+
+            TPaveText *infor=new TPaveText(0.1,0.8,0.6,0.9,"NDC");
+            infor->AddText(Form("Bpm on Targ x.y/cm:(%f,%f)",bpmX,bpmY));
+            infor->AddText(Form("Targ to Sieve on Beamline:%f",sieveZ));
+            infor->AddText(Form("Atan(#frac{%f}{%f})=%f (%f#circ)",bpmX,sieveZ,TMath::ATan((bpmX)/sieveZ),HRSBPMCorrection));
+            infor->Draw("same");
+
         SieveRecCanvas->cd(1);
 		//calculate the Dp with +/x 10^-4 change
 		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
@@ -1096,7 +1102,7 @@ void DynamicCanvas(){
 		double HRSAngle=GetPointingAngle(deltaE,getBeamE(eventID,chain));
 
 		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle,errorAngle,errorAngle1));
-        pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle-HRSBPMCorrection,errorAngle,errorAngle1));
+//        pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle-HRSBPMCorrection,errorAngle,errorAngle1));
         pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f",bpmX,bpmY));
 
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
@@ -1142,13 +1148,13 @@ void DynamicCanvas(){
 	TH1F *groundStats=(TH1F *)momentum->Clone("H2O p.ground");
 	groundStats->GetXaxis()->SetRangeUser(fCrystalMomentumPar[1]-0.002,fCrystalMomentumPar[1]+0.002);
 	groundStats->Draw();
-	//groudposLine->Draw("same");
+	groudposLine->Draw("same");
 
 	SieveRecCanvas->cd(2)->cd(4);
 	TH1F *firstStats=(TH1F *)momentum->Clone("H2O p.first");
 	firstStats->GetXaxis()->SetRangeUser(fCrystalMomentumPar[6]-0.002,fCrystalMomentumPar[6]+0.002);
 	firstStats->Draw();
-	//firstposLine->Draw("same");
+	firstposLine->Draw("same");
 
 	SieveRecCanvas->Update();
 
@@ -1168,8 +1174,6 @@ void DynamicCanvas(){
 	TCanvas *SieveMainCanvas = (TCanvas*) gROOT->GetListOfCanvases()->FindObject(
 				"cutPro");
 
-
-
 	if(SieveMainCanvas){
 		SieveMainCanvas->cd();
 		cutg->Draw("same");
@@ -1180,9 +1184,8 @@ void DynamicCanvas(){
 		t2->SetTextSize(0.02);
 		t2->Draw("same");
 	}
+	SieveRecCanvas->SaveAs(Form("./PointingCheck/result/Pointing_%d.root",eventID));
 	hSieveHole->Delete();
 	cutg->Delete();
-//	f1->Close();
-
 }
 
