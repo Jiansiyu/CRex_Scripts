@@ -13,30 +13,19 @@
 #include <TChain.h>
 #include <TCut.h>
 #include <TCutG.h>
-#include <TPad.h>
-#include <TMath.h>
-#include <TH1F.h>
 #include <TH2F.h>
 #include <TH1.h>
 #include <TF1.h>
-#include <TMath.h>
-#include <TF1NormSum.h>
 #include <TPaveText.h>
 #include <map>
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
 
-#include <TComplex.h>
 #include <TVirtualPad.h>
 
-#include <TSpectrum2.h>
-#include <TF2.h>
 #include <TObject.h>
-#include "TMinuit.h"
 #include <TFile.h>
-#include <fstream>
 #include <TLatex.h>
 #include <TSystem.h>
 
@@ -64,8 +53,7 @@ TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.v
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.2";//&& fEvtHdr.fEvtType==1
 
 inline Bool_t IsFileExist (const std::string& name) {
-	  struct stat buffer;
-	  return (stat (name.c_str(), &buffer) == 0);
+    return !gSystem->AccessPathName(name.c_str());
 }
 
 
@@ -270,6 +258,7 @@ void DynamicCanvas(){
 		HRS = "L";
 	}
 
+
 	TH2 *h = (TH2*) select;
 	gPad->GetCanvas()->FeedbackMode(kTRUE);
 
@@ -278,6 +267,8 @@ void DynamicCanvas(){
 	double_t x = (gPad->PadtoX(gPad->AbsPixeltoX(gPad->GetEventX())));
 	double_t y = (gPad->PadtoY(gPad->AbsPixeltoY(gPad->GetEventY())));
 
+
+	int runID=(int)chain->GetMaximum("fEvtHdr.fRun");
 	// create new canvas
 	TCanvas *SieveRecCanvas = (TCanvas*) gROOT->GetListOfCanvases()->FindObject(
 			"SieveRecCanvas");
@@ -353,7 +344,7 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",500,2.16,2.178);
+	TH1F *momentum=new TH1F(Form("C-12 gold.p run%d",runID),Form("C-12 gold.p run%d",runID),500,2.16,2.178);
 	chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
@@ -475,7 +466,7 @@ void DynamicCanvas(){
 		t2->Draw("same");
 	}
 
-
+	SieveRecCanvas->SaveAs(Form("Carbon/Carbon_%d.jpg",runID));
 	hSieveHole->Delete();
 //	f1->Close();
 }

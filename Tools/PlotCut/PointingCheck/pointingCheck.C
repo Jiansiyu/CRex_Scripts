@@ -938,8 +938,8 @@ int plotError(TString csvfname="./crex_pointing.csv"){
     }
 
 
-    plotHRSCanv(pointDataL,"LHRS");
-//    plotHRSCanv(pointDataR,"RHRS");
+    // plotHRSCanv(pointDataL,"LHRS");
+   plotHRSCanv(pointDataR,"RHRS");
 
 
 
