@@ -277,10 +277,11 @@ void DynamicCanvas(){
 //		delete SieveRecCanvas->GetPrimitive("Projection");
 	} else
 		SieveRecCanvas = new TCanvas("SieveRecCanvas", "Projection Canvas",
-				1000, 1000);
+				1960, 1000);
 
-	SieveRecCanvas->Divide(1, 2);
+	SieveRecCanvas->Divide(1, 3);
 	SieveRecCanvas->cd(2)->Divide(4, 1);
+    SieveRecCanvas->cd(3)->Divide(4, 1);
 	//get the hsitogram and start rec
 	SieveRecCanvas->cd(2)->cd(2);
 
@@ -465,7 +466,33 @@ void DynamicCanvas(){
 		t2->SetTextSize(0.02);
 		t2->Draw("same");
 	}
+    {
+        SieveRecCanvas->cd(3)->cd(1);
+        TH1F *tgThetah=new TH1F(Form("tg_th_%d",runID),Form("tg_th_%d",runID),1000,-0.045,0.045);
+        chain->Project(tgThetah->GetName(),Form("%s.gold.th",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+        tgThetah->GetXaxis()->SetRangeUser(tgThetah->GetMaximum()-0.005,tgThetah->GetMaximum()+0.005);
+        tgThetah->Fit("gaus");
+        tgThetah->Draw();
+        auto thetaFunc=tgThetah->GetFunction("gaus");
+        TLatex *txTheta=new TLatex(thetaFunc->GetParameter(1),thetaFunc->GetParameter(0),Form("theta:%f",thetaFunc->GetParameter(1)));
+        txTheta->Draw("same");
 
+        SieveRecCanvas->cd(3)->cd(2);
+        TH1F *tgPhih=new TH1F(Form("tg_ph_%d",runID),Form("tg_ph_%d",runID),1000,-0.045,0.045);
+        chain->Project(tgPhih->GetName(),Form("%s.gold.ph",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+        tgPhih->GetXaxis()->SetRangeUser(tgPhih->GetMaximum()-0.005,tgPhih->GetMaximum()+0.005);
+        tgPhih->Fit("gaus");
+        tgPhih->Draw();
+        auto phiFunc=tgPhih->GetFunction("gaus");
+        TLatex *txPhi=new TLatex(phiFunc->GetParameter(1),phiFunc->GetParameter(0),Form("phi:%f",phiFunc->GetParameter(1)));
+        txPhi->Draw("same");
+
+        // create file and write the data into it
+        std::ofstream txtfileio("./FinalData/TargetVar/Carbon_tg_variableList.txt",std::ofstream::app);
+        auto writeString=Form("%5d  %1.5f   %1.5f ",runID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1));
+        txtfileio << writeString<<std::endl;
+        txtfileio.close();
+    }
 	SieveRecCanvas->SaveAs(Form("Carbon/Carbon_%d.jpg",runID));
 	hSieveHole->Delete();
 //	f1->Close();

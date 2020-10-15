@@ -36,7 +36,8 @@
 #include <Math/Functor.h>
 
 #include "Math/RootFinder.h"
-
+#include "iostream"
+#include "fstream"
 int FoilID=0;
 
 int col=3;
@@ -645,7 +646,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TStri
 	return 1;
 }
 
-Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
+Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -663,6 +664,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storag
 				chain->Add(filename.Data());
 				split++;
 				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                if(split>maximumFileas) break;
 			}
 		}else{
 			std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
@@ -681,6 +683,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,TString folder="/home/newdriver/Storag
 				chain->Add(filename.Data());
 				split++;
 				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                if(split > maximumFileas) break;
 			}
 		}else{
 			std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
@@ -875,10 +878,11 @@ void DynamicCanvas(){
 		SieveRecCanvas = new TCanvas("SieveRecCanvas", "Projection Canvas",
 				1000, 1000);
 
-	SieveRecCanvas->Divide(1, 3);   // on the third line, will display the bpm correction term
+	SieveRecCanvas->Divide(1, 4);   // on the third line, will display the bpm correction term
 
 	SieveRecCanvas->cd(2)->Divide(4, 1);
     SieveRecCanvas->cd(3)->Divide(4,1);
+    SieveRecCanvas->cd(4)->Divide(4,1);
 	//get the hsitogram and start rec
 	SieveRecCanvas->cd(2)->cd(2);
 
@@ -961,7 +965,7 @@ void DynamicCanvas(){
 	fgroudGaus->GetParameters(fgroudGausPar);
 
 	TH1F *test=(TH1F *)momentum->Clone("fitTest");
-	test->GetXaxis()->SetRangeUser(momentum->GetXaxis()->GetXmin(),fgroudGausPar[1]-5*fgroudGausPar[2]);
+	test->GetXaxis()->SetRangeUser(momentum->GetXaxis()->GetXmin(),fgroudGausPar[1]-10*fgroudGausPar[2]);
 
 	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
 //	auto C1stp=2.1565;//CGroundp-0.016504;
@@ -1103,7 +1107,7 @@ void DynamicCanvas(){
 
 		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle,errorAngle,errorAngle1));
 //        pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle-HRSBPMCorrection,errorAngle,errorAngle1));
-        pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f",bpmX,bpmY));
+        pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f beamE:%f",bpmX,bpmY,getBeamE(eventID,chain)));
 
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
 		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
@@ -1184,6 +1188,36 @@ void DynamicCanvas(){
 		t2->SetTextSize(0.02);
 		t2->Draw("same");
 	}
+
+	//ceate the data for the target focal plane variables and also save it to canvas
+    {
+        SieveRecCanvas->cd(4)->cd(1);
+        TH1F *tgThetah=new TH1F(Form("tg_th_%d",eventID),Form("tg_th_%d",eventID),1000,-0.045,0.045);
+        chain->Project(tgThetah->GetName(),Form("%s.gold.th",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+        tgThetah->GetXaxis()->SetRangeUser(tgThetah->GetMaximum()-0.005,tgThetah->GetMaximum()+0.005);
+        tgThetah->Fit("gaus");
+        tgThetah->Draw();
+        auto thetaFunc=tgThetah->GetFunction("gaus");
+        TLatex *txTheta=new TLatex(thetaFunc->GetParameter(1),thetaFunc->GetParameter(0),Form("theta:%f",thetaFunc->GetParameter(1)));
+        txTheta->Draw("same");
+
+        SieveRecCanvas->cd(4)->cd(2);
+        TH1F *tgPhih=new TH1F(Form("tg_ph_%d",eventID),Form("tg_ph_%d",eventID),1000,-0.045,0.045);
+        chain->Project(tgPhih->GetName(),Form("%s.gold.ph",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+        tgPhih->GetXaxis()->SetRangeUser(tgPhih->GetMaximum()-0.005,tgPhih->GetMaximum()+0.005);
+        tgPhih->Fit("gaus");
+        tgPhih->Draw();
+        auto phiFunc=tgPhih->GetFunction("gaus");
+        TLatex *txPhi=new TLatex(phiFunc->GetParameter(1),phiFunc->GetParameter(0),Form("phi:%f",phiFunc->GetParameter(1)));
+        txPhi->Draw("same");
+
+        // create file and write the data into it
+        std::ofstream txtfileio("./FinalData/TargetVar/tg_variableList.txt",std::ofstream::app);
+        auto writeString=Form("%5d  %1.5f   %1.5f ",eventID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1));
+        txtfileio << writeString<<std::endl;
+        txtfileio.close();
+    }
+    SieveRecCanvas->SaveAs(Form("./PointingCheck/result/Pointing_%d.jpg",eventID));
 	SieveRecCanvas->SaveAs(Form("./PointingCheck/result/Pointing_%d.root",eventID));
 	hSieveHole->Delete();
 	cutg->Delete();
