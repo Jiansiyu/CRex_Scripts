@@ -597,7 +597,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TStri
 		return -1;
 	}
 
-	//loop on the files in the cut and find all the sieve hole cuts
+	//lo on the files in the cut and find all the sieve hole cuts
 	TCutG *sieveCut[NSieveCol][NSieveRow];
 	TCut sieveAllHoleCut;
 	for (int16_t col = 0; col < NSieveCol; col++){
@@ -646,7 +646,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TStri
 	return 1;
 }
 
-Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
+Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/pyQuant/crex_replayed") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
