@@ -18,7 +18,7 @@
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
+//#include <sys/stat.h>
 
 #include <TComplex.h>
 #include <TVirtualPad.h>
@@ -52,12 +52,14 @@ const UInt_t NSieveRow = 7;
 //////////////////////////////////////////////////////////////////////////////
 TString prepcut;
 TString generalcut;
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 "; // && R.gold.p > 2.14 && R.gold.p < 2.2
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 "; // && L.gold.p > 2.14 && L.gold.p < 2.2
+TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 0.91 && R.gold.p < 0.98";
+TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1  && L.gold.p > 0.91 && L.gold.p < 0.98";
 
 inline Bool_t IsFileExist (const std::string& name) {
-	  struct stat buffer;
-	  return (stat (name.c_str(), &buffer) == 0);
+//	  struct stat buffer;
+//	  return (stat (name.c_str(), &buffer) == 0);
+    return !gSystem->AccessPathName(name.c_str());
+
 }
 
 
@@ -263,7 +265,7 @@ TF1 *SpectroCrystalFitP_C12(TH1F*momentumSpectro,int fitPeak=4){
 }
 
 
-Int_t OpticsGraphicCutPro(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
+Int_t OpticsGraphicCutPro(UInt_t runID,UInt_t maxFile=2,TString folder="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -281,6 +283,7 @@ Int_t OpticsGraphicCutPro(UInt_t runID,TString folder="/home/newdriver/Storage/R
 				chain->Add(filename.Data());
 				split++;
 				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                if(split > maxFile) break;
 			}
 		}else{
 			std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
@@ -299,6 +302,7 @@ Int_t OpticsGraphicCutPro(UInt_t runID,TString folder="/home/newdriver/Storage/R
 				chain->Add(filename.Data());
 				split++;
 				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+				if(split > maxFile) break;
 			}
 		}else{
 			std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
@@ -492,8 +496,9 @@ void DynamicCanvas(){
 	// plot the dp and fit
 	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",150,0.94,0.96);
 	chain->Project(momentum->GetName(),Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+	momentum->Draw("same");
 
-	SpectroCrystalFitP_C12(momentum,2);
+//	SpectroCrystalFitP_C12(momentum,2);
 
 /*	double_t ffirstCrystalPar[5];
 	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
