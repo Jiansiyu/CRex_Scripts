@@ -498,7 +498,16 @@ void DynamicCanvas(){
 	chain->Project(momentum->GetName(),Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	momentum->Draw("same");
 
-//	SpectroCrystalFitP_C12(momentum,2);
+	SpectroCrystalFitP_C12(momentum,2);
+
+	std::cout<<momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
+
+//	auto func=momentum->GetFunction("fCrystalGuasMomentum");
+//
+//	TLatex *txt=new TLatex(func->GetParameter(1),func->GetParameter(0),Form("%f",func->GetParameter(1)));
+//	txt->Draw("same");
+
+//	std::cout<<func->GetParameter(1)<<std::endl;
 
 /*	double_t ffirstCrystalPar[5];
 	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
