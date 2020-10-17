@@ -1213,7 +1213,7 @@ void DynamicCanvas(){
 
         // create file and write the data into it
         std::ofstream txtfileio("./FinalData/TargetVar/tg_variableList.txt",std::ofstream::app);
-        auto writeString=Form("%5d  %1.5f   %1.5f ",eventID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1));
+        auto writeString=Form("%5d  %1.5f   %1.5f   %1.5f   %1.5f",eventID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1),thetaFunc->GetParameter(1)*180.0/3.141592654,phiFunc->GetParameter(1)*180.0/3.141592654);
         txtfileio << writeString<<std::endl;
         txtfileio.close();
     }
