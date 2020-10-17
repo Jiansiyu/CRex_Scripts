@@ -408,7 +408,7 @@ void DynamicCanvas(){
 		HRS = "L";
 	}
 
-
+	UInt_t runID=chain->GetMaximum("fEvtHdr.fRun");
 	double CentralP=getCentralP(chain);
 
 	TH2 *h = (TH2*) select;
@@ -494,7 +494,7 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",150,0.94,0.96);
+	TH1F *momentum=new TH1F(Form("C-12 gold.p %d",runID),Form("C-12 gold.p %d",runID),150,0.94,0.96);
 	chain->Project(momentum->GetName(),Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	momentum->Draw("same");
 
