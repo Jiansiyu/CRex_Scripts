@@ -345,7 +345,7 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F(Form("C-12 gold.p run%d",runID),Form("C-12 gold.p run%d",runID),500,2.16,2.178);
+	TH1F *momentum=new TH1F(Form("C-12 gold.p run%d",runID),Form("C-12 gold.p run%d",runID),500,2.15,2.25);
 	chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
