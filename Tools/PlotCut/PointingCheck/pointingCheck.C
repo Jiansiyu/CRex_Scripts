@@ -39,6 +39,7 @@
 #include "fstream"
 #include "iostream"
 #include "string"
+#include "numeric"
 //#include "i"
 inline Bool_t IsFileExist (const std::string& name) {
     return !gSystem->AccessPathName(name.c_str());
@@ -795,13 +796,17 @@ int requestColor(){
 
 TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data,TString HRS="RHRS"){
 
-    auto hrsangleCanv=new TCanvas("HRS Angle","HRS Angle",200,10,600,400);
+    TCanvas* hrsangleCanv;
+	hrsangleCanv=new TCanvas(Form("HRS Angle %s",HRS.Data()),Form("HRS Angle %s",HRS.Data()),200,10,600,400);
+
     TMultiGraph *mg = new TMultiGraph();
     mg->SetTitle("Exclusion graphs");
 
 
-    TLegend *lgend=new TLegend(0.3,0.3);
+    TLegend *lgend=new TLegend(0.8,0.8);
 
+    std::vector<double> HRSAngleAver;
+//    double HRSAngleStd;
     for (auto iter=data.begin(); iter!=data.end();iter++){
         TString title=iter->first;
         const int elemenCount=iter->second.size();
@@ -816,6 +821,7 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
             x_err[counter]=iter->second[counter][1];
             y_value[counter]=iter->second[counter][2];
             y_err[counter]=iter->second[counter][3];
+            HRSAngleAver.push_back(y_value[counter]);
         }
 
         for (int i =0 ; i < iter->second.size();i++){
@@ -852,9 +858,9 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
     }
 
     {
-        double survey = 4.7469;
+        double survey = 4.803;
         if (HRS == "RHRS"){
-            survey=4.7572;
+            survey=4.807;
         }
         TLine *line=new TLine(-1.9,survey,1.9,survey);
         line->SetLineWidth(2);
@@ -879,6 +885,21 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
         line2->SetLineColor(93);
         line2->Draw("same");
     }
+
+    TPaveText *text=new TPaveText(0.2,0.15,0.8,0.23,"NDC");
+    double sum = std::accumulate(HRSAngleAver.begin(),HRSAngleAver.end(),0.0);
+    double mean=sum/HRSAngleAver.size();
+    double sq_sum=std::inner_product(HRSAngleAver.begin(), HRSAngleAver.end(), HRSAngleAver.begin(), 0.0);
+    double stdev=std::sqrt(sq_sum/HRSAngleAver.size()-mean*mean);
+    text->AddText(Form("Average:%1.3f #pm %1.3f",mean,stdev));
+    text->SetTextColor(4);
+    text->SetTextAlign(22);
+    text->Draw("same");
+
+    TLine *AverageLine=new TLine(-1.9,mean,1.9,mean);
+    AverageLine->SetLineColor(4);
+    AverageLine->SetLineWidth(2);
+    AverageLine->Draw("same");
 
     lgend->Draw("same");
     return hrsangleCanv;
@@ -938,8 +959,8 @@ int plotError(TString csvfname="./crex_pointing.csv"){
     }
 
 
-    // plotHRSCanv(pointDataL,"LHRS");
-   plotHRSCanv(pointDataR,"RHRS");
+//    plotHRSCanv(pointDataL,"LHRS")->Draw();
+   plotHRSCanv(pointDataR,"RHRS")->Draw();
 
 
 

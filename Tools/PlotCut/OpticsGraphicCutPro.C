@@ -57,9 +57,60 @@ inline Bool_t IsFileExist (const std::string& name) {
 }
 
 
+//
+// fit function for the water cell target
+TF1 *SpectroCrystalFit_C12(TH1F*momentumSpectro){
+
+    auto CGroundDp=momentumSpectro->GetXaxis()->GetBinCenter(momentumSpectro->GetMaximumBin());
+
+    //start the fit and get the mean ans sigma
+    momentumSpectro->Fit("gaus","RQ0","ep",CGroundDp-0.0003,CGroundDp+0.0003);
+
+    double_t fgroundCrystalballPar[5];
+
+    TF1 *fgroundCrystalball = new TF1("fgroundCrystal", "crystalball",
+                                      momentumSpectro->GetFunction("gaus")->GetParameter(1)
+                                      - 5 * momentumSpectro->GetFunction("gaus")->GetParameter(2),
+                                      momentumSpectro->GetFunction("gaus")->GetParameter(1)
+                                      + 2 * momentumSpectro->GetFunction("gaus")->GetParameter(2));
+    fgroundCrystalball->SetParameters(
+            momentumSpectro->GetFunction("gaus")->GetParameter(0),
+            momentumSpectro->GetFunction("gaus")->GetParameter(1),
+            momentumSpectro->GetFunction("gaus")->GetParameter(2), 1.64, 1.1615);
+
+    momentumSpectro->Fit("fgroundCrystal","RQ0","ep",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
+    fgroundCrystalball->GetParameters(fgroundCrystalballPar);
+
+
+    TH1F *test=(TH1F *)momentumSpectro->Clone("fitTest");
+    test->GetXaxis()->SetRangeUser(momentumSpectro->GetXaxis()->GetXmin(),fgroundCrystalballPar[1]-5*fgroundCrystalballPar[2]);
+
+    double_t ffirstGuasPar[3];
+    auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
+    test->Delete();
+    TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-2*fgroundCrystalballPar[2],C1stp+3*fgroundCrystalballPar[2]);
+    momentumSpectro->Fit("firststatesgaus","R0Q","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
+    ffirstGuas->GetParameters(ffirstGuasPar);
+
+    double_t ffirstCrystalPar[5];
+    TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.002,ffirstGuas->GetXmax());
+    ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
+    momentumSpectro->Fit("ffirstCrystal","RQ0","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
+    ffirstCrystal->GetParameters(ffirstCrystalPar);
+
+    double_t fCrystalMomentumPar[10];
+    TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
+    std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
+    std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
+    fCrystalMomentum->SetParameters(fCrystalMomentumPar);
+    momentumSpectro->Fit("fCrystalMomentum","RQ0","ep",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+
+    return fCrystalMomentum;
+}
+
+
 // does it needed to add another function to predict the position of each peak
 // add an global fit function used for the fit
-
 TF1 *SpectroCrystalFitDp_C12(TH1F*momentumSpectro,int fitPeak=4){
 
 
@@ -258,6 +309,32 @@ void DynamicCanvas(){
 		HRS = "L";
 	}
 
+    // try to extract the hall prob if this is LHRS
+    double CentralP;
+    if (HRS == "L") {
+        TH1F *HallProbHH = new TH1F("HallLProb", "HallLProb", 1000, -1, 0);
+        chain->Project(HallProbHH->GetName(), "HacL_D_LS450_FLD_DATA",
+                       generalcut.Data());
+        CentralP = std::abs((HallProbHH->GetMean()) * 0.95282 / 0.33930);
+        std::cout << "CentralMomentum is (LHRS) for Hall Probe::" << (CentralP)
+                  << std::endl;
+    } else {
+        //HacR_D1_NMR_SIG
+        TH1F *HallR_NMR = new TH1F("HallR_NMR", "HallR_NMR", 1000, 0.7, 0.9);
+        chain->Project(HallR_NMR->GetName(), "HacR_D1_NMR_SIG",
+                       generalcut.Data());
+        if (HallR_NMR->GetEntries()) {
+            double Mag = HallR_NMR->GetMean();
+            CentralP = 2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
+            std::cout << "CentralMomentum is (RHRS) from NMR::" << CentralP
+                      << std::endl;
+        } else {
+
+            std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
+                      << std::endl;
+        }
+    }
+
 
 	TH2 *h = (TH2*) select;
 	gPad->GetCanvas()->FeedbackMode(kTRUE);
@@ -345,69 +422,30 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
-	TH1F *momentum=new TH1F(Form("C-12 gold.p run%d",runID),Form("C-12 gold.p run%d",runID),500,2.15,2.25);
-	chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+	TH1F *momentum=new TH1F(Form("C-12 gold.p run_%d",runID),Form("C-12 gold.p run_%d",runID),800,2.15,2.20);
+	chain->Project(momentum->GetName(),Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
 	auto C1stp=CGroundp-0.00443891;
 	momentum->GetXaxis()->SetRangeUser(CGroundp-0.0044*3,CGroundp+0.0044*2);
-	momentum->GetXaxis()->SetTitle("gold.p");
+	momentum->GetXaxis()->SetTitle(Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP));
 	momentum->GetYaxis()->SetTitle("#");
-
 	momentum->Draw();
-	double_t fgroudGausPar[3];
-	double_t ffirstGuasPar[3];
-	TF1 *fgroudGaus=new TF1("groudstatesgaus","gaus",CGroundp-0.0005,CGroundp+0.0005);
-	momentum->Fit("groudstatesgaus","R","ep",fgroudGaus->GetXmin(),fgroudGaus->GetXmax());
-	//fgroudGaus->Draw("same");
-	fgroudGaus->GetParameters(fgroudGausPar);
 
-	{
-		// check the first excited states
-		TH1F *firstexcited_temp=new TH1F("C-12 gold.p_temp","C-12 gold.p_temp",2000,2.1,2.2);
-		chain->Project(firstexcited_temp->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s && %s.gold.p> %f && %s.gold.p < %f ",generalcut.Data(),cutg->GetName(), HRS.Data(),CGroundp-0.0044*3,HRS.Data(),fgroudGausPar[1]-0.003));
-		C1stp=firstexcited_temp->GetXaxis()->GetBinCenter(firstexcited_temp->GetMaximumBin());
-		firstexcited_temp->Delete();
-	}
+    auto fCrystalMomentum=SpectroCrystalFit_C12(momentum);
+    fCrystalMomentum->Draw("same");
 
-	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0006,C1stp+0.0004);
-	momentum->Fit("firststatesgaus","R","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
-	//ffirstGuas->Draw("same");
-	ffirstGuas->GetParameters(ffirstGuasPar);
-
-	// change the gause fit to cristal ball
-	double_t fgroundCrystalballPar[5];
-	TF1 *fgroundCrystalball=new TF1("fgroundCrystal","crystalball",fgroudGausPar[1]-0.0030,fgroudGaus->GetXmax()+0.0003);
-	fgroundCrystalball->SetParameters(fgroudGausPar[0],fgroudGausPar[1],fgroudGausPar[2],1.64,1.1615);
-	momentum->Fit("fgroundCrystal","R","same",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
-	fgroundCrystalball->GetParameters(fgroundCrystalballPar);
-	//fgroundCrystalball->Draw("same");
-
-	double_t ffirstCrystalPar[5];
-	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
-	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
-	momentum->Fit("ffirstCrystal","R","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
-	ffirstCrystal->GetParameters(ffirstCrystalPar);
-	//	ffirstCrystal->Draw("same");
-
-	// fit together
-	double_t fCrystalMomentumPar[10];
-	TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
-	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
-	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
-	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
-	momentum->Fit("fCrystalMomentum","","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
-	fCrystalMomentum->Draw("same");
-	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
+    double_t fCrystalMomentumPar[10];
+    fCrystalMomentum->GetParameters(fCrystalMomentumPar);
 
 	SieveRecCanvas->Update();
 	// plot the reconstrcution peak
-	TLine *groudposLine=new TLine(fCrystalMomentumPar[1],0,fCrystalMomentumPar[1],fgroudGausPar[0]*1.1);
+	TLine *groudposLine=new TLine(fCrystalMomentumPar[1],0,fCrystalMomentumPar[1],fCrystalMomentumPar[0]*1.1);
 	groudposLine->SetLineColor(3);
 	groudposLine->SetLineWidth(2);
 	groudposLine->Draw("same");
 
-	TLine *firstposLine=new TLine(fCrystalMomentumPar[6],0,fCrystalMomentumPar[6],ffirstGuasPar[0]*1.1);
+	TLine *firstposLine=new TLine(fCrystalMomentumPar[6],0,fCrystalMomentumPar[6],fCrystalMomentumPar[5]*1.1);
 	firstposLine->SetLineColor(3);
 	firstposLine->SetLineWidth(2);
 	firstposLine->Draw("same");
@@ -416,13 +454,13 @@ void DynamicCanvas(){
 	pt->AddText(Form("%1.3f MeV (%2.2f\%%)",1000.0*(fCrystalMomentumPar[1]-fCrystalMomentumPar[6]),100.0*abs(abs(fCrystalMomentumPar[1]-fCrystalMomentumPar[6])-0.00443891)/0.00443891));
 	pt->Draw("same");
 
-	TLatex *t1 = new TLatex(fgroudGausPar[1] + 2 * fgroudGausPar[2],fgroudGausPar[0], Form("P=%2.5fGeV #sigma=%1.2f x 10^{-3}", fCrystalMomentumPar[1],fCrystalMomentumPar[2]*1000));
+	TLatex *t1 = new TLatex(fCrystalMomentumPar[1] + 2 * fCrystalMomentumPar[2],fCrystalMomentumPar[0], Form("P=%2.5fGeV #sigma=%1.2f x 10^{-3}", fCrystalMomentumPar[1],fCrystalMomentumPar[2]*1000));
 	t1->SetTextSize(0.055);
 	t1->SetTextAlign(12);
 	t1->SetTextColor(2);
 	t1->Draw("same");
 
-	TLatex *t2 = new TLatex(ffirstGuasPar[1] + 2 * ffirstGuasPar[2],ffirstGuasPar[0], Form("P=%2.5fGeV #sigma=%1.2f x 10^{-3}", fCrystalMomentumPar[6],fCrystalMomentumPar[7]*1000));
+	TLatex *t2 = new TLatex(fCrystalMomentumPar[6] + 2 * fCrystalMomentumPar[7],fCrystalMomentumPar[5], Form("P=%2.5fGeV #sigma=%1.2f x 10^{-3}", fCrystalMomentumPar[6],fCrystalMomentumPar[7]*1000));
 	t2->SetTextSize(0.055);
 	t2->SetTextAlign(12);
 	t2->SetTextColor(2);
@@ -448,6 +486,7 @@ void DynamicCanvas(){
 	if (patternCheck) {
 		patternCheck->Clear();
 	}
+
 	hSieveHole=new TH2F("sieveholeh", "sieveholeh", 1000, h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(), 1000,
 			h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax());
 	chain->Project(hSieveHole->GetName(),
@@ -489,12 +528,12 @@ void DynamicCanvas(){
 
         // create file and write the data into it
         std::ofstream txtfileio("./FinalData/TargetVar/Carbon_tg_variableList.txt",std::ofstream::app);
-        auto writeString=Form("%5d  %1.5f   %1.5f ",runID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1));
+        auto writeString=Form("%5d  %1.5f   %1.5f   %1.5f",runID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1),fCrystalMomentumPar[1]);
         txtfileio << writeString<<std::endl;
         txtfileio.close();
     }
 	SieveRecCanvas->SaveAs(Form("Carbon/Carbon_%d.jpg",runID));
-	hSieveHole->Delete();
+//	hSieveHole->Delete();
 //	f1->Close();
 }
 

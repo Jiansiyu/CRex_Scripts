@@ -646,7 +646,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TStri
 	return 1;
 }
 
-Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/pyQuant/crex_replayed") {
+Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/pyQuant/crex_replayed/run20201017_ifarm") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -756,8 +756,8 @@ double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Le
         chain->Project(HallEpicsBeamE->GetName(),"HALLA_p");
         double epicsBeamE=HallEpicsBeamE->GetMean();
         if ((epicsBeamE > 2170)&&(epicsBeamE < 2180)){
-            std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E in ROOT file: "<<epicsBeamE<<std::endl;
-            return  epicsBeamE/1000.0;
+            std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E in ROOT file(with correction): "<<epicsBeamE*953.4/951.1<<std::endl;
+            return  epicsBeamE/1000.0*953.4/951.1;
         }
 //        else{
 //            std::cout<<"\033[1;31m [CAUTION]\033[0m Can not read reasonable Beam E from ROOT file:: "<<runID<<" ( "<<epicsBeamE/1000.0<<")"<<std::endl;
@@ -784,8 +784,8 @@ double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Le
 
 
 	if(beamE.find(runID)!=beamE.end()){
-
-		return beamE[runID];
+        std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E file(with correction): "<<beamE[runID]*953.4/951.1<<std::endl;
+		return beamE[runID]*953.4/951.1;
 	}else{
 		std::cout<<"\033[1;31m [CAUTION]\033[0m Can not find the Beam E for run"<<runID<<" Using default value!!!["<<__func__<<"("<<__LINE__<<")]"<<std::endl;
 		return 2.17568;
@@ -953,7 +953,7 @@ void DynamicCanvas(){
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
 
 	momentum->GetXaxis()->SetRangeUser(CGroundp-0.02,CGroundp+0.0044*2);
-	momentum->GetXaxis()->SetTitle("gold.p");
+	momentum->GetXaxis()->SetTitle(Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP));
 	momentum->GetYaxis()->SetTitle("#");
 
 	momentum->Draw();
@@ -1019,6 +1019,7 @@ void DynamicCanvas(){
 	double_t deltaE=fCrystalMomentumPar[1]-fCrystalMomentumPar[6];
 	double_t deltaErr=TMath::Sqrt( (fCrystalMomentum->GetParError(1))*(fCrystalMomentum->GetParError(1))+(fCrystalMomentum->GetParError(6))*(fCrystalMomentum->GetParError(6)));
 
+	double_t HRSAngle_Final=0.0;
 //	if(HallProbHH->GetEntries()!=0)
 	{
 	    //Step-1 calculate the correction
@@ -1104,7 +1105,7 @@ void DynamicCanvas(){
 		double errorAngle1=abs(GetPointingAngle(DeltaE200,getBeamE(eventID,chain)))-Angletemp;
 		//add the correction
 		double HRSAngle=GetPointingAngle(deltaE,getBeamE(eventID,chain));
-
+		HRSAngle_Final=HRSAngle;
 		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle,errorAngle,errorAngle1));
 //        pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle-HRSBPMCorrection,errorAngle,errorAngle1));
         pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f beamE:%f",bpmX,bpmY,getBeamE(eventID,chain)));
@@ -1213,7 +1214,7 @@ void DynamicCanvas(){
 
         // create file and write the data into it
         std::ofstream txtfileio("./FinalData/TargetVar/tg_variableList.txt",std::ofstream::app);
-        auto writeString=Form("%5d  %1.5f   %1.5f   %1.5f   %1.5f",eventID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1),thetaFunc->GetParameter(1)*180.0/3.141592654,phiFunc->GetParameter(1)*180.0/3.141592654);
+        auto writeString=Form("%5d  %1.5f   %1.5f   %1.5f   %1.5f   %1.5f",eventID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1),thetaFunc->GetParameter(1)*180.0/3.141592654,phiFunc->GetParameter(1)*180.0/3.141592654,HRSAngle_Final);
         txtfileio << writeString<<std::endl;
         txtfileio.close();
     }
