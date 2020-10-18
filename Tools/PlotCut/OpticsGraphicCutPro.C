@@ -192,6 +192,32 @@ void DynamicCanvas(){
 		HRS = "L";
 	}
 
+    double CentralP;
+    if (HRS == "L") {
+        TH1F *HallProbHH = new TH1F("HallLProb", "HallLProb", 1000, -1, 0);
+        chain->Project(HallProbHH->GetName(), "HacL_D_LS450_FLD_DATA",
+                       generalcut.Data());
+        CentralP = std::abs((HallProbHH->GetMean()) * 0.95282 / 0.33930);
+        std::cout << "CentralMomentum is (LHRS) for Hall Probe::" << (CentralP)
+                  << std::endl;
+    } else {
+        //HacR_D1_NMR_SIG
+        TH1F *HallR_NMR = new TH1F("HallR_NMR", "HallR_NMR", 1000, 0.2, 0.9);
+        chain->Project(HallR_NMR->GetName(), "HacR_D1_NMR_SIG",
+                       generalcut.Data());
+        if (HallR_NMR->GetEntries()) {
+            double Mag = HallR_NMR->GetMean();
+            CentralP = 2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
+            std::cout << "CentralMomentum is (RHRS) from NMR::" << CentralP
+                      << std::endl;
+        } else {
+
+            std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
+                      << std::endl;
+        }
+    }
+
+
 	TH2 *h = (TH2*) select;
 	gPad->GetCanvas()->FeedbackMode(kTRUE);
 
@@ -232,6 +258,7 @@ void DynamicCanvas(){
 	selectedSievehh->Draw("CONT LIST");
 
 	SieveRecCanvas->Update(); // update the canvas to let the pattern buffer in root
+
 
 	// extract the contour
 	TObjArray *conts = (TObjArray*) gROOT->GetListOfSpecials()->FindObject(
@@ -276,7 +303,7 @@ void DynamicCanvas(){
 	SieveRecCanvas->cd(1)->SetLogy();
 	// plot the dp and fit
 	TH1F *momentum=new TH1F("C-12 gold.p","C-12 gold.p",170,0.94,0.954);
-	chain->Project(momentum->GetName(),Form("%s.gold.p",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
+	chain->Project(momentum->GetName(),Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP),Form("%s && %s",generalcut.Data(),cutg->GetName()));
 	// get the maximum bin, this should be the first excited states
 	auto CGroundp=momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
 

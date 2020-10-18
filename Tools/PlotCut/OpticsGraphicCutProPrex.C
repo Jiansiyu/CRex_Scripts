@@ -85,79 +85,79 @@ TF1 *SpectroCrystalFitDp_C12(TH1F*momentumSpectro,int fitPeak=4){
 			momentumSpectro->GetFunction("gaus")->GetParameter(1),
 			momentumSpectro->GetFunction("gaus")->GetParameter(2), 1.64, 1.1615);
 
-	momentumSpectro->Fit("fgroundCrystal","RQ0","ep",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
-	fgroundCrystalball->GetParameters(fgroundCrystalballPar);
+//	momentumSpectro->Fit("fgroundCrystal","RQ0","ep",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
+    fgroundCrystalball->GetParameters(fgroundCrystalballPar);
 
 
-	TH1F *test=(TH1F *)momentumSpectro->Clone("fitTest");
-	test->GetXaxis()->SetRangeUser(momentumSpectro->GetXaxis()->GetXmin(),fgroundCrystalballPar[1]-5*fgroundCrystalballPar[2]);
-
-	double_t ffirstGuasPar[3];
-	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
-	test->Delete();
-	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-3*fgroundCrystalballPar[2],C1stp+3*fgroundCrystalballPar[2]);
-	momentumSpectro->Fit("firststatesgaus","R0Q","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
-	ffirstGuas->GetParameters(ffirstGuasPar);
-
-	double_t ffirstCrystalPar[5];
-	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
-	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
-	momentumSpectro->Fit("ffirstCrystal","R","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
-	ffirstCrystal->GetParameters(ffirstCrystalPar);
-
-	double_t fCrystalMomentumPar[10];
-	TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
-	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
-	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
-	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
-	momentumSpectro->Fit("fCrystalMomentum","RQ0","ep",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
-	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
-	// get the Dp seperation for the first and second, and then project to the third and the fouth to fit the second the third excited states
-
-
-	if(fitPeak>3){
-		double c2GausFitPar[3];
-		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-2*fCrystalMomentum->GetParameter(7);
-		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+2*fCrystalMomentum->GetParameter(7);
-		//fit the peak with gaussion
-		momentumSpectro->Fit("gaus","R0Q","ep",c2_fitRange_Min,c2_fitRange_Max);
-		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
-
-		double c3GausFitPar[3];
-		double c3_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982-2*fCrystalMomentum->GetParameter(7);
-		double c3_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982+2*fCrystalMomentum->GetParameter(7);
-		// get th peak and start the fit
-		momentumSpectro->Fit("gaus","R0Q","ep",c3_fitRange_Min,c3_fitRange_Max);
-		momentumSpectro->GetFunction("gaus")->GetParameters(c3GausFitPar);
-
-		double_t fCrystalGausMomentumPar[16];
-		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
-		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
-		std::copy(c3GausFitPar,c3GausFitPar+3,fCrystalGausMomentumPar+13);
-
-		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)+gaus(13)",c3_fitRange_Min,fgroundCrystalball->GetXmax());
-		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
-		momentumSpectro->Fit("fCrystalGuasMomentum","R0Q","ep",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
-		return fCrystalGuasMomentum;
-
-	}else if (fitPeak==3) {
-		double c2GausFitPar[3];
-		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-3*fCrystalMomentum->GetParameter(7);
-		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+3*fCrystalMomentum->GetParameter(7);
-		//fit the peak with gaussion
-		momentumSpectro->Fit("gaus","","",c2_fitRange_Min,c2_fitRange_Max);
-		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
-
-		double_t fCrystalGausMomentumPar[13];
-		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
-		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
-
-		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)",c2_fitRange_Min,fgroundCrystalball->GetXmax());
-		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
-		momentumSpectro->Fit("fCrystalGuasMomentum","","",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
-		return fCrystalGuasMomentum;
-	}
-	return fCrystalMomentum;
+//	TH1F *test=(TH1F *)momentumSpectro->Clone("fitTest");
+//	test->GetXaxis()->SetRangeUser(momentumSpectro->GetXaxis()->GetXmin(),fgroundCrystalballPar[1]-5*fgroundCrystalballPar[2]);
+//
+//	double_t ffirstGuasPar[3];
+//	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
+//	test->Delete();
+//	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-3*fgroundCrystalballPar[2],C1stp+3*fgroundCrystalballPar[2]);
+//	momentumSpectro->Fit("firststatesgaus","R0Q","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
+//	ffirstGuas->GetParameters(ffirstGuasPar);
+//
+//	double_t ffirstCrystalPar[5];
+//	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
+//	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
+//	momentumSpectro->Fit("ffirstCrystal","R","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
+//	ffirstCrystal->GetParameters(ffirstCrystalPar);
+//
+//	double_t fCrystalMomentumPar[10];
+//	TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
+//	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
+//	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
+//	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
+//	momentumSpectro->Fit("fCrystalMomentum","RQ0","ep",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+//	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
+//	// get the Dp seperation for the first and second, and then project to the third and the fouth to fit the second the third excited states
+//
+//
+//	if(fitPeak>3){
+//		double c2GausFitPar[3];
+//		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-2*fCrystalMomentum->GetParameter(7);
+//		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+2*fCrystalMomentum->GetParameter(7);
+//		//fit the peak with gaussion
+//		momentumSpectro->Fit("gaus","R0Q","ep",c2_fitRange_Min,c2_fitRange_Max);
+//		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
+//
+//		double c3GausFitPar[3];
+//		double c3_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982-2*fCrystalMomentum->GetParameter(7);
+//		double c3_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982+2*fCrystalMomentum->GetParameter(7);
+//		// get th peak and start the fit
+//		momentumSpectro->Fit("gaus","R0Q","ep",c3_fitRange_Min,c3_fitRange_Max);
+//		momentumSpectro->GetFunction("gaus")->GetParameters(c3GausFitPar);
+//
+//		double_t fCrystalGausMomentumPar[16];
+//		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
+//		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
+//		std::copy(c3GausFitPar,c3GausFitPar+3,fCrystalGausMomentumPar+13);
+//
+//		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)+gaus(13)",c3_fitRange_Min,fgroundCrystalball->GetXmax());
+//		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
+//		momentumSpectro->Fit("fCrystalGuasMomentum","R0Q","ep",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
+//		return fCrystalGuasMomentum;
+//
+//	}else if (fitPeak==3) {
+//		double c2GausFitPar[3];
+//		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-3*fCrystalMomentum->GetParameter(7);
+//		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+3*fCrystalMomentum->GetParameter(7);
+//		//fit the peak with gaussion
+//		momentumSpectro->Fit("gaus","","",c2_fitRange_Min,c2_fitRange_Max);
+//		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
+//
+//		double_t fCrystalGausMomentumPar[13];
+//		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
+//		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
+//
+//		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)",c2_fitRange_Min,fgroundCrystalball->GetXmax());
+//		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
+//		momentumSpectro->Fit("fCrystalGuasMomentum","","",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
+//		return fCrystalGuasMomentum;
+//	}
+	return fgroundCrystalball;
 }
 
 
@@ -186,82 +186,82 @@ TF1 *SpectroCrystalFitP_C12(TH1F*momentumSpectro,int fitPeak=4){
 
 
 
-
-	TH1F *test=(TH1F *)momentumSpectro->Clone("fitTest");
-	test->GetXaxis()->SetRangeUser(momentumSpectro->GetXaxis()->GetXmin(),fgroundCrystalballPar[1]-0.0040);
-
-	double_t ffirstGuasPar[3];
-	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
-	test->Delete();
-	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-3*fgroundCrystalballPar[2],C1stp+3*fgroundCrystalballPar[2]);
-	momentumSpectro->Fit("firststatesgaus","ROQ","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
-	ffirstGuas->GetParameters(ffirstGuasPar);
-
-
-
-	double_t ffirstCrystalPar[5];
-	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.001,ffirstGuas->GetXmax());
-	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
-	momentumSpectro->Fit("ffirstCrystal","R","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
-	ffirstCrystal->GetParameters(ffirstCrystalPar);
-	ffirstCrystal->Draw("same");
-
-	double_t fCrystalMomentumPar[10];
-	TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
-	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
-	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
-	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
-	momentumSpectro->Fit("fCrystalMomentum","RQ0","ep",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
-	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
-	// get the Dp seperation for the first and second, and then project to the third and the fouth to fit the second the third excited states
-	fCrystalMomentum->Draw("same");
-	double MomDiffer=fgroundCrystalballPar[1]-ffirstCrystalPar[1];
-	TLatex *text=new TLatex(fgroundCrystalballPar[1]*0.5+ffirstCrystalPar[1]*0.5,fgroundCrystalballPar[0]*0.5+ffirstCrystalPar[0]*0.5,Form("%1.4f MeV",MomDiffer*1000.0));
-	text->Draw("same");
-
-	if(fitPeak>3){
-		double c2GausFitPar[3];
-		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-2*fCrystalMomentum->GetParameter(7);
-		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+2*fCrystalMomentum->GetParameter(7);
-		//fit the peak with gaussion
-		momentumSpectro->Fit("gaus","R0Q","ep",c2_fitRange_Min,c2_fitRange_Max);
-		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
-
-		double c3GausFitPar[3];
-		double c3_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982-2*fCrystalMomentum->GetParameter(7);
-		double c3_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982+2*fCrystalMomentum->GetParameter(7);
-		// get th peak and start the fit
-		momentumSpectro->Fit("gaus","R0Q","ep",c3_fitRange_Min,c3_fitRange_Max);
-		momentumSpectro->GetFunction("gaus")->GetParameters(c3GausFitPar);
-
-		double_t fCrystalGausMomentumPar[16];
-		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
-		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
-		std::copy(c3GausFitPar,c3GausFitPar+3,fCrystalGausMomentumPar+13);
-
-		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)+gaus(13)",c3_fitRange_Min,fgroundCrystalball->GetXmax());
-		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
-		momentumSpectro->Fit("fCrystalGuasMomentum","R0Q","ep",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
-		return fCrystalGuasMomentum;
-
-	}else if (fitPeak==3) {
-		double c2GausFitPar[3];
-		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-3*fCrystalMomentum->GetParameter(7);
-		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+3*fCrystalMomentum->GetParameter(7);
-		//fit the peak with gaussion
-		momentumSpectro->Fit("gaus","","",c2_fitRange_Min,c2_fitRange_Max);
-		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
-
-		double_t fCrystalGausMomentumPar[13];
-		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
-		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
-
-		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)",c2_fitRange_Min,fgroundCrystalball->GetXmax());
-		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
-		momentumSpectro->Fit("fCrystalGuasMomentum","","",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
-		return fCrystalGuasMomentum;
-	}
-	return fCrystalMomentum;
+//
+//	TH1F *test=(TH1F *)momentumSpectro->Clone("fitTest");
+//	test->GetXaxis()->SetRangeUser(momentumSpectro->GetXaxis()->GetXmin(),fgroundCrystalballPar[1]-0.0040);
+//
+//	double_t ffirstGuasPar[3];
+//	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
+//	test->Delete();
+//	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-3*fgroundCrystalballPar[2],C1stp+3*fgroundCrystalballPar[2]);
+//	momentumSpectro->Fit("firststatesgaus","ROQ","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
+//	ffirstGuas->GetParameters(ffirstGuasPar);
+//
+//
+//
+//	double_t ffirstCrystalPar[5];
+//	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.001,ffirstGuas->GetXmax());
+//	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
+//	momentumSpectro->Fit("ffirstCrystal","R","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
+//	ffirstCrystal->GetParameters(ffirstCrystalPar);
+//	ffirstCrystal->Draw("same");
+//
+//	double_t fCrystalMomentumPar[10];
+//	TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
+//	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
+//	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
+//	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
+//	momentumSpectro->Fit("fCrystalMomentum","RQ0","ep",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+//	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
+//	// get the Dp seperation for the first and second, and then project to the third and the fouth to fit the second the third excited states
+//	fCrystalMomentum->Draw("same");
+//	double MomDiffer=fgroundCrystalballPar[1]-ffirstCrystalPar[1];
+//	TLatex *text=new TLatex(fgroundCrystalballPar[1]*0.5+ffirstCrystalPar[1]*0.5,fgroundCrystalballPar[0]*0.5+ffirstCrystalPar[0]*0.5,Form("%1.4f MeV",MomDiffer*1000.0));
+//	text->Draw("same");
+//
+//	if(fitPeak>3){
+//		double c2GausFitPar[3];
+//		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-2*fCrystalMomentum->GetParameter(7);
+//		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+2*fCrystalMomentum->GetParameter(7);
+//		//fit the peak with gaussion
+//		momentumSpectro->Fit("gaus","R0Q","ep",c2_fitRange_Min,c2_fitRange_Max);
+//		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
+//
+//		double c3GausFitPar[3];
+//		double c3_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982-2*fCrystalMomentum->GetParameter(7);
+//		double c3_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*9.641/4.43982+2*fCrystalMomentum->GetParameter(7);
+//		// get th peak and start the fit
+//		momentumSpectro->Fit("gaus","R0Q","ep",c3_fitRange_Min,c3_fitRange_Max);
+//		momentumSpectro->GetFunction("gaus")->GetParameters(c3GausFitPar);
+//
+//		double_t fCrystalGausMomentumPar[16];
+//		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
+//		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
+//		std::copy(c3GausFitPar,c3GausFitPar+3,fCrystalGausMomentumPar+13);
+//
+//		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)+gaus(13)",c3_fitRange_Min,fgroundCrystalball->GetXmax());
+//		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
+//		momentumSpectro->Fit("fCrystalGuasMomentum","R0Q","ep",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
+//		return fCrystalGuasMomentum;
+//
+//	}else if (fitPeak==3) {
+//		double c2GausFitPar[3];
+//		double c2_fitRange_Min=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982-3*fCrystalMomentum->GetParameter(7);
+//		double c2_fitRange_Max=fCrystalMomentum->GetParameter(1)-(fCrystalMomentum->GetParameter(1)-fCrystalMomentum->GetParameter(6))*7.65407/4.43982+3*fCrystalMomentum->GetParameter(7);
+//		//fit the peak with gaussion
+//		momentumSpectro->Fit("gaus","","",c2_fitRange_Min,c2_fitRange_Max);
+//		momentumSpectro->GetFunction("gaus")->GetParameters(c2GausFitPar);
+//
+//		double_t fCrystalGausMomentumPar[13];
+//		std::copy(fCrystalMomentumPar,fCrystalMomentumPar+10,fCrystalGausMomentumPar);
+//		std::copy(c2GausFitPar,c2GausFitPar+3,fCrystalGausMomentumPar+10);
+//
+//		TF1 *fCrystalGuasMomentum=new TF1("fCrystalGuasMomentum","crystalball(0)+crystalball(5)+gaus(10)",c2_fitRange_Min,fgroundCrystalball->GetXmax());
+//		fCrystalGuasMomentum->SetParameters(fCrystalGausMomentumPar);
+//		momentumSpectro->Fit("fCrystalGuasMomentum","","",fCrystalGuasMomentum->GetXmin(),fCrystalGuasMomentum->GetXmax());
+//		return fCrystalGuasMomentum;
+//	}
+	return fgroundCrystalball;
 }
 
 
@@ -502,10 +502,10 @@ void DynamicCanvas(){
 
 	std::cout<<momentum->GetXaxis()->GetBinCenter(momentum->GetMaximumBin());
 
-//	auto func=momentum->GetFunction("fCrystalGuasMomentum");
-//
-//	TLatex *txt=new TLatex(func->GetParameter(1),func->GetParameter(0),Form("%f",func->GetParameter(1)));
-//	txt->Draw("same");
+	auto func=momentum->GetFunction("fgroundCrystal");
+	func->Draw("same");
+	TLatex *txt=new TLatex(func->GetParameter(1),func->GetParameter(0),Form("%f",func->GetParameter(1)));
+	txt->Draw("same");
 
 //	std::cout<<func->GetParameter(1)<<std::endl;
 
