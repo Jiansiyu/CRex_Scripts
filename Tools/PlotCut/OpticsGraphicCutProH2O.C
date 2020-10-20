@@ -35,7 +35,7 @@
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
+//#include <sys/stat.h>
 
 #include <TComplex.h>
 #include <TVirtualPad.h>
@@ -113,8 +113,9 @@ inline double GetPointingAngle(double DeltaE, double BeamE=2.17568){
 //}
 
 inline Bool_t IsFileExist (const std::string& name) {
-	  struct stat buffer;
-	  return (stat (name.c_str(), &buffer) == 0);
+//	  struct stat buffer;
+//	  return (stat (name.c_str(), &buffer) == 0);
+    return !gSystem->AccessPathName(name.c_str());
 }
 
 
@@ -753,13 +754,13 @@ double_t getBeamE(int runID){
 	beamE[21789]=2.1762745;
 	beamE[21790]=2.1762517;
 
-	beamE[20804]=0.9504413567;
-	beamE[20805]=0.9503818932;
-	beamE[20808]=0.9504413567; // not accurate
+	beamE[20804]=0.9504413567*953.4/951.1;
+	beamE[20805]=0.9503818932*953.4/951.1;
+	beamE[20808]=0.9504413567*953.4/951.1; // not accurate
 
-	beamE[1672]=0.95043818;
-	beamE[1673]=0.95038349;
-	beamE[1676]=0.9504413567; // not accurate
+	beamE[1672]=0.95043818*953.4/951.1;
+	beamE[1673]=0.95038349*953.4/951.1;
+	beamE[1676]=0.9504413567*953.4/951.1; // not accurate
 
 
 
@@ -963,7 +964,7 @@ void DynamicCanvas(){
 	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
 //	auto C1stp=2.1565;//CGroundp-0.016504;
 
-	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0005,C1stp+0.001);
+	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0007,C1stp+0.001);
 	momentum->Fit("firststatesgaus","R","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
 //	ffirstGuas->Draw("same");
 	ffirstGuas->GetParameters(ffirstGuasPar);
