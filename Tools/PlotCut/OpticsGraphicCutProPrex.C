@@ -34,6 +34,7 @@
 
 #include <TApplication.h>
 #include <boost/filesystem.hpp>
+#include "TVector3.h"
 R__LOAD_LIBRARY(/usr/lib/x86_64-linux-gnu/libboost_filesystem.so)
 
 int FoilID=0;
@@ -62,6 +63,84 @@ inline Bool_t IsFileExist (const std::string& name) {
 
 }
 
+const TVector3 GetSieveHolePos(TString HRS,UInt_t Col, UInt_t Row){
+    // return the Sieve hole position
+    if(HRS="L"){
+    assert(Col < NSieveCol);
+    assert(Row < NSieveRow);
+
+    // temporary uasage
+    // for prex experiment,
+    const Double_t PositionIndex_y[]={-20.52, -18.12, -15.72, -10.92,
+                                      -8.52,  -6.12,      0.0,	3.06,
+                                      6.12,    12.24, 15.30,   18.30,
+                                      21.42
+    };
+    const Double_t XOffset[]      = {0.0,	    6.65,	   0.0,	    0.0,    // 0 - 3
+                                     6.65,	   0.0,	   0.0,    6.65,      // 4 - 7
+                                     0.0,	   0,	6.65,      0,
+                                     6.65};
+    double ZPos=(97.900) * 1e-2;
+
+    double_t rowID_temp=(double_t)Row -3.0;
+    Double_t PRex_x=rowID_temp*13.3*(1e-3)+XOffset[Col]*(1e-3);
+    Double_t PRex_y=PositionIndex_y[Col]*(1e-3);
+    assert(PRex_x<0.2 && PRex_x<-0.2);
+    assert(PRex_y<0.2 && PRex_y<-0.2);
+
+    return TVector3(PRex_x,PRex_y,ZPos);
+     }else{
+        // return the Sieve hole position
+        assert(Col < NSieveCol);
+        assert(Row < NSieveRow);
+        double ZPos=(97.923) * 1e-2;
+        const Double_t PositionIndex_y[]={-20.52, -18.12, -15.72, -10.92,
+                                          -8.52,  -6.12,      0.0,	3.06,
+                                          6.12,    12.24, 15.30,   18.30,
+                                          21.42
+        };
+        const Double_t XOffset[]      = {0.0,	    6.65,	   0.0,	    0.0,    // 0 - 3
+                                         6.65,	   0.0,	   0.0,    6.65,      // 4 - 7
+                                         0.0,	   0,	6.65,      0,
+                                         6.65};
+        double_t rowID_temp=(double_t)Row -3.0;
+
+        Double_t PRex_x=rowID_temp*13.3*(1e-3)+XOffset[Col]*(1e-3);
+        Double_t PRex_y=PositionIndex_y[Col]*(-1e-3);
+
+        assert(PRex_x<0.2 && PRex_x<-0.2);
+        assert(PRex_y<0.2 && PRex_y<-0.2);
+        return TVector3(PRex_x,PRex_y,ZPos);
+    }
+}
+
+const TVector3 GetBeamOnTarg(UInt_t runID){
+    double beamX=0.0;
+    double beamY=0.0;
+    double beamZ=0.0;
+    // load in the beam Pos file
+    return  TVector3(beamX,beamY, beamZ);
+}
+
+
+TVector2 getThetaPhi(UInt_t  runID, TString HRS, UInt_t Col, UInt_t Row){
+
+    double HRSAngle=0.0*TMath::Pi()/180;
+
+    TVector3 TCSX(0, -1, 0);
+    TVector3 TCSZ(TMath::Sin(HRSAngle), 0, TMath::Cos(HRSAngle));
+    TVector3 TCSY = TCSZ.Cross(TCSX);
+    fTCSInHCS.RotateAxes(TCSX, TCSY, TCSZ);
+
+    const TVector3 SieveHoleTCS = GetSieveHolePos(HRS, Col, Row);
+
+    const TVector3 beamSpotHCS = GetBeamOnTarg(runID);
+
+    const  TVector3 beamSpotTCS=
+
+
+
+}
 
 // does it needed to add another function to predict the position of each peak
 // add an global fit function used for the fit
