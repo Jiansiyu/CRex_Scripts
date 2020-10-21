@@ -25,7 +25,6 @@
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
 #include <sstream>
 #include <TComplex.h>
 #include <TVirtualPad.h>
@@ -98,8 +97,9 @@ int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
 
 inline Bool_t IsFileExist (const std::string& name) {
-	  struct stat buffer;
-	  return (stat (name.c_str(), &buffer) == 0);
+//	  struct stat buffer;
+//	  return (stat (name.c_str(), &buffer) == 0);
+    return !gSystem->AccessPathName(name.c_str());
 }
 
 

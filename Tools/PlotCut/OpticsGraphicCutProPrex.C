@@ -63,7 +63,7 @@ inline Bool_t IsFileExist (const std::string& name) {
 
 }
 
-const TVector3 GetSieveHolePos(TString HRS,UInt_t Col, UInt_t Row){
+/*const TVector3 GetSieveHolePos(TString HRS,UInt_t Col, UInt_t Row){
     // return the Sieve hole position
     if(HRS="L"){
     assert(Col < NSieveCol);
@@ -131,16 +131,11 @@ TVector2 getThetaPhi(UInt_t  runID, TString HRS, UInt_t Col, UInt_t Row){
     TVector3 TCSZ(TMath::Sin(HRSAngle), 0, TMath::Cos(HRSAngle));
     TVector3 TCSY = TCSZ.Cross(TCSX);
     fTCSInHCS.RotateAxes(TCSX, TCSY, TCSZ);
-
     const TVector3 SieveHoleTCS = GetSieveHolePos(HRS, Col, Row);
-
     const TVector3 beamSpotHCS = GetBeamOnTarg(runID);
-
     const  TVector3 beamSpotTCS=
 
-
-
-}
+}*/
 
 // does it needed to add another function to predict the position of each peak
 // add an global fit function used for the fit
