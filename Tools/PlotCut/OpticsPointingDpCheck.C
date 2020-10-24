@@ -664,9 +664,9 @@ void DynamicCanvas(){
 		chainArray[0] = LoadrootFile(21626);
 		chainArray[1] = LoadrootFile(21632);
 //		chainArray[999] = LoadrootFile(22119);
-		chainArray[1000] = LoadrootFile(22234);
-		chainArray[1001] = LoadrootFile(22248);
-		chainArray[1001] = LoadrootFile(22256);
+		chainArray[1000] = LoadrootFile(21737);
+//		chainArray[1001] = LoadrootFile(22248);
+//		chainArray[1001] = LoadrootFile(22256);
 	}
 
 	// create new canvas
