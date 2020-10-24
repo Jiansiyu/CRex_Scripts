@@ -487,6 +487,37 @@ inline  int16_t getUID(UInt_t KineID,UInt_t Col, UInt_t Row){
 	return KineID*98+Col*NSieveRow+Row;
 }
 
+double_t getCentralP(TChain *chain){
+    double CentralP;
+    Int_t runID=(Int_t)chain->GetMaximum("fEvtHdr.fEvtNum");
+    TString HRS="L";
+    if (runID>20000)HRS="R";
+
+	if (HRS == "L") {
+		TH1F *HallProbHH = new TH1F("HallLProb", "HallLProb", 1000, -1, 0);
+		chain->Project(HallProbHH->GetName(), "HacL_D_LS450_FLD_DATA",
+				generalcut.Data());
+		CentralP = std::abs((HallProbHH->GetMean()) * 0.95282 / 0.33930);
+		std::cout << "CentralMomentum is (LHRS) for Hall Probe::" << (CentralP)
+				<< std::endl;
+	} else {
+		//HacR_D1_NMR_SIG
+		TH1F *HallR_NMR = new TH1F("HallR_NMR", "HallR_NMR", 1000, 0.2, 0.9);
+		chain->Project(HallR_NMR->GetName(), "HacR_D1_NMR_SIG",
+				generalcut.Data());
+		if (HallR_NMR->GetEntries()) {
+			double Mag = HallR_NMR->GetMean();
+			CentralP = 2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
+			std::cout << "CentralMomentum is (RHRS) from NMR::" << CentralP
+					<< std::endl;
+		} else {
+
+			std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
+					<< std::endl;
+		}
+	}
+    return CentralP;
+}
 
 // take the cut file and  the root file as input, and generate the average value the parameters on the focal plane
 //TString cutFile =
@@ -495,7 +526,8 @@ inline  int16_t getUID(UInt_t KineID,UInt_t Col, UInt_t Row){
 //"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles")
 Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		TString cutFile =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/LHRS/WithOutMomCut",
+		        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/RHRS/WithOutMomCut",
+//				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/LHRS/WithOutMomCut",
 		TString folder =
 				"/home/newdriver/pyQuant/prex_replayed/optroot")
 				{
@@ -602,6 +634,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 	TCut sieveAllHoleCut;
 	for (int16_t col = 0; col < NSieveCol; col++){
 		for (int16_t row = 0; row < NSieveRow; row++){
+
 			auto cutg=(TCutG*)gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
 			if(cutg){
 				sieveCut[col][row]=cutg;
@@ -656,8 +689,9 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 	std::map<int, std::map<int, TH1F *>> bpmYinforh;
 	std::map<int, std::map<int, TH1F *>> sieveholemomentum;
 	TH2F *SieveThetaPhiCuthh;
-	for (int16_t col = 0; col < NSieveCol; col++) {
-		for (int16_t row = 0; row < NSieveRow; row++) {
+
+	for (int16_t col = 0; col < NSieveCol; col++){
+		for (int16_t row = 0; row < NSieveRow; row++){
 			// skip the third one
 			if((col==3)&&(row==3)) continue;
 			// get the informations
@@ -675,23 +709,24 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				TCut sieveMomCut(Form("%s && %s",(Form("hcut_R_%d_%d_%d", FoilID, col, row)),generalcut.Data()));
 				// need cut on the Ground states
 				mainPatternCanvas->cd(1)->cd(3);
-				sieveholemomentum[col][row]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row),600,defaultMomMin,defaultMomMax);
-				chain->Project(sieveholemomentum[col][row]->GetName(),Form("%s.gold.p",HRS.Data()),sieveMomCut);
+				sieveholemomentum[col][row]=new TH1F(Form("hcut_R_%d_%d_%d_h_momentum", FoilID, col, row),Form("hcut_R_%d_%d_%d_momentum", FoilID, col, row),1000,defaultMomMin,defaultMomMax);
+//				chain->Project(sieveholemomentum[col][row]->GetName(),Form("%s.gold.p",HRS.Data()),sieveMomCut);
+                chain->Project(sieveholemomentum[col][row]->GetName(),Form("%s.gold.dp*%f+%f",HRS.Data(),getCentralP(chain),getCentralP(chain)),sieveMomCut);
 				sieveholemomentum[col][row]->GetXaxis()->SetRangeUser(
 						sieveholemomentum[col][row]->GetXaxis()->GetBinCenter(
 								sieveholemomentum[col][row]->GetMaximumBin())
-											- 0.009,
+											- 0.004,
 											sieveholemomentum[col][row]->GetXaxis()->GetBinCenter(
 													sieveholemomentum[col][row]->GetMaximumBin())
-											+ 0.009);
-				sieveholemomentum[col][row]->Fit("gaus","","",sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())-0.001,sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())+0.001);
+											+ 0.004);
+				sieveholemomentum[col][row]->Fit("gaus","","",sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())-0.0003,sieveholemomentum[col][row]->GetBinCenter(sieveholemomentum[col][row]->GetMaximumBin())+0.0005);
 				double SieveMomFitPar[3];
 				sieveholemomentum[col][row]->GetFunction("gaus")->GetParameters(SieveMomFitPar);
                 sieveholemomentum[col][row]->GetXaxis()->SetRangeUser(SieveMomFitPar[1]-10*SieveMomFitPar[2],SieveMomFitPar[1]+10*SieveMomFitPar[2]);
 				sieveholemomentum[col][row]->Draw();
 
 
-				TString sieveGroundPcut(Form("abs(%s.gold.p-%f)<%f*%f",HRS.Data(),SieveMomFitPar[1],sieveMomCutSigma,SieveMomFitPar[2]));
+//				TString sieveGroundPcut(Form("abs(%s.gold.p-%f)<%f*%f",HRS.Data(),SieveMomFitPar[1],sieveMomCutSigma,SieveMomFitPar[2]));
 
 				TLine momLineCenter(SieveMomFitPar[1],0,SieveMomFitPar[1],SieveMomFitPar[0]);
 				momLineCenter.SetLineColor(kRed);
@@ -725,7 +760,8 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 										500,-5,5);
 
 
-				TCut sieveHoleCut(Form("%s && %s && %s",(Form("hcut_R_%d_%d_%d", FoilID, col, row)),generalcut.Data(),sieveGroundPcut.Data()));
+//				TCut sieveHoleCut(Form("%s && %s && %s",(Form("hcut_R_%d_%d_%d", FoilID, col, row)),generalcut.Data(),sieveGroundPcut.Data()));
+                TCut sieveHoleCut(Form("%s && %s ",(Form("hcut_R_%d_%d_%d", FoilID, col, row)),generalcut.Data()));
 				//extract the informations
 				sieveCut[col][row]->SetLineWidth(2);
 				sieveCut[col][row]->SetLineColor(kGreen);
@@ -735,8 +771,8 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 				// get the focal plane variables
 				mainPatternCanvas->cd(2)->cd(1);
 				chain->Project(focalXh[col][row]->GetName(),Form("%s.tr.r_x",HRS.Data()),sieveHoleCut);
-				focalXh[col][row]->GetXaxis()->SetRangeUser(focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.03,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.03);
-				focalXh[col][row]->Fit("gaus","","",focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.01,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.01);
+				focalXh[col][row]->GetXaxis()->SetRangeUser(focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.02,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.02);
+				focalXh[col][row]->Fit("gaus","","",focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())-0.005,focalXh[col][row]->GetBinCenter(focalXh[col][row]->GetMaximumBin())+0.005);
 				focalXh[col][row]->Draw();
 				focal_x=focalXh[col][row]->GetFunction("gaus")->GetParameter(1);
 
