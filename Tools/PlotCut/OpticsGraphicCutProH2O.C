@@ -646,7 +646,7 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TStri
 	return 1;
 }
 
-Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/pyQuant/crex_replayed/run20201016") {
+Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/pyQuant/crex_replayed/run20201017_sum") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
