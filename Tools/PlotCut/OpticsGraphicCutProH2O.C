@@ -759,9 +759,6 @@ double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Le
             std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E in ROOT file(with correction): "<<epicsBeamE*953.4/951.1<<std::endl;
             return  epicsBeamE/1000.0*953.4/951.1;
         }
-//        else{
-//            std::cout<<"\033[1;31m [CAUTION]\033[0m Can not read reasonable Beam E from ROOT file:: "<<runID<<" ( "<<epicsBeamE/1000.0<<")"<<std::endl;
-//        }
     }
 
 	//read in the beamE information and parser
