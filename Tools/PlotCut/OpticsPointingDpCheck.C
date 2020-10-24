@@ -794,30 +794,31 @@ void DynamicCanvas(){
 	std::map<int, double> DpTheoreticalMap;
 
 
-	//old value
-    if (HRS == "L") { 	//0.0164994,0.00649027,-0.00405851,-0.00915162,
-		DpTheoreticalMap[-2] = 0.0164994;
-		DpTheoreticalMap[-1] = 0.00649027;
-		DpTheoreticalMap[0] = -0.00405851;
-		DpTheoreticalMap[1] = -0.00915162;
-	}else {
-		DpTheoreticalMap[-2] = 0.0164135;
-		DpTheoreticalMap[-1] = 0.00630493;
-		DpTheoreticalMap[0] = -0.00390594;
-		DpTheoreticalMap[1] = -0.0134213;
-	}
-
-//	if (HRS == "L") { //0.0193804,0.00934287,-0.00123581,-0.00634336
-//		DpTheoreticalMap[-2] = 0.0193804;
-//		DpTheoreticalMap[-1] = 0.00934287;
-//		DpTheoreticalMap[0] = -0.00123581;
-//		DpTheoreticalMap[1] = -0.00634336;
-//	}else {//0.0164135,0.00630493,-0.00390594,-0.0134213
+//	//old value
+//    if (HRS == "L") { 	//0.0164994,0.00649027,-0.00405851,-0.00915162,
+//		DpTheoreticalMap[-2] = 0.0164994;
+//		DpTheoreticalMap[-1] = 0.00649027;
+//		DpTheoreticalMap[0] = -0.00405851;
+//		DpTheoreticalMap[1] = -0.00915162;
+//	}else {
 //		DpTheoreticalMap[-2] = 0.0164135;
 //		DpTheoreticalMap[-1] = 0.00630493;
 //		DpTheoreticalMap[0] = -0.00390594;
 //		DpTheoreticalMap[1] = -0.0134213;
 //	}
+
+//new value with corrected Beam E, Zpos, HRS Angle
+	if (HRS == "L") { //0.0193804,0.00934287,-0.00123581,-0.00634336
+		DpTheoreticalMap[-2] = 0.0193804;
+		DpTheoreticalMap[-1] = 0.00934287;
+		DpTheoreticalMap[0] = -0.00123581;
+		DpTheoreticalMap[1] = -0.00634336;
+	}else {//0.0164135,0.00630493,-0.00390594,-0.0134213
+		DpTheoreticalMap[-2] = 0.0164135;
+		DpTheoreticalMap[-1] = 0.00630493;
+		DpTheoreticalMap[0] = -0.00390594;
+		DpTheoreticalMap[1] = -0.0134213;
+	}
 
 	std::map<int, double >CentralPArray;
 	for (auto item = OptDpArrayH.begin(); item!= OptDpArrayH.end();item++){
