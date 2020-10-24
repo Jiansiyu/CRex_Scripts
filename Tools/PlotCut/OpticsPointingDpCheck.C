@@ -230,7 +230,7 @@ TF1 *SpectroCrystalFitDp_H2O(TH1F*momentumSpectro){
 }
 
 
-TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/pyQuant/crex_replayed/run20201016"){
+TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/pyQuant/crex_replayed/run20201017_sum"){
 	TChain *chain=new TChain("T");
 	TString HRS="R";
 		if(runID<20000){HRS="L";};
@@ -973,23 +973,23 @@ void DynamicCanvas(){
     }
     DpCanvas->Update();
 
-//	for(auto item = OptDpArrayH.begin(); item!= OptDpArrayH.end();item++){
-//		int i = item->first;
-//		if(FitPars.find(i)!=FitPars.end()){
-//			 TArrow *ar5 = new TArrow(FitPars[i][1],FitPars[i][0]/2,FitPars[i][6],FitPars[i][0]/2,15,"<|>");
-//			ar5->SetAngle(60);
-//			ar5->SetLineWidth(2);
-//			ar5->SetLineColor(4);
-//			ar5->SetFillStyle(3008);
-//			ar5->SetFillColor(2);
-//			ar5->Draw("same");
-//
-//			TLatex *txt=new TLatex(FitPars[i][1]*0.5+FitPars[i][6]*0.5,FitPars[i][0]*0.5,Form("%1.3fMeV#pm%1.3f",CentralPArray[i]*1000.0*(FitPars[i][1]-FitPars[i][6]),CentralPArray[i]*1000.0*TMath::Sqrt(fitFunctionsList[i]->GetParError(1)*fitFunctionsList[i]->GetParError(1)+fitFunctionsList[i]->GetParError(6)*fitFunctionsList[i]->GetParError(6))));
-//			txt->SetLineWidth(1);
-//			txt->SetTextSize(0.02);
-//			txt->Draw("same");
-//		}
-//	}
+	for(auto item = OptDpArrayH.begin(); item!= OptDpArrayH.end();item++){
+		int i = item->first;
+		if(FitPars.find(i)!=FitPars.end()){
+			 TArrow *ar5 = new TArrow(FitPars[i][1],FitPars[i][0]/2,FitPars[i][6],FitPars[i][0]/2,15,"<|>");
+			ar5->SetAngle(60);
+			ar5->SetLineWidth(2);
+			ar5->SetLineColor(4);
+			ar5->SetFillStyle(3008);
+			ar5->SetFillColor(2);
+			ar5->Draw("same");
+
+			TLatex *txt=new TLatex(FitPars[i][1]*0.5+FitPars[i][6]*0.5,FitPars[i][0]*0.5,Form("%1.3fMeV#pm%1.3f",CentralPArray[i]*1000.0*(FitPars[i][1]-FitPars[i][6]),CentralPArray[i]*1000.0*TMath::Sqrt(fitFunctionsList[i]->GetParError(1)*fitFunctionsList[i]->GetParError(1)+fitFunctionsList[i]->GetParError(6)*fitFunctionsList[i]->GetParError(6))));
+			txt->SetLineWidth(1);
+			txt->SetTextSize(0.02);
+			txt->Draw("same");
+		}
+	}
 
 
 
