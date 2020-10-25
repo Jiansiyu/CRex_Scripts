@@ -501,152 +501,13 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 		momentumP2->SetMarkerStyle(20);
 		momentumP2->SetMarkerColor(kRed);
 		momentumP2->SetLineColor(kRed);
-
 		momentumP2->Draw("same");
-
 	canvastest2->Update();
-
-
 	return 1;
 }
 
 
-
-// input: the runID
-//        cut root file
-//TODO, need to input the size ID vs. scattered angle chart
-Int_t OpticsGraphicCutProH20(UInt_t runID,double centralP,TString cutFile, TString folder="/home/newdriver/Storage/Research/CRex_Experiment/optReplay/Result") {
-	CentralP=centralP;
-	TChain *chain=new TChain("T");
-	// if the folder itself is and root file
-	TString HRS="R";
-	if(runID<20000){HRS="L";};
-
-	if(folder.EndsWith(".root")){
-		chain->Add(folder.Data());
-	}else{
-		TString rootDir(folder.Data());
-		if(runID>20000){ //RHRS
-			if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
-				std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-				chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
-
-				TString filename;
-				int16_t split=1;
-				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-				while (IsFileExist(filename.Data())){
-					std::cout<<"Add File::"<<filename.Data()<<std::endl;
-					chain->Add(filename.Data());
-					split++;
-					filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-				}
-			}else{
-				std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-			}
-		}else{
-			HRS="L";
-			if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
-				std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-				chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
-
-				TString filename;
-				int16_t split=1;
-				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-				while (IsFileExist(filename.Data())){
-					std::cout<<"Add File::"<<filename.Data()<<std::endl;
-					chain->Add(filename.Data());
-					split++;
-					filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-				}
-			}else{
-				std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-			}
-		}
-	}
-
-	//load the cut and load the canvas
-	//plot the theta and phi, and load the cut file
-	if(HRS=="L"){
-		generalcut=generalcutL;
-	}else{
-		generalcut=generalcutR;
-	}
-
-	TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
-	if(!mainPatternCanvas){
-		mainPatternCanvas=new TCanvas("cutPro","cutPro",600,600);
-	}else{
-		mainPatternCanvas->Clear();
-	}
-	mainPatternCanvas->Divide(1,2);
-	mainPatternCanvas->Draw();
-	mainPatternCanvas->cd(1);
-	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
-	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.03,0.03,1000,-0.045,0.045);
-
-	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
-	TargetThPhHH->Draw("zcol");
-
-
-	// read the cut file and load the cut, create the new data set with the cut
-	// load the cut file
-	TFile *cutFileIO=new TFile(cutFile.Data(),"READ");
-	if(cutFileIO->IsZombie()){
-		std::cout<<"[ERROR]:: CAN NOT FIND CUT FILE \" "<<cutFile.Data()<<"\""<<std::endl;
-		return -1;
-	}
-
-	//lo on the files in the cut and find all the sieve hole cuts
-	TCutG *sieveCut[NSieveCol][NSieveRow];
-	TCut sieveAllHoleCut;
-	for (int16_t col = 0; col < NSieveCol; col++){
-		for (int16_t row = 0; row < NSieveRow; row++){
-			auto cutg=(TCutG*)gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
-			if(cutg){
-				sieveCut[col][row]=cutg;
-				sieveCut[col][row]->SetLineWidth(2);
-				sieveCut[col][row]->SetLineColor(kRed);
-				sieveCut[col][row]->Draw("same");
-				sieveAllHoleCut=sieveAllHoleCut||TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
-
-				//get the data for this canvas
-				TH2F *selectedSievehh=(TH2F *)  gROOT->FindObject("Sieve_Selected_th_ph");
-				if (selectedSievehh) {
-					selectedSievehh->Clear();
-				} else {
-					selectedSievehh = new TH2F("Sieve_Selected_th_ph",
-							"Sieve_Selected_th_ph", 1000,
-							TargetThPhHH->GetXaxis()->GetXmin(),
-							TargetThPhHH->GetXaxis()->GetXmax(), 1000,
-							TargetThPhHH->GetYaxis()->GetXmin(),
-							TargetThPhHH->GetYaxis()->GetXmax());
-				}
-				chain->Project(selectedSievehh->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),Form("%s&&%s",sieveCut[col][row]->GetName(),generalcut.Data()));
-				TLatex *label=new TLatex(selectedSievehh->GetMean(1),selectedSievehh->GetMean(2),Form("(%d %d)",col,row));
-				label->SetTextSize(0.04);
-				label->SetTextColor(2);
-				label->Draw("same");
-				selectedSievehh->Delete();
-			}
-		}
-	}
-	sieveAllHoleCut=sieveAllHoleCut+TCut(generalcut.Data());
-
-	mainPatternCanvas->cd(2);
-	TH2F *TargetThPh_SieveCutHH=(TH2F *)gROOT->FindObject("th_vs_ph_cut");
-	if(TargetThPh_SieveCutHH) TargetThPh_SieveCutHH->Delete();
-	TargetThPh_SieveCutHH=new TH2F("th_vs_ph_cut","th_vs_ph_cut",1000,-0.03,0.03,1000,-0.045,0.045);
-	chain->Project(TargetThPh_SieveCutHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveAllHoleCut);
-	TargetThPh_SieveCutHH->Draw("zcol");
-	mainPatternCanvas->Update();
-
-	// fit each individual sieve holes
-	//create the
-	return 1;
-}
-
-Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/pyQuant/crex_replayed/run20201016") {
+Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
 	// prepare the data
 	TChain *chain=new TChain("T");
 	TString rootDir(folder.Data());
@@ -725,7 +586,6 @@ double HRSAngleBPMCorrection(UInt_t runID){
     //create the the canvas and calculate the angle correction cause the bpm
     std::map<UInt_t, double> bpmValue;
 
-
     std::map<UInt_t,double> bpmCorrectArray;
 
     return 0.0;
@@ -757,37 +617,30 @@ double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Le
         double epicsBeamE=HallEpicsBeamE->GetMean();
         if ((epicsBeamE > 2170)&&(epicsBeamE < 2180)){
             std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E in ROOT file(with correction): "<<epicsBeamE*953.4/951.1<<std::endl;
-            return  epicsBeamE/1000.0*953.4/951.1;
+            return  epicsBeamE/1000.0*2182.2152/2176;
         }
     }
 
 	//read in the beamE information and parser
 	if ((!beamEfname.IsNull()) && IsFileExist(beamEfname.Data())){
 		std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E file: "<<beamEfname.Data()<<std::endl;
-
 		std::ifstream infile(beamEfname.Data());
-
 		int runID_temp;
 		float beamE_temp;
 		while (infile >> runID_temp >> beamE_temp){
-        //std::cout<<"runID:"<<runID_temp<<"   ->   "<<beamE_temp<<std::endl;
            beamE[runID_temp]=beamE_temp/1000.0;
 		}
-
 	}else{
 		std::cout<<"\033[1;33m [Warning]\033[0m can not find file "<<beamEfname.Data()<<" Skip the beamE file!!!"<<std::endl;
 
 	}
-
-
 	if(beamE.find(runID)!=beamE.end()){
         std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E file(with correction): "<<beamE[runID]*953.4/951.1<<std::endl;
-		return beamE[runID]*953.4/951.1;
+		return beamE[runID]*2182.2152/2176;
 	}else{
 		std::cout<<"\033[1;31m [CAUTION]\033[0m Can not find the Beam E for run"<<runID<<" Using default value!!!["<<__func__<<"("<<__LINE__<<")]"<<std::endl;
-		return 2.17568;
+		exit(-1);
 	}
-
 }
 
 
@@ -1166,8 +1019,6 @@ void DynamicCanvas(){
 		patternCheck->Clear();
 	}
 
-
-
 	hSieveHole=new TH2F("sieveholeh", "sieveholeh", 1000, h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(), 1000,
 			h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax());
 	chain->Project(hSieveHole->GetName(),
@@ -1215,6 +1066,7 @@ void DynamicCanvas(){
         txtfileio << writeString<<std::endl;
         txtfileio.close();
     }
+
     SieveRecCanvas->SaveAs(Form("./PointingCheck/result/Pointing_%d.jpg",eventID));
 	SieveRecCanvas->SaveAs(Form("./PointingCheck/result/Pointing_%d.root",eventID));
 	hSieveHole->Delete();

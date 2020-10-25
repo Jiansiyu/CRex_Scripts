@@ -26,7 +26,7 @@
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
+//#include <sys/stat.h>
 
 #include <TComplex.h>
 #include <TVirtualPad.h>
@@ -54,8 +54,8 @@ TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.v
 TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.2";
 
 inline Bool_t IsFileExist (const std::string& name) {
-	  struct stat buffer;
-	  return (stat (name.c_str(), &buffer) == 0);
+
+    return !gSystem->AccessPathName(name.c_str());
 }
 
 TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result"){
