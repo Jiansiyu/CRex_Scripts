@@ -230,7 +230,7 @@ TF1 *SpectroCrystalFitDp_H2O(TH1F*momentumSpectro){
 }
 
 
-TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/pyQuant/crex_replayed/run20201017_sum"){
+TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result"){
 	TChain *chain=new TChain("T");
 	TString HRS="R";
 		if(runID<20000){HRS="L";};
@@ -279,7 +279,7 @@ TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/pyQuant/crex_r
 		return chain;
 }
 
-Int_t OpticsPointingDpCheck(UInt_t runID,TString folder="/home/newdriver/pyQuant/crex_replayed/run20201016") {
+Int_t OpticsPointingDpCheck(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
 	// prepare the data
 	TChain *chain=LoadrootFile(runID,folder);
 	TString rootDir(folder.Data());
@@ -663,9 +663,9 @@ void DynamicCanvas(){
 		chainArray[-1] = LoadrootFile(21641);
 		chainArray[0] = LoadrootFile(21626);
 		chainArray[1] = LoadrootFile(21632);
-//		chainArray[999] = LoadrootFile(22119);
-		chainArray[1000] = LoadrootFile(21737);
-//		chainArray[1001] = LoadrootFile(22248);
+		chainArray[999] = LoadrootFile(21786);
+		chainArray[1000] = LoadrootFile(21736);
+		chainArray[1001] = LoadrootFile(21764);
 //		chainArray[1001] = LoadrootFile(22256);
 	}
 
@@ -813,11 +813,11 @@ void DynamicCanvas(){
 		DpTheoreticalMap[-1] = 0.00934287;
 		DpTheoreticalMap[0] = -0.00123581;
 		DpTheoreticalMap[1] = -0.00634336;
-	}else {//0.0164135,0.00630493,-0.00390594,-0.0134213
-		DpTheoreticalMap[-2] = 0.0164135;
-		DpTheoreticalMap[-1] = 0.00630493;
-		DpTheoreticalMap[0] = -0.00390594;
-		DpTheoreticalMap[1] = -0.0134213;
+	}else {//0.0168572,0.00674419,-0.00349023,-0.0129019
+		DpTheoreticalMap[-2] = 0.0168572;
+		DpTheoreticalMap[-1] = 0.00674419;
+		DpTheoreticalMap[0] = -0.00349023;
+		DpTheoreticalMap[1] = -0.0129019;
 	}
 
 	std::map<int, double >CentralPArray;
