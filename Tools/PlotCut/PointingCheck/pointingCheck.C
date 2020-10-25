@@ -806,6 +806,7 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
     TLegend *lgend=new TLegend(0.8,0.8);
 
     std::vector<double> HRSAngleAver;
+    std::vector<double> HRSAngleFiltered;
 //    double HRSAngleStd;
     for (auto iter=data.begin(); iter!=data.end();iter++){
         TString title=iter->first;
@@ -822,6 +823,9 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
             y_value[counter]=iter->second[counter][2];
             y_err[counter]=iter->second[counter][3];
             HRSAngleAver.push_back(y_value[counter]);
+
+            if(x_id[counter] < 0.5)HRSAngleFiltered.push_back(y_value[counter]);
+
         }
 
         for (int i =0 ; i < iter->second.size();i++){
@@ -859,7 +863,7 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
 
 
 
-    TPaveText *text=new TPaveText(0.2,0.15,0.8,0.23,"NDC");
+    TPaveText *text=new TPaveText(0.3,0.15,0.7,0.23,"NDC");
     double sum = std::accumulate(HRSAngleAver.begin(),HRSAngleAver.end(),0.0);
     double mean=sum/HRSAngleAver.size();
     double sq_sum=std::inner_product(HRSAngleAver.begin(), HRSAngleAver.end(), HRSAngleAver.begin(), 0.0);
@@ -868,6 +872,22 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
     text->SetTextColor(4);
     text->SetTextAlign(22);
     text->Draw("same");
+
+    TPaveText *textFiltered=new TPaveText(0.3,0.25,0.7,0.33,"NDC");
+    textFiltered->SetFillColor(6);
+    double sumFiltered = std::accumulate(HRSAngleFiltered.begin(),HRSAngleFiltered.end(),0.0);
+    double meanFiltered=sumFiltered/HRSAngleFiltered.size();
+    double sq_sumFiltered=std::inner_product(HRSAngleFiltered.begin(), HRSAngleFiltered.end(), HRSAngleFiltered.begin(), 0.0);
+    double stdevFiltered=std::sqrt(sq_sumFiltered/HRSAngleFiltered.size()-meanFiltered*meanFiltered);
+    textFiltered->AddText(Form("Average:%1.3f #pm %1.3f",meanFiltered,stdevFiltered));
+    textFiltered->SetTextColor(4);
+    textFiltered->SetTextAlign(22);
+    textFiltered->Draw("same");
+
+
+
+
+
 
     TLine *AverageLine=new TLine(-1.9,mean,1.9,mean);
     AverageLine->SetLineColor(4);
@@ -973,8 +993,8 @@ int plotError(TString csvfname="./crex_pointing.csv"){
         }
     }
 
-//    plotHRSCanv(pointDataL,"LHRS")->Draw();
-    plotHRSCanv(pointDataR,"RHRS")->Draw();
+    plotHRSCanv(pointDataL,"LHRS")->Draw();
+//    plotHRSCanv(pointDataR,"RHRS")->Draw();
 
 //    auto canvL= plotHRSCanv(pointDataL,"LHRS");
 //    auto canvR= plotHRSCanv(pointDataR,"RHRS");
