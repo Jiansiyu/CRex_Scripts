@@ -857,6 +857,24 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
         }
     }
 
+
+
+    TPaveText *text=new TPaveText(0.2,0.15,0.8,0.23,"NDC");
+    double sum = std::accumulate(HRSAngleAver.begin(),HRSAngleAver.end(),0.0);
+    double mean=sum/HRSAngleAver.size();
+    double sq_sum=std::inner_product(HRSAngleAver.begin(), HRSAngleAver.end(), HRSAngleAver.begin(), 0.0);
+    double stdev=std::sqrt(sq_sum/HRSAngleAver.size()-mean*mean);
+    text->AddText(Form("Average:%1.3f #pm %1.3f",mean,stdev));
+    text->SetTextColor(4);
+    text->SetTextAlign(22);
+    text->Draw("same");
+
+    TLine *AverageLine=new TLine(-1.9,mean,1.9,mean);
+    AverageLine->SetLineColor(4);
+    AverageLine->SetLineWidth(2);
+    AverageLine->Draw("same");
+
+    if(false)
     {
         double survey = 4.803;
         if (HRS == "RHRS"){
@@ -884,22 +902,19 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
         line2->SetLineWidth(2);
         line2->SetLineColor(93);
         line2->Draw("same");
+    }else{
+
+        TLine *lineUpperBound=new TLine(-1.9,mean+stdev,1.9,mean+stdev);
+        lineUpperBound->SetLineWidth(2);
+        lineUpperBound->SetLineColor(44);
+        lineUpperBound->Draw("same");
+
+        TLine *lineLowerBound=new TLine(-1.9,mean-stdev,1.9,mean-stdev);
+        lineLowerBound->SetLineWidth(2);
+        lineLowerBound->SetLineColor(44);
+        lineLowerBound->Draw("same");
+
     }
-
-    TPaveText *text=new TPaveText(0.2,0.15,0.8,0.23,"NDC");
-    double sum = std::accumulate(HRSAngleAver.begin(),HRSAngleAver.end(),0.0);
-    double mean=sum/HRSAngleAver.size();
-    double sq_sum=std::inner_product(HRSAngleAver.begin(), HRSAngleAver.end(), HRSAngleAver.begin(), 0.0);
-    double stdev=std::sqrt(sq_sum/HRSAngleAver.size()-mean*mean);
-    text->AddText(Form("Average:%1.3f #pm %1.3f",mean,stdev));
-    text->SetTextColor(4);
-    text->SetTextAlign(22);
-    text->Draw("same");
-
-    TLine *AverageLine=new TLine(-1.9,mean,1.9,mean);
-    AverageLine->SetLineColor(4);
-    AverageLine->SetLineWidth(2);
-    AverageLine->Draw("same");
 
     lgend->Draw("same");
     return hrsangleCanv;
@@ -958,12 +973,18 @@ int plotError(TString csvfname="./crex_pointing.csv"){
         }
     }
 
+    plotHRSCanv(pointDataL,"LHRS")->Draw();
+//    plotHRSCanv(pointDataR,"RHRS")->Draw();
 
-//    plotHRSCanv(pointDataL,"LHRS")->Draw();
-   plotHRSCanv(pointDataR,"RHRS")->Draw();
-
-
-
+//    auto canvL= plotHRSCanv(pointDataL,"LHRS");
+//    auto canvR= plotHRSCanv(pointDataR,"RHRS");
+//
+//    TCanvas *pointingCanv = new TCanvas("CRex Pointing Measurement");
+//    pointingCanv->Divide(2,1);
+//    pointingCanv->cd(1);
+//    canvL->DrawClonePad();
+//    pointingCanv->cd(2);
+//    canvR->DrawClonePad();
     return  1;
 
 }

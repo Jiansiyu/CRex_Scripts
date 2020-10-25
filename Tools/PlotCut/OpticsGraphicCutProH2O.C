@@ -84,6 +84,20 @@ inline double GetPointingAngle(double DeltaE, double BeamE=2.17568){
 }
 
 
+inline double getP0(double ScatterAng, double Targ_theta, double Targ_phi){
+
+    ScatterAng=ScatterAng*TMath::Pi()/180.0;
+    double A=2.0*TMath::Sqrt(1+Targ_phi*Targ_phi+Targ_theta*Targ_theta)*TMath::Cos(ScatterAng);
+    double B=TMath::Sqrt(2)*TMath::Sqrt(Targ_phi*Targ_phi - Targ_phi*Targ_phi*Targ_theta*Targ_theta + Targ_phi*Targ_phi*Targ_phi*Targ_phi-
+            Targ_phi*Targ_phi*TMath::Cos(2*ScatterAng)-Targ_phi*Targ_phi*Targ_theta*Targ_theta*TMath::Cos(2*ScatterAng)-TMath::Power(Targ_phi,4)*TMath::Cos(2*ScatterAng));
+
+    double C=1.0/(2*(1+TMath::Power(Targ_phi,2)));
+
+    return TMath::ACos(C*(A-B))*180/TMath::Pi();
+
+
+}
+
 inline Bool_t IsFileExist (const std::string& name) {
     return !gSystem->AccessPathName(name.c_str());
 //	  struct stat buffer;
@@ -666,8 +680,7 @@ void DynamicCanvas(){
 	if (event!=kButton1Down) return;
 
 
-	TFile *f1=new TFile("test_temp.root","RECREATE");
-		assert(f1);
+
 
 	// link the root tree and check which HRS we are working on
 	TChain *chain = (TChain *) gROOT->FindObject("T");
@@ -677,6 +690,12 @@ void DynamicCanvas(){
 	} else if (filename.Contains("LHRS")) {
 		HRS = "L";
 	}
+
+    TH1F *eventIDhh=new TH1F("eventID","eventID",800000,0,800000);
+    chain->Project(eventIDhh->GetName(),"fEvtHdr.fRun");
+    int eventID=int(eventIDhh->GetMean());
+    TFile *f1=new TFile(Form("./PointingCheck/result/Pointing_%d.root",eventID),"RECREATE");
+    assert(f1);
 
 	// try to extract the hall prob if this is LHRS
 	double CentralP;
@@ -706,9 +725,6 @@ void DynamicCanvas(){
 
 
 
-	TH1F *eventIDhh=new TH1F("eventID","eventID",800000,0,800000);
-	chain->Project(eventIDhh->GetName(),"fEvtHdr.fRun");
-	int eventID=int(eventIDhh->GetMean());
 
 
 	TH2 *h = (TH2*) select;
@@ -865,7 +881,7 @@ void DynamicCanvas(){
 	firstposLine->SetLineWidth(2);
 	firstposLine->Draw("same");
 
-	TPaveText *pt = new TPaveText(0.1,0.8,0.6,0.9,"NDC");
+	TPaveText *pt = new TPaveText(0.1,0.1,0.4,0.4,"NDC");
 	double_t deltaE=fCrystalMomentumPar[1]-fCrystalMomentumPar[6];
 	double_t deltaErr=TMath::Sqrt( (fCrystalMomentum->GetParError(1))*(fCrystalMomentum->GetParError(1))+(fCrystalMomentum->GetParError(6))*(fCrystalMomentum->GetParError(6)));
 
@@ -926,13 +942,12 @@ void DynamicCanvas(){
             }
 
             // get the equantion and the equation that used for calculate the correction angle
-            SieveRecCanvas->cd(3)->cd(4);
-
-            TPaveText *infor=new TPaveText(0.1,0.8,0.6,0.9,"NDC");
-            infor->AddText(Form("Bpm on Targ x.y/cm:(%f,%f)",bpmX,bpmY));
-            infor->AddText(Form("Targ to Sieve on Beamline:%f",sieveZ));
-            infor->AddText(Form("Atan(#frac{%f}{%f})=%f (%f#circ)",bpmX,sieveZ,TMath::ATan((bpmX)/sieveZ),HRSBPMCorrection));
-            infor->Draw("same");
+//            SieveRecCanvas->cd(3)->cd(4);
+//            TPaveText *infor=new TPaveText(0.1,0.1,0.9,0.9,"NDC");
+//            infor->AddText(Form("Bpm on Targ x.y/cm:(%f,%f)",bpmX,bpmY));
+//            infor->AddText(Form("Targ to Sieve on Beamline:%f",sieveZ));
+//            infor->AddText(Form("Atan(#frac{%f}{%f})=%f (%f#circ)",bpmX,sieveZ,TMath::ATan((bpmX)/sieveZ),HRSBPMCorrection));
+//            infor->Draw("same");
 
         SieveRecCanvas->cd(1);
 		//calculate the Dp with +/x 10^-4 change
@@ -957,8 +972,9 @@ void DynamicCanvas(){
 		double HRSAngle=GetPointingAngle(deltaE,getBeamE(eventID,chain));
 		HRSAngle_Final=HRSAngle;
 		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle,errorAngle,errorAngle1));
+		pt->AddText(Form("Beam E   :%f",getBeamE(eventID,chain)));
 //        pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle-HRSBPMCorrection,errorAngle,errorAngle1));
-        pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f beamE:%f",bpmX,bpmY,getBeamE(eventID,chain)));
+//        pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f beamE:%f",bpmX,bpmY,getBeamE(eventID,chain)));
 
 		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
 		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
@@ -979,19 +995,19 @@ void DynamicCanvas(){
 	pt->Draw("same");
 
 	TLatex *t1 = new TLatex(fgroudGausPar[1] + 2 * fgroudGausPar[2],fgroudGausPar[0], Form("P=%2.5fGeV #pm %1.3fMeV", fCrystalMomentumPar[1],1000.0*(fCrystalMomentum->GetParError(1))));
-	t1->SetTextSize(0.055);
+	t1->SetTextSize(0.1);
 	t1->SetTextAlign(12);
 	t1->SetTextColor(2);
 	t1->Draw("same");
 
 	TLatex *t2 = new TLatex(ffirstGuasPar[1]+ffirstGuasPar[2]*0.5,fCrystalMomentumPar[5], Form("P=%2.5fGeV #pm %1.3fMeV", fCrystalMomentumPar[6],1000.0*(fCrystalMomentum->GetParError(6))));
-	t2->SetTextSize(0.055);
+	t2->SetTextSize(0.1);
 	t2->SetTextAlign(12);
 	t2->SetTextColor(2);
 	t2->Draw("same");
 
 	TLatex *t3 = new TLatex((ffirstGuasPar[1]+fgroudGausPar[1])/2.0,(fCrystalMomentumPar[5]+fgroudGausPar[0])*0.5, Form("#DeltaP=%2.3f #pm %1.3fMeV", 1000.0*deltaE,1000.0*deltaErr));
-	t3->SetTextSize(0.055);
+	t3->SetTextSize(0.1);
 	t3->SetTextAlign(12);
 	t3->SetTextColor(2);
 	t3->Draw("same");
@@ -1062,13 +1078,13 @@ void DynamicCanvas(){
 
         // create file and write the data into it
         std::ofstream txtfileio("./FinalData/TargetVar/tg_variableList.txt",std::ofstream::app);
-        auto writeString=Form("%5d  %1.5f   %1.5f   %1.5f   %1.5f   %1.5f",eventID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1),thetaFunc->GetParameter(1)*180.0/3.141592654,phiFunc->GetParameter(1)*180.0/3.141592654,HRSAngle_Final);
+        auto writeString=Form("%5d  %1.5f   %1.5f   %1.5f   %1.5f   %1.5f   %1.5f",eventID,thetaFunc->GetParameter(1),phiFunc->GetParameter(1),thetaFunc->GetParameter(1)*180.0/3.141592654,phiFunc->GetParameter(1)*180.0/3.141592654,HRSAngle_Final,getP0(HRSAngle_Final,thetaFunc->GetParameter(1),phiFunc->GetParameter(1)));
         txtfileio << writeString<<std::endl;
         txtfileio.close();
     }
 
     SieveRecCanvas->SaveAs(Form("./PointingCheck/result/Pointing_%d.jpg",eventID));
-	SieveRecCanvas->SaveAs(Form("./PointingCheck/result/Pointing_%d.root",eventID));
+	SieveRecCanvas->Write();
 	hSieveHole->Delete();
 	cutg->Delete();
 }
