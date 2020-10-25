@@ -653,9 +653,9 @@ void DynamicCanvas(){
         chainArray[-1] = LoadrootFile(2565);
         chainArray[0] = LoadrootFile(2550);
         chainArray[1] = LoadrootFile(2556);
-		chainArray[1000] = LoadrootFile(2671);
-//        chainArray[999] = LoadrootFile(2671);
-        chainArray[1001] = LoadrootFile(2709);
+//		chainArray[1000] = LoadrootFile(2671);
+////        chainArray[999] = LoadrootFile(2671);
+//        chainArray[1001] = LoadrootFile(2709);
 
     }else {
 		std::cout<<"Working on RHRS"<<std::endl;
@@ -663,9 +663,9 @@ void DynamicCanvas(){
 		chainArray[-1] = LoadrootFile(21641);
 		chainArray[0] = LoadrootFile(21626);
 		chainArray[1] = LoadrootFile(21632);
-		chainArray[999] = LoadrootFile(21786);
-		chainArray[1000] = LoadrootFile(21736);
-		chainArray[1001] = LoadrootFile(21764);
+//		chainArray[999] = LoadrootFile(21786);
+//		chainArray[1000] = LoadrootFile(21736);
+//		chainArray[1001] = LoadrootFile(21764);
 //		chainArray[1001] = LoadrootFile(22256);
 	}
 
