@@ -128,7 +128,7 @@ TF1 *SpectroCrystalFitDp_C12(TH1F*momentumSpectro,int fitPeak=4){
                                       momentumSpectro->GetFunction("gaus")->GetParameter(1)
                                       - 5 * momentumSpectro->GetFunction("gaus")->GetParameter(2),
                                       momentumSpectro->GetFunction("gaus")->GetParameter(1)
-                                      + 2 * momentumSpectro->GetFunction("gaus")->GetParameter(2));
+                                      + 5 * momentumSpectro->GetFunction("gaus")->GetParameter(2));
     fgroundCrystalball->SetParameters(
             momentumSpectro->GetFunction("gaus")->GetParameter(0),
             momentumSpectro->GetFunction("gaus")->GetParameter(1),
@@ -430,6 +430,9 @@ void DynamicCanvas(){
     momentumDph->GetXaxis()->SetRangeUser(dpFitfunc->GetParameter(1)-0.004,dpFitfunc->GetParameter(1)+0.001);
     momentumDph->Draw();
     dpFitfunc->Draw("same");
+    TPaveText *dpfitpt = new TPaveText(0.1,0.8,0.3,0.9,"NDC");
+    dpfitpt->AddText(Form("Dpfit: %1.3f",CentralP*1000*(dpFitfunc->GetParameter(1)-dpFitfunc->GetParameter(6))));
+    dpfitpt->Draw("same");
 
     SieveRecCanvas->cd(1);
 	SieveRecCanvas->cd(1)->SetLogy();
@@ -443,8 +446,6 @@ void DynamicCanvas(){
 	momentum->GetXaxis()->SetTitle(Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP));
 	momentum->GetYaxis()->SetTitle("#");
 	momentum->Draw();
-
-
 
 
     auto fCrystalMomentum=SpectroCrystalFit_C12(momentum);
@@ -547,6 +548,14 @@ void DynamicCanvas(){
         txtfileio << writeString<<std::endl;
         txtfileio.close();
     }
+    {
+        SieveRecCanvas->cd(3)->cd(4);
+        TPaveText *p0pt = new TPaveText(0.1,0.1,0.9,0.9,"NDC");
+        p0pt->AddText(Form("P_0 : %f",CentralP));
+        p0pt->Draw("same");
+
+    }
+
 	SieveRecCanvas->SaveAs(Form("Carbon/Carbon_%d.jpg",runID));
 //	hSieveHole->Delete();
 //	f1->Close();

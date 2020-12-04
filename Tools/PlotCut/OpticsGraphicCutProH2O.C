@@ -972,7 +972,7 @@ void DynamicCanvas(){
 		double HRSAngle=GetPointingAngle(deltaE,getBeamE(eventID,chain));
 		HRSAngle_Final=HRSAngle;
 		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle,errorAngle,errorAngle1));
-		pt->AddText(Form("Beam E   :%f",getBeamE(eventID,chain)));
+//		pt->AddText(Form("Beam E   :%f",getBeamE(eventID,chain)));
 //        pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle-HRSBPMCorrection,errorAngle,errorAngle1));
 //        pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f beamE:%f",bpmX,bpmY,getBeamE(eventID,chain)));
 

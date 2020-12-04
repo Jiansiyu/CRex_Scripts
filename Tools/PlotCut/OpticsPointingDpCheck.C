@@ -871,7 +871,7 @@ void DynamicCanvas(){
 								(HallProbHH->GetRMS()) * 0.95282*1000.0 / 0.33930)));
 				peakInfor->SetLineWidth(2);
 				peakInfor->SetTextSize(0.02);
-//				peakInfor->Draw("same");
+				peakInfor->Draw("same");
 				CentralPArray[item->first]=CentralP;
 			}
 			HallProbHH->Delete();
@@ -896,7 +896,7 @@ void DynamicCanvas(){
 						Form("P_{0}=%1.4fGeV#pn%1.3f", CentralP,nmrperror));
 				peakInfor->SetLineWidth(2);
 				peakInfor->SetTextSize(0.02);
-//				peakInfor->Draw("same");
+				peakInfor->Draw("same");
 				CentralPArray[item->first]=CentralP;
 
 			} else {
@@ -912,65 +912,65 @@ void DynamicCanvas(){
 
     DpCanvas->cd();
 	// plot the bias at the carbon
-    {
-        for(auto iter = fitFunctionsList.begin();iter!=fitFunctionsList.end();iter++){
-            int scanID=iter->first;
-            if(scanID < 10){
-                if(DpTheoreticalMap.find(scanID)!=DpTheoreticalMap.end()){
-                    //plot the bias on the canv
-                    std::cout<<"expected"<<DpTheoreticalMap[scanID]<<std::endl;
-                    TLine *line=new TLine(DpTheoreticalMap[scanID],0,DpTheoreticalMap[scanID],fitFunctionsList[scanID]->GetParameter(0));
-                    line->SetLineWidth(2);
-                    line->Draw("same");
-                    //print the bias
-                    double theo=DpTheoreticalMap[scanID]*1000;
-                    double meas=fitFunctionsList[scanID]->GetParameter(1)*1000;
-                    TLatex *txt=new TLatex(fitFunctionsList[scanID]->GetParameter(1),fitFunctionsList[scanID]->GetParameter(0),Form("Bias:%1.3f x 10^{-3}",theo-meas));
-                    txt->SetTextSize(0.02);
-                    txt->Draw("same");
-                }
-            } else{
-                // get the theoretical predicted value for the water runs
-                UInt_t runID=getRunID(chainArray[scanID]);
-                double beamE=getBeamE(runID,chainArray[scanID]);
-                double centralP=getCentralP(chainArray[scanID]);
-                double scatteredAngle=4.7655;
-                if(runID > 20000) scatteredAngle=4.7717;
-                auto scatteredEmap=getWaterScatteredP(beamE,scatteredAngle);
-
-                double HydroE=0.0;
-                double  OxyE=0.0;
-                if (scatteredEmap.find("O")!=scatteredEmap.end()) OxyE=scatteredEmap["O"];
-                if (scatteredEmap.find("H")!=scatteredEmap.end()) HydroE=scatteredEmap["H"];
-
-                double  OxyEdp=(OxyE-centralP)/centralP;
-                double  HydroEdp=(HydroE-centralP)/centralP;
-
-                std::cout<<"Expect Position on Dp Plot::"<<OxyEdp<<","<<fitFunctionsList[scanID]->GetParameter(0)<<"  Central P"<<centralP<<std::endl;
-                TLine *line=new TLine(OxyEdp,0,OxyEdp,fitFunctionsList[scanID]->GetParameter(0));
-                line->SetLineWidth(2);
-                line->Draw("same");
-
-                double theo=OxyEdp;
-                double meas=fitFunctionsList[scanID]->GetParameter(1);
-                TLatex *txt=new TLatex(theo,fitFunctionsList[scanID]->GetParameter(0),Form("Bias:%f x 10^{-3}",1000*(theo-meas)));
-                txt->SetTextSize(0.02);
-                txt->SetTextColor(9);
-                txt->Draw("same");
-
-                TLine *lineH=new TLine(HydroEdp,0,HydroEdp,fitFunctionsList[scanID]->GetParameter(5));
-                lineH->SetLineWidth(2);
-                lineH->Draw("same");
-
-                double  theoH=HydroEdp;
-                double measH=fitFunctionsList[scanID]->GetParameter(6);
-                TLatex *txth=new TLatex(theoH,fitFunctionsList[scanID]->GetParameter(5),Form("bias:%f x 10^{-3}",1000*(theoH-measH)));
-                txth->SetTextSize(0.02);
-                txth->SetTextColor(9);
-                txth->Draw("same");
-            }
-        }
-    }
+//    {
+//        for(auto iter = fitFunctionsList.begin();iter!=fitFunctionsList.end();iter++){
+//            int scanID=iter->first;
+//            if(scanID < 10){
+//                if(DpTheoreticalMap.find(scanID)!=DpTheoreticalMap.end()){
+//                    //plot the bias on the canv
+//                    std::cout<<"expected"<<DpTheoreticalMap[scanID]<<std::endl;
+//                    TLine *line=new TLine(DpTheoreticalMap[scanID],0,DpTheoreticalMap[scanID],fitFunctionsList[scanID]->GetParameter(0));
+//                    line->SetLineWidth(2);
+//                    line->Draw("same");
+//                    //print the bias
+//                    double theo=DpTheoreticalMap[scanID]*1000;
+//                    double meas=fitFunctionsList[scanID]->GetParameter(1)*1000;
+//                    TLatex *txt=new TLatex(fitFunctionsList[scanID]->GetParameter(1),fitFunctionsList[scanID]->GetParameter(0),Form("Bias:%1.3f x 10^{-3}",theo-meas));
+//                    txt->SetTextSize(0.02);
+//                    txt->Draw("same");
+//                }
+//            } else{
+//                // get the theoretical predicted value for the water runs
+//                UInt_t runID=getRunID(chainArray[scanID]);
+//                double beamE=getBeamE(runID,chainArray[scanID]);
+//                double centralP=getCentralP(chainArray[scanID]);
+//                double scatteredAngle=4.7655;
+//                if(runID > 20000) scatteredAngle=4.7717;
+//                auto scatteredEmap=getWaterScatteredP(beamE,scatteredAngle);
+//
+//                double HydroE=0.0;
+//                double  OxyE=0.0;
+//                if (scatteredEmap.find("O")!=scatteredEmap.end()) OxyE=scatteredEmap["O"];
+//                if (scatteredEmap.find("H")!=scatteredEmap.end()) HydroE=scatteredEmap["H"];
+//
+//                double  OxyEdp=(OxyE-centralP)/centralP;
+//                double  HydroEdp=(HydroE-centralP)/centralP;
+//
+//                std::cout<<"Expect Position on Dp Plot::"<<OxyEdp<<","<<fitFunctionsList[scanID]->GetParameter(0)<<"  Central P"<<centralP<<std::endl;
+//                TLine *line=new TLine(OxyEdp,0,OxyEdp,fitFunctionsList[scanID]->GetParameter(0));
+//                line->SetLineWidth(2);
+//                line->Draw("same");
+//
+//                double theo=OxyEdp;
+//                double meas=fitFunctionsList[scanID]->GetParameter(1);
+//                TLatex *txt=new TLatex(theo,fitFunctionsList[scanID]->GetParameter(0),Form("Bias:%f x 10^{-3}",1000*(theo-meas)));
+//                txt->SetTextSize(0.02);
+//                txt->SetTextColor(9);
+//                txt->Draw("same");
+//
+//                TLine *lineH=new TLine(HydroEdp,0,HydroEdp,fitFunctionsList[scanID]->GetParameter(5));
+//                lineH->SetLineWidth(2);
+//                lineH->Draw("same");
+//
+//                double  theoH=HydroEdp;
+//                double measH=fitFunctionsList[scanID]->GetParameter(6);
+//                TLatex *txth=new TLatex(theoH,fitFunctionsList[scanID]->GetParameter(5),Form("bias:%f x 10^{-3}",1000*(theoH-measH)));
+//                txth->SetTextSize(0.02);
+//                txth->SetTextColor(9);
+//                txth->Draw("same");
+//            }
+//        }
+//    }
     DpCanvas->Update();
 
 	for(auto item = OptDpArrayH.begin(); item!= OptDpArrayH.end();item++){

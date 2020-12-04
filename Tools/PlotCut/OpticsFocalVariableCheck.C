@@ -599,10 +599,6 @@ void DynamicCanvas(){
 	}
 
 
-
-
-
-
 	//focal plan variables
 	std::map<int, double *> SieveFocalXGuasFitPar;
 	std::map<int, double *> SieveFocalYGuasFitPar;
@@ -924,6 +920,5 @@ void DynamicCanvas(){
 		}
 	}
 	sieveFocalXYCanv->Update();
-
 }
 

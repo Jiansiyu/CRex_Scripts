@@ -840,8 +840,8 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
 
 
         auto prexplot=new TGraphErrors(iter->second.size(),x_id,y_value,x_err,y_err);
-        prexplot->GetYaxis()->SetRangeUser(4.5,5.1);
-        prexplot->GetXaxis()->SetLimits(-2,2);
+        prexplot->GetYaxis()->SetRangeUser(4.5,5.0);
+        prexplot->GetXaxis()->SetLimits(-2,0.5);
 
 
         prexplot->GetXaxis()->SetTitle("Dp Scan");
@@ -873,6 +873,7 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
     text->SetTextAlign(22);
     text->Draw("same");
 
+/*
     TPaveText *textFiltered=new TPaveText(0.3,0.25,0.7,0.33,"NDC");
     textFiltered->SetFillColor(6);
     double sumFiltered = std::accumulate(HRSAngleFiltered.begin(),HRSAngleFiltered.end(),0.0);
@@ -883,13 +884,14 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
     textFiltered->SetTextColor(4);
     textFiltered->SetTextAlign(22);
     textFiltered->Draw("same");
+*/
 
 
 
 
 
 
-    TLine *AverageLine=new TLine(-1.9,mean,1.9,mean);
+    TLine *AverageLine=new TLine(-1.9,mean,0.4,mean);
     AverageLine->SetLineColor(4);
     AverageLine->SetLineWidth(2);
     AverageLine->Draw("same");
@@ -900,7 +902,7 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
         if (HRS == "RHRS"){
             survey=4.807;
         }
-        TLine *line=new TLine(-1.9,survey,1.9,survey);
+        TLine *line=new TLine(-1.9,survey,0.4,survey);
         line->SetLineWidth(2);
         line->SetLineColor(3);
         line->Draw("same");
@@ -913,23 +915,23 @@ TCanvas *plotHRSCanv(std::map<std::string,std::vector<std::vector<double>>> data
         text1->Draw("same");
         text2->Draw("same");
 
-        TLine *line1=new TLine(-1.9,survey+0.06,1.9,survey+0.06);
+        TLine *line1=new TLine(-1.9,survey+0.06,0.4,survey+0.06);
         line1->SetLineWidth(2);
         line1->SetLineColor(93);
         line1->Draw("same");
 
-        TLine *line2=new TLine(-1.9,survey-0.06,1.9,survey-0.06);
+        TLine *line2=new TLine(-1.9,survey-0.06,0.4,survey-0.06);
         line2->SetLineWidth(2);
         line2->SetLineColor(93);
         line2->Draw("same");
     }else{
 
-        TLine *lineUpperBound=new TLine(-1.9,mean+stdev,1.9,mean+stdev);
+        TLine *lineUpperBound=new TLine(-1.9,mean+stdev,0.4,mean+stdev);
         lineUpperBound->SetLineWidth(2);
         lineUpperBound->SetLineColor(44);
         lineUpperBound->Draw("same");
 
-        TLine *lineLowerBound=new TLine(-1.9,mean-stdev,1.9,mean-stdev);
+        TLine *lineLowerBound=new TLine(-1.9,mean-stdev,0.4,mean-stdev);
         lineLowerBound->SetLineWidth(2);
         lineLowerBound->SetLineColor(44);
         lineLowerBound->Draw("same");
