@@ -12,34 +12,22 @@
 #include <TChain.h>
 #include <TCut.h>
 #include <TCutG.h>
-#include <TPad.h>
-#include <TMath.h>
-#include <TH1F.h>
 #include <TH2F.h>
 #include <TH1.h>
 #include <TF1.h>
-#include <TMath.h>
-#include <TF1NormSum.h>
 #include <TPaveText.h>
 #include <map>
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sys/stat.h>
-#include <sstream>
-#include <TComplex.h>
+
 #include <TVirtualPad.h>
 
-#include <TSpectrum2.h>
-#include <TF2.h>
 #include <TObject.h>
-#include "TMinuit.h"
 #include <TFile.h>
-#include <fstream>
 #include <TSystem.h>
 #include <TApplication.h>
 #include <TLatex.h>
-#include <TGApplication.h>
 
 // used for create the folder if does not exist in the destintion folder
 #include <boost/filesystem.hpp>
@@ -64,8 +52,8 @@ TString prepcut;
 TString generalcut;
 
 //CRex C-12
-TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1";// && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
-TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && L.gold.dp<1 && L.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
+TString generalcutR="R.tr.n==1 ";//&& R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1";// && R.gold.dp<1 && R.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
+TString generalcutL="L.tr.n==1 ";//&& L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1 && L.gold.dp<1 && L.gold.dp > -0.1 && fEvtHdr.fEvtType==1";
 
 // CRex Water
 //TString generalcutR="R.tr.n==1 && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 && R.vdc.u2.nclust==1 && R.vdc.v2.nclust==1 && fEvtHdr.fEvtType==1 && R.gold.p > 2.14 && R.gold.p < 2.2";
@@ -82,7 +70,9 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200701/";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200701/water";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200915";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200921/RHRS";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200921/RHRS";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Water/cut_20201206";
+
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -102,8 +92,9 @@ int minSieveHoles[13]=     {0,0,0,1,0,1,1,0,1,1,1,2,2};
 
 
 inline Bool_t IsFileExist (const std::string& name) {
-	  struct stat buffer;
-	  return (stat (name.c_str(), &buffer) == 0);
+//	  struct stat buffer;
+//	  return (stat (name.c_str(), &buffer) == 0);
+    return !gSystem->AccessPathName(name.c_str());
 }
 
 

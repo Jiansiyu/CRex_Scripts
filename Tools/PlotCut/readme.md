@@ -3,6 +3,7 @@
 Most of the code are root or Hall A analyzer micros
 
 1. [Optics automatic cut tool](#cutpro-c)
+2. [Pointing Measurement Script](#pointing-measurement-script)
 
 
 # Usage
@@ -58,6 +59,18 @@ myget -b "2019-12-16 04:11:14" -e "2019-12-16 04:14:12" -c HALLA:p > RHRS_21739_
 ```
 python3 getBeamE.py
 ```
+
+### Pointing Measurement Script
+#### Regular mode 
+Measure the Central Sieve Pointing Angle (HRS pointing angle)
+```c++
+OpticsGraphicCutH2O.C +
+OpticsGraphicCutProH20(UInt_t runID)
+
+```
+
+#### Calculate All the Sieve holes for single Pointing Run 
+
 
 
 ## PRexCRex_cut branch 

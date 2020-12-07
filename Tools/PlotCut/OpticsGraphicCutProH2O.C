@@ -61,7 +61,10 @@ TString generalcutR="R.tr.n==1";// && R.vdc.u1.nclust==1&& R.vdc.v1.nclust==1 &&
 TString generalcutL="L.tr.n==1";// && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.vdc.u2.nclust==1 && L.vdc.v2.nclust==1  && L.gold.p > 2.14 && L.gold.p < 2.19";
 
 
-//
+///
+/// \param DeltaE
+/// \param BeamE
+/// \return
 inline double GetPointingAngle(double DeltaE, double BeamE=2.17568){
 	//In pointing measurement,
 	// calculate the HRS angle according to H and O seperation
@@ -83,7 +86,11 @@ inline double GetPointingAngle(double DeltaE, double BeamE=2.17568){
 	return HRSAngleReal;
 }
 
-
+///
+/// \param ScatterAng
+/// \param Targ_theta
+/// \param Targ_phi
+/// \return
 inline double getP0(double ScatterAng, double Targ_theta, double Targ_phi){
 
     ScatterAng=ScatterAng*TMath::Pi()/180.0;
@@ -94,22 +101,113 @@ inline double getP0(double ScatterAng, double Targ_theta, double Targ_phi){
     double C=1.0/(2*(1+TMath::Power(Targ_phi,2)));
 
     return TMath::ACos(C*(A-B))*180/TMath::Pi();
-
-
 }
 
+///
+/// \param name
+/// \return
 inline Bool_t IsFileExist (const std::string& name) {
     return !gSystem->AccessPathName(name.c_str());
-//	  struct stat buffer;
-//	  return (stat (name.c_str(), &buffer) == 0);
 }
 
+double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Learning/GeneralScripts/halog/beamE.txt"){
+    std::map<int, double_t> beamE;
+    beamE[21739]=2.1763077;
+    beamE[21740]=2.1763047;
+    beamE[21789]=2.1762745;
+    beamE[21790]=2.1762517;
+    beamE[21762]=2.1763254;
 
-//
+    beamE[2566]=2.175918588;
+    beamE[2565]=2.175984498;
+    beamE[2550]=2.17560073;
+    beamE[2556]=2.1762867;
+    beamE[2674]=2.1763062;
+    beamE[2697]=2.1763254;
+    beamE[2726]=2.1762729;
+
+    //TODO check the root file, if it contains the hallp information, need to use this value
+    {
+        double beamERangeMin=2100;
+        double beamERangeMax=2200;
+        chain->GetListOfBranches()->Contains("HALLA_p");
+        TH1F *HallEpicsBeamE = new TH1F("HallEpicsBeamE", "HallEpicsBeamE", 1000, beamERangeMin, beamERangeMax);
+        chain->Project(HallEpicsBeamE->GetName(),"HALLA_p");
+        double epicsBeamE=HallEpicsBeamE->GetMean();
+        if ((epicsBeamE > 2170)&&(epicsBeamE < 2180)){
+            std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E in ROOT file(with correction): "<<epicsBeamE*953.4/951.1<<std::endl;
+            return  epicsBeamE/1000.0*2182.2152/2176;
+        }
+    }
+
+    //read in the beamE information and parser
+    if ((!beamEfname.IsNull()) && IsFileExist(beamEfname.Data())){
+        std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E file: "<<beamEfname.Data()<<std::endl;
+        std::ifstream infile(beamEfname.Data());
+        int runID_temp;
+        float beamE_temp;
+        while (infile >> runID_temp >> beamE_temp){
+            beamE[runID_temp]=beamE_temp/1000.0;
+        }
+    }else{
+        std::cout<<"\033[1;33m [Warning]\033[0m can not find file "<<beamEfname.Data()<<" Skip the beamE file!!!"<<std::endl;
+
+    }
+    if(beamE.find(runID)!=beamE.end()){
+        std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E file(with correction): "<<beamE[runID]*953.4/951.1<<std::endl;
+        return beamE[runID]*2182.2152/2176;
+    }else{
+        std::cout<<"\033[1;31m [CAUTION]\033[0m Can not find the Beam E for run"<<runID<<" Using default value!!!["<<__func__<<"("<<__LINE__<<")]"<<std::endl;
+        exit(-1);
+    }
+}
+
+/// Read the NMR/Hall Probe and calculate the cental P
+/// \param chain
+/// \return
+double_t getCentralP(TChain *chain){
+    TString HRS("R");
+    TString filename(chain->GetFile()->GetName());
+    if (filename.Contains("RHRS")) {
+    } else if (filename.Contains("LHRS")) {
+        HRS = "L";
+    }
+
+    double CentralP;
+    if (HRS == "L") {
+        TH1F *HallProbHH = new TH1F("HallLProb", "HallLProb", 1000, -1, 0);
+        chain->Project(HallProbHH->GetName(), "HacL_D_LS450_FLD_DATA",
+                       generalcut.Data());
+        CentralP = std::abs((HallProbHH->GetMean()) * 0.95282 / 0.33930);
+        std::cout << "CentralMomentum is (LHRS) for Hall Probe::" << (CentralP)
+                  << std::endl;
+    } else {
+        //HacR_D1_NMR_SIG
+        TH1F *HallR_NMR = new TH1F("HallR_NMR", "HallR_NMR", 1000, 0.7, 0.9);
+        chain->Project(HallR_NMR->GetName(), "HacR_D1_NMR_SIG",
+                       generalcut.Data());
+        if (HallR_NMR->GetEntries()) {
+            double Mag = HallR_NMR->GetMean();
+            CentralP = 2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
+            std::cout << "CentralMomentum is (RHRS) from NMR::" << CentralP
+                      << std::endl;
+        } else {
+
+            std::cout << "\033[1;33m [Warning]\033[0m Missing HallR_NMR:"
+                      << std::endl;
+        }
+    }
+
+    return CentralP;
+}
+
 double GLobalSovler_scatteredAngle;
 double GLobalSovler_theta_tg;
 double GLobalSovler_phi_tg;
 
+///
+/// \param HRSAngle
+/// \return
 double GetHRSAngle(double HRSAngle){
 
     TVector3 TCSX(0, -1, 0);
@@ -124,112 +222,121 @@ double GetHRSAngle(double HRSAngle){
     return ScatteringAngle - GLobalSovler_scatteredAngle;
 }
 
-// fit function for the water cell target
+///
+/// \param momentumSpectro
+/// \return
 TF1 *SpectroCrystalFit_H2O(TH1F*momentumSpectro){
+    // locate the H peak
+    auto CGroundp = momentumSpectro->GetXaxis()->GetBinCenter(momentumSpectro->GetMaximumBin());
+    momentumSpectro->GetXaxis()->SetRangeUser(CGroundp - 0.03,CGroundp + 0.0044*1.7);
+    momentumSpectro->GetXaxis()->SetTitle("Mom");
+    momentumSpectro->GetYaxis()->SetTitle("#");
 
-	auto CGroundDp=momentumSpectro->GetXaxis()->GetBinCenter(momentumSpectro->GetMaximumBin());
-	//start the fit and get the mean ans sigma
-	momentumSpectro->Fit("gaus","RQ0","ep",CGroundDp-0.0003,CGroundDp+0.0003);
+    double_t fgroudGausPar[3];
+    TF1 *fgroundGaus = new TF1("groundStateGaus","gaus",CGroundp - 0.0005,CGroundp + 0.0005);
+    momentumSpectro->Fit(fgroundGaus->GetName(),"RQ0","ep",fgroundGaus->GetXmin(),fgroundGaus->GetXmax());
+    fgroundGaus->GetParameters(fgroudGausPar);
 
-	double_t fgroundCrystalballPar[5];
+    TH1F *test  = (TH1F *) momentumSpectro->Clone("fitTest");
+    test ->GetXaxis()->SetRangeUser(momentumSpectro->GetXaxis()->GetXmin(),fgroudGausPar[1]-10*fgroudGausPar[2]);
 
-	TF1 *fgroundCrystalball = new TF1("fgroundCrystal", "crystalball",
-			momentumSpectro->GetFunction("gaus")->GetParameter(1)
-					- 5 * momentumSpectro->GetFunction("gaus")->GetParameter(2),
-			momentumSpectro->GetFunction("gaus")->GetParameter(1)
-					+ 5 * momentumSpectro->GetFunction("gaus")->GetParameter(2));
-	fgroundCrystalball->SetParameters(
-			momentumSpectro->GetFunction("gaus")->GetParameter(0),
-			momentumSpectro->GetFunction("gaus")->GetParameter(1),
-			momentumSpectro->GetFunction("gaus")->GetParameter(2), 1.64, 1.1615);
+    auto C1stp = test ->GetXaxis()->GetBinCenter(test->GetMaximumBin());
 
-	momentumSpectro->Fit("fgroundCrystal","RQ0","ep",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
-	fgroundCrystalball->GetParameters(fgroundCrystalballPar);
+    double_t ffirstGuasPar[3];
+    TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0015,C1stp+0.00155);
+    momentumSpectro->Fit("firststatesgaus","RQ0","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
+    ffirstGuas->GetParameters(ffirstGuasPar);
 
+    // change the gause fit to cristal ball
+    double_t fgroundCrystalballPar[5];
+    TF1 *fgroundCrystalball=new TF1("fgroundCrystal","crystalball",fgroudGausPar[1]-0.0030,fgroundGaus->GetXmax()+0.0003);
+    fgroundCrystalball->SetParameters(fgroudGausPar[0],fgroudGausPar[1],fgroudGausPar[2],1.64,1.1615);
+    momentumSpectro->Fit("fgroundCrystal","RQ0","same",fgroundCrystalball->GetXmin(),fgroundCrystalball->GetXmax());
+    fgroundCrystalball->GetParameters(fgroundCrystalballPar);
 
-	TH1F *test=(TH1F *)momentumSpectro->Clone("fitTest");
-	test->GetXaxis()->SetRangeUser(momentumSpectro->GetXaxis()->GetXmin(),fgroundCrystalballPar[1]-5*fgroundCrystalballPar[2]);
+    double_t ffirstCrystalPar[5];
+    TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
+    ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
+    momentumSpectro->Fit("ffirstCrystal","RQ0","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
+    ffirstCrystal->GetParameters(ffirstCrystalPar);
 
-	double_t ffirstGuasPar[3];
-	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
-	test->Delete();
-	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-3*fgroundCrystalballPar[2],C1stp+3*fgroundCrystalballPar[2]);
-	momentumSpectro->Fit("firststatesgaus","R0Q","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
-	ffirstGuas->GetParameters(ffirstGuasPar);
-
-	double_t ffirstCrystalPar[5];
-	TF1 *ffirstCrystal=new TF1("ffirstCrystal","crystalball",ffirstGuasPar[1]-0.0025,ffirstGuas->GetXmax());
-	ffirstCrystal->SetParameters(ffirstGuasPar[0],ffirstGuasPar[1],ffirstGuasPar[2],1.64,1.1615);
-	momentumSpectro->Fit("ffirstCrystal","RQ0","ep",ffirstCrystal->GetXmin(),ffirstCrystal->GetXmax());
-	ffirstCrystal->GetParameters(ffirstCrystalPar);
-
-	double_t fCrystalMomentumPar[10];
-	TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
-	std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
-	std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
-	fCrystalMomentum->SetParameters(fCrystalMomentumPar);
-	momentumSpectro->Fit("fCrystalMomentum","RQ0","ep",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
-
-	return fCrystalMomentum;
+    double_t fCrystalMomentumPar[10];
+    TF1 *fCrystalMomentum=new TF1("fCrystalMomentum","crystalball(0)+crystalball(5)",ffirstCrystal->GetXmin(),fgroundCrystalball->GetXmax());
+    std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
+    std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
+    fCrystalMomentum->SetParameters(fCrystalMomentumPar);
+    momentumSpectro->Fit("fCrystalMomentum","R","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+    return fCrystalMomentum;
 }
 
 
-// input: the runID
-//		: cut root file
-//TODO, need to input the size ID vs. scattered angle chart
-Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
+///
+/// \param runID
+/// \param folder
+/// \return
+TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result"){
+    TChain *chain=new TChain("T");
+    TString HRS="R";
+    if(runID<20000){HRS="L";};
+
+    if(folder.EndsWith(".root")){
+        chain->Add(folder.Data());
+    }else{
+        TString rootDir(folder.Data());
+        if(runID>20000){ //RHRS
+            if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
+                std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+                chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
+
+                TString filename;
+                int16_t split=1;
+                filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                while (IsFileExist(filename.Data())){
+                    std::cout<<"Add File::"<<filename.Data()<<std::endl;
+                    chain->Add(filename.Data());
+                    split++;
+                    filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                }
+            }else{
+                std::cout<<"Looking file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+            }
+        }else{
+            HRS="L";
+            if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
+                std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+                chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
+
+                TString filename;
+                int16_t split=1;
+                filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                while (IsFileExist(filename.Data())){
+                    std::cout<<"Add File::"<<filename.Data()<<std::endl;
+                    chain->Add(filename.Data());
+                    split++;
+                    filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
+                }
+            }else{
+                std::cout<<"Looking file :"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
+            }
+        }
+    }
+    return chain;
+}
+
+///
+/// \param runID
+/// \param cutFile
+/// \param folder
+void getAllSievePointing(UInt_t runID=2671,
 		TString cutFile =
-				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Water/WithOutMomCut/prexLHRS_2726_-1.root.FullCut.root",
+				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Water/cut_20201206/WithOutMomCut/prexLHRS_2671_-1.root.FullCut.root",
 		TString folder =
 				"/home/newdriver/Storage/Research/CRex_Experiment/RasterReplay/Replay/Result") {
-	TChain *chain=new TChain("T");
+
+	TChain *chain=LoadrootFile(runID,folder);
 	// if the folder itself is and root file
 	TString HRS="R";
 	if(runID<20000){HRS="L";};
-
-	if(folder.EndsWith(".root")){
-		chain->Add(folder.Data());
-	}else{
-		TString rootDir(folder.Data());
-		if(runID>20000){ //RHRS
-			if(IsFileExist(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID))){
-				std::cout<<"Add File::"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-				chain->Add(Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID));
-				TString filename;
-				int16_t split=1;
-				filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-				while (IsFileExist(filename.Data())){
-					std::cout<<"Add File::"<<filename.Data()<<std::endl;
-					chain->Add(filename.Data());
-					split++;
-					filename=Form("%s/prexRHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-				}
-			}else{
-				std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-			}
-		}else{
-			HRS="L";
-			if(IsFileExist(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID))){
-				std::cout<<"Add File::"<<Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-				chain->Add(Form("%s/prexLHRS_%d_-1.root",rootDir.Data(),runID));
-
-				TString filename;
-				int16_t split=1;
-				filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-				while (IsFileExist(filename.Data())){
-					std::cout<<"Add File::"<<filename.Data()<<std::endl;
-					chain->Add(filename.Data());
-					split++;
-					filename=Form("%s/prexLHRS_%d_-1_%d.root",rootDir.Data(),runID,split);
-				}
-			}else{
-				std::cout<<"\033[1;33m [Warning]\033[0m Missing file :"<<Form("%s/prexRHRS_%d_-1.root",rootDir.Data(),runID)<<std::endl;
-			}
-		}
-	}
-	// get list of files, and print summary
-
-
 
 	//load the cut and load the canvas
 	//plot the theta and phi, and load the cut file
@@ -239,30 +346,11 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 		generalcut=generalcutR;
 	}
 
-	// try to extract the hall prob if this is LHRS
-	double CentralP;
-	if(HRS=="L"){
-		TH1F *HallProbHH = new TH1F("HallLProb", "HallLProb", 1000, -1, 0);
-		chain->Project(HallProbHH->GetName(), "HacL_D_LS450_FLD_DATA",generalcut.Data());
-		CentralP = std::abs((HallProbHH->GetMean()) * 0.95282 / 0.33930);
-		std::cout << "CentralMomentum is (LHRS) for Hall Probe::" << (CentralP) << std::endl;
-	}else{
-		//HacR_D1_NMR_SIG
-		TH1F *HallR_NMR = new TH1F("HallR_NMR", "HallR_NMR", 1000, 0.7, 0.9);
-		chain->Project(HallR_NMR->GetName(), "HacR_D1_NMR_SIG",generalcut.Data());
-		if (HallR_NMR->GetEntries()) {
-			double Mag = HallR_NMR->GetMean();
-			CentralP = 2.702 * (Mag) - 1.6e-03 * (Mag) * (Mag) * (Mag);
-			std::cout << "CentralMomentum is (RHRS) from NMR::" << CentralP
-					<< std::endl;
-		}else{
-
-			std::cout<<"\033[1;33m [Warning]\033[0m Missing HallR_NMR:"<<std::endl;
-		}
-	}
+	double CentralP=getCentralP(chain);
 
 
 	TCanvas *mainPatternCanvas=(TCanvas *)gROOT->GetListOfCanvases()->FindObject("cutPro");
+
 	if(!mainPatternCanvas){
 		mainPatternCanvas=new TCanvas("cutPro","cutPro",600,600);
 	}else{
@@ -272,12 +360,14 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 	mainPatternCanvas->Draw();
 
 	mainPatternCanvas->cd(1);
+
 	// check initial data set without cut and check it with cut
 	TH2F *TargetThPh_SieveNoCutHH=(TH2F *)gROOT->FindObject("th_vs_ph_No_cut");
 	if(TargetThPh_SieveNoCutHH) TargetThPh_SieveNoCutHH->Delete();
 	TargetThPh_SieveNoCutHH=new TH2F("th_vs_ph_No_cut","th_vs_ph with No Cut",1000,-0.03,0.03,1000,-0.045,0.045);
 	chain->Project(TargetThPh_SieveNoCutHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()));   // draw all the data with no cut
 	TargetThPh_SieveNoCutHH->Draw("zcol");
+
 	if(!(TargetThPh_SieveNoCutHH->GetEntries())){
 		TPaveText *text=new TPaveText(0.2,0.2,0.8,0.8,"NDC");
 		text->AddText("No Event Found !!!");
@@ -311,7 +401,6 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 	TFile *cutFileIO=new TFile(cutFile.Data(),"READ");
 	if(cutFileIO->IsZombie()){
 		std::cout<<"[ERROR]:: CAN NOT FIND CUT FILE \" "<<cutFile.Data()<<"\""<<std::endl;
-		return -1;
 	}
 
 	//loop on the files in the cut and find all the sieve hole cuts
@@ -348,6 +437,7 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 			}
 		}
 	}
+
 	sieveAllHoleCut=sieveAllHoleCut+TCut(generalcut.Data());
 
 	mainPatternCanvas->cd(4);
@@ -358,66 +448,262 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 	TargetThPh_SieveCutHH->Draw("zcol");
 	mainPatternCanvas->Update();
 
+    mainPatternCanvas->Print(Form("Pointing_run%d.pdf(",runID),"pdf");
 
 	// fit each individual momentum
-	TCanvas *canvastest=new TCanvas("canvs","sasas",1000,1000);
-	canvastest->Divide(NSieveCol,NSieveRow);
-		canvastest->Draw();
+	TCanvas *SievePointingCanv=new TCanvas(Form("SievePointing"),Form("SievePointing"),1960,1080);
+    SievePointingCanv->Draw();
+
 	std::map<int, std::map<int, double *>> MomentumFitParArray;
 	std::map<int, std::map<int, TH1F *>> SieveMomentumArray;
 
-	for (int16_t col = 0; col < NSieveCol; col++) {
+	// plot all the Momentum, and get  the momentum difference
+    std::map<int, std::map<int, double>> scatteredAngleArray;
+    std::map<int, std::map<int, double>> scatteredAngleEnergyDiff;
+
+    // theta and phi value
+    std::map<int, std::map<int, double>> thetaValueArray;
+    std::map<int, std::map<int, double>> phiValueArray;
+
+    for (int16_t col = 0; col < NSieveCol; col++) {
 		for (int16_t row = 0; row < NSieveRow; row++) {
 			auto cutg = (TCutG*) gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+
 			if (cutg) {
-				canvastest->cd(col*NSieveRow+row+1);
+                SievePointingCanv->Clear();
+                SievePointingCanv->Divide(1,2);
+                SievePointingCanv->cd(2)->Divide(4,1);
+
+			    SievePointingCanv->SetLogy();
+
 				std::cout<<"Fitting col"<<col<<"row"<<row<<std::endl;
 				SieveMomentumArray[col][row]=new TH1F(Form("Sieve_Col%d_Row%d_Momentum",col,row),Form("Sieve_Col%d_Row%d_Momentum",col,row),1000,2.1,2.2);
 				TCut sieveCut=TCut(generalcut.Data())+TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
 				chain->Project(SieveMomentumArray[col][row]->GetName(),Form("%s.gold.dp*%f+%f",HRS.Data(),CentralP,CentralP),sieveCut);
-				SieveMomentumArray[col][row]->Draw("zcol");
+
+
 				if(SieveMomentumArray[col][row]->GetEntries())
 				{
-					auto fitFunction=SpectroCrystalFit_H2O(SieveMomentumArray[col][row]);
+                    //get the target theta and phi angle from the projected sieve holesm use those information together with the angle to get the central Sieve
+                    TH2F *TargetThPhSieve=(TH2F *)gROOT->FindObject(Form("th_vs_ph_cut_col%d_row%d",col,row));
+                    if(TargetThPhSieve) TargetThPhSieve->Delete();
+                    TargetThPhSieve=new TH2F(Form("th_vs_ph_cut_col%d_row%d",col,row),Form("th_vs_ph_cut_col%d_row%d",col,row),1000,-0.03,0.03,1000,-0.045,0.045);
+                    TCut sieveCut=TCut(generalcut.Data())+TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+                    chain->Project(TargetThPhSieve->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveCut);
 
+                    SievePointingCanv->cd(2)->cd(1);
+                    TargetThPhSieve->Draw("zcol");
+                    cutg->Draw("same");
+
+                    auto projectx=TargetThPhSieve->ProjectionX();
+                    auto projecty=TargetThPhSieve->ProjectionY();
+
+                    projectx->GetXaxis()->SetRangeUser(projectx->GetXaxis()->GetBinCenter(projectx->GetMaximumBin())-0.003,projectx->GetXaxis()->GetBinCenter(projectx->GetMaximumBin())+0.003);
+                    projectx->SetTitle(Form("Sieve_Phi_Col%d_Row%d",col,row));
+                    projecty->GetXaxis()->SetRangeUser(projecty->GetXaxis()->GetBinCenter(projecty->GetMaximumBin())-0.004,projecty->GetXaxis()->GetBinCenter(projecty->GetMaximumBin())+0.004);
+                    projecty->SetTitle(Form("Sieve_Theta_Col%d_Row%d",col,row));
+
+
+                    SievePointingCanv->cd(2)->cd(2);
+                    projectx->Fit("gaus");
+                    thetaValueArray[col][row]=projectx->GetFunction("gaus")->GetParameter(1);
+                    TLine *thetaValLine =new TLine(thetaValueArray[col][row],0,thetaValueArray[col][row],projectx->GetFunction("gaus")->GetParameter(0));
+                    TLatex *thetaValtxt =new TLatex(thetaValueArray[col][row],projectx->GetFunction("gaus")->GetParameter(0),Form("theta %1.5f",thetaValueArray[col][row]));
+                    projectx->Draw();
+                    thetaValLine->Draw("same");
+                    thetaValtxt->Draw("same");
+
+                    SievePointingCanv->cd(2)->cd(3);
+                    projecty->Fit("gaus");
+                    phiValueArray[col][row] = projecty->GetFunction("gaus")->GetParameter(1);
+
+                    TLine *phiValLine = new TLine(phiValueArray[col][row],0, phiValueArray[col][row], projecty->GetFunction("gaus")->GetParameter(0));
+                    TLatex *phiValTxt = new TLatex(phiValueArray[col][row], projecty->GetFunction("gaus")->GetParameter(0),Form("Phi: %1.5f",phiValueArray[col][row]));
+
+                    projecty->Draw();
+                    phiValLine->Draw("same");
+                    phiValTxt->Draw("same");
+
+                    SievePointingCanv->cd(1);
+					auto fitFunction=SpectroCrystalFit_H2O(SieveMomentumArray[col][row]);
 					MomentumFitParArray[col][row]=new double[10];
 					fitFunction->GetParameters(MomentumFitParArray[col][row]);
+
+
+					//calculate the sieve angles and also the sieve theta phi
+                    double  DeltaE=MomentumFitParArray[col][row][1]-MomentumFitParArray[col][row][6];
+                    double scatteredAngle=GetPointingAngle(DeltaE,getBeamE(runID,chain));
+                    // take the angle on the target coordination and get the central sieve position
+                    scatteredAngleArray[col][row]=scatteredAngle;
+                    scatteredAngleEnergyDiff[col][row]=DeltaE;
+
+
+                    SieveMomentumArray[col][row]->Draw();
 					fitFunction->Draw("same");
-					canvastest->Update();
+					//plot the values on the canvas, write the data
+					TLatex *groundValtxt = new TLatex(MomentumFitParArray[col][row][1] + 2*MomentumFitParArray[col][row][2],MomentumFitParArray[col][row][0],Form("P=%2.5fGeV #pm %3.1fMeV",MomentumFitParArray[col][row][1],1000*fitFunction->GetParError(1)));
+					groundValtxt->SetTextSize(0.05);
+                    groundValtxt->SetTextAlign(12);
+                    groundValtxt->SetTextColor(2);
+                    groundValtxt->Draw("same");
+
+                    TLine *groudposLine=new TLine(MomentumFitParArray[col][row][1],0,MomentumFitParArray[col][row][1],MomentumFitParArray[col][row][0]*1.1);
+                    groudposLine->SetLineColor(3);
+                    groudposLine->SetLineWidth(2);
+                    groudposLine->Draw("same");
+
+                    TLatex *firstValtxt = new TLatex(MomentumFitParArray[col][row][6] + 2*MomentumFitParArray[col][row][7],MomentumFitParArray[col][row][5],Form("P=%2.5fGeV #pm %3.1fMeV",MomentumFitParArray[col][row][6],1000*fitFunction->GetParError(6)));
+                    firstValtxt->SetTextSize(0.05);
+                    firstValtxt->SetTextAlign(12);
+                    firstValtxt->SetTextColor(2);
+                    firstValtxt->Draw("same");
+
+                    TLine *firstposLine=new TLine(MomentumFitParArray[col][row][6],0,MomentumFitParArray[col][row][6],MomentumFitParArray[col][row][5]*2.0);
+                    firstposLine->SetLineColor(3);
+                    firstposLine->SetLineWidth(2);
+                    firstposLine->Draw("same");
+
+                    auto deltaE = MomentumFitParArray[col][row][1]-MomentumFitParArray[col][row][6];
+                    auto deltaErr = TMath::Sqrt(fitFunction->GetParError(1)*fitFunction->GetParError(1)+fitFunction->GetParError(6)*fitFunction->GetParError(6));
+
+                    TLatex *midValuetxt = new TLatex(0.5*MomentumFitParArray[col][row][6]+0.5*MomentumFitParArray[col][row][1],0.5*(MomentumFitParArray[col][row][0]+MomentumFitParArray[col][row][5]),Form("#DeltaP=%2.3f #pm %1.3fMeV",deltaE*1000.0,1000.0*deltaErr));
+                    midValuetxt->SetTextSize(0.05);
+                    midValuetxt->SetTextAlign(12);
+                    midValuetxt->SetTextColor(2);
+                    midValuetxt->Draw("same");
+
+                    // calculate the final result of the data
+                    TPaveText *pt = new TPaveText(0.1,0.8,0.4,0.9,"NDC");
+
+                    std::cout<<"Get the HRS angle from ("<<col<<","<<row<<std::endl;
+                    double a = scatteredAngleArray[col][row];
+                    double theta_tg=thetaValueArray[col][row];
+                    double phi_tg=phiValueArray[col][row];
+
+                    GLobalSovler_phi_tg=phi_tg;
+                    GLobalSovler_theta_tg=theta_tg;
+                    GLobalSovler_scatteredAngle=a*TMath::Pi()/180.0;
+
+                    // sovle the function and get the angle
+                    ROOT::Math::Functor1D f1D(&GetHRSAngle);
+                    ROOT::Math::RootFinder rfb(ROOT::Math::RootFinder::kBRENT);
+                    rfb.SetFunction(f1D,0.0,6.0*TMath::Pi()/180.0);
+                    rfb.Solve();
+                    std::cout << rfb.Root()*180.0/TMath::Pi() << std::endl;
+
+                    pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f Degree)",1000.0*deltaE,rfb.Root()*180.0/TMath::Pi()));
+                    pt->Draw("same");
+
+
+
+                    SievePointingCanv->Update();
+					SievePointingCanv->Print(Form("Pointing_run%d.pdf",runID),"pdf");
 				}
-			}
-		}
-	}
-	canvastest->Update();
-
-	// plot all the Momentum, and get  the momentum difference
-	std::map<int, std::map<int, double>> scatteredAngleArray;
-	std::map<int, std::map<int, double>> scatteredAngleEnergyDiff;
-
-	for (int16_t col = 0; col < NSieveCol; col++) {
-		for (int16_t row = 0; row < NSieveRow; row++) {
-			if((SieveMomentumArray.find(col)!=SieveMomentumArray.end()) &&(SieveMomentumArray[col].find(row)!=SieveMomentumArray[col].end())){
-				//calculate the sieve momentumn difference
-				double  DeltaE=MomentumFitParArray[col][row][1]-MomentumFitParArray[col][row][6];
-				double scatteredAngle=GetPointingAngle(DeltaE);
-				// take the angle on the target coordination and get the central sieve position
-				scatteredAngleArray[col][row]=scatteredAngle;
-				scatteredAngleEnergyDiff[col][row]=DeltaE;
 			}
 		}
 	}
 
 	// how to the get the position for the central angles
 	// get the target theta and phi from the measurement
-	std::map<int, std::map<int, double>> thetaValueArray;
-	std::map<int, std::map<int, double>> phiValueArray;
-	for (int16_t col = 0; col < NSieveCol; col++) {
-		for (int16_t row = 0; row < NSieveRow; row++) {
-			auto cutg = (TCutG*) gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
-			if (cutg) {
-				std::cout<<"Get the theta/phi position: col"<<col<<"row"<<row<<std::endl;
-				// get the theta and phi for the sieve hole
-				TH2F *TargetThPhSieve=(TH2F *)gROOT->FindObject(Form("th_vs_ph_cut_col%d_row%d",col,row));
+//	for (int16_t col = 0; col < NSieveCol; col++) {
+//		for (int16_t row = 0; row < NSieveRow; row++) {
+//			auto cutg = (TCutG*) gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+//			if (cutg) {
+//				std::cout<<"Get the theta/phi position: col"<<col<<"row"<<row<<std::endl;
+//				// get the theta and phi for the sieve hole
+//				TH2F *TargetThPhSieve=(TH2F *)gROOT->FindObject(Form("th_vs_ph_cut_col%d_row%d",col,row));
+//				if(TargetThPhSieve) TargetThPhSieve->Delete();
+//				TargetThPhSieve=new TH2F(Form("th_vs_ph_cut_col%d_row%d",col,row),Form("th_vs_ph_cut_col%d_row%d",col,row),1000,-0.03,0.03,1000,-0.045,0.045);
+//				TCut sieveCut=TCut(generalcut.Data())+TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+//				//project the sieve
+//				chain->Project(TargetThPhSieve->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveCut);
+//
+//				auto projectx=TargetThPhSieve->ProjectionX();
+//				auto projecty=TargetThPhSieve->ProjectionY();
+//
+//				// get central sieve position
+//				auto maximumX=projectx->GetXaxis()->GetBinCenter(projectx->GetMaximumBin());
+//				auto maximumY=projecty->GetXaxis()->GetBinCenter(projecty->GetMaximumBin());
+//
+//				projectx->Fit("gaus","R","ep",maximumX-0.003,maximumX+0.003);
+//				projecty->Fit("gaus","R","ep",maximumY-0.003,maximumY+0.003);
+//
+//				double gausXFitPar[3];
+//				double gausYFitPar[3];
+//				projectx->GetFunction("gaus")->GetParameters(gausXFitPar);
+//				projecty->GetFunction("gaus")->GetParameters(gausYFitPar);
+//
+//				thetaValueArray[col][row]=gausXFitPar[1];
+//				phiValueArray[col][row]=gausYFitPar[1];
+//			}
+//		}
+//	}
+
+	// TODO add the code used for calculated the HRS
+	//get the scattered angle
+
+//	TH2F *sieveIDHRSAngle=new TH2F("ID vs. HRS angle","ID vs. HRS angle",100,0,100,100,0,10);
+//	for (int16_t col = 0; col < NSieveCol; col++) {
+//			for (int16_t row = 0; row < NSieveRow; row++) {
+//			if (thetaValueArray.find(col) != thetaValueArray.end()
+//					&& (thetaValueArray[col].find(row)
+//							!= thetaValueArray[col].end())
+//					&& (scatteredAngleArray.find(col)
+//							!= scatteredAngleArray.end())
+//					&& (scatteredAngleArray[col].find(row)
+//							!= scatteredAngleArray[col].end())) {
+//				std::cout<<"Get the HRS angle from ("<<col<<","<<row<<std::endl;
+//				double a = scatteredAngleArray[col][row];
+//				double theta_tg=thetaValueArray[col][row];
+//				double phi_tg=phiValueArray[col][row];
+//
+////				auto result = GetHRSAngle(a,theta_tg,phi_tg);
+////				std::cout<<"result:: 1-> "<<result<<std::endl;
+//
+//				GLobalSovler_phi_tg=phi_tg;
+//				GLobalSovler_theta_tg=theta_tg;
+//				GLobalSovler_scatteredAngle=a*TMath::Pi()/180.0;
+//
+//				// sovle the function and get the angle
+//				 ROOT::Math::Functor1D f1D(&GetHRSAngle);
+//				 ROOT::Math::RootFinder rfb(ROOT::Math::RootFinder::kBRENT);
+//				 rfb.SetFunction(f1D,0.0,6.0*TMath::Pi()/180.0);
+//				 rfb.Solve();
+//				 std::cout << rfb.Root()*180.0/TMath::Pi() << "  incease error:";
+//				 sieveIDHRSAngle->Fill(col*NSieveRow+row,rfb.Root()*180.0/TMath::Pi());
+//				 GLobalSovler_phi_tg=phi_tg*1.01;
+//				 GLobalSovler_theta_tg=theta_tg*1.01;
+//				 GLobalSovler_scatteredAngle=a*TMath::Pi()/180.0;
+//				 rfb.Solve();
+//				 std::cout << rfb.Root()*180.0/TMath::Pi()<<std::endl;
+//
+//				}
+//			}
+//	}
+//	TCanvas *canvastest1=new TCanvas("canvs1","sasas1",1000,1000);
+//	canvastest1->cd();
+//
+//	sieveIDHRSAngle->SetLineWidth(2);
+//	sieveIDHRSAngle->SetMarkerStyle(20);
+//	sieveIDHRSAngle->Draw();
+//	canvastest1->Update();
+
+
+    // draw the Momentum of the each Sieve holes
+    TH2F *TargetGroundPSieve=(TH2F *)gROOT->FindObject(Form("Sieve_Ground_P"));
+    if(TargetGroundPSieve) TargetGroundPSieve->Delete();
+    TargetGroundPSieve=new TH2F(Form("Sieve_Ground_P"),Form("Sieve_Ground_P"),1000,-0.03,0.03,1000,-0.045,0.045);
+
+    TCanvas *targetGroundPCanv = new TCanvas(Form("Sieve_ground_p"),Form("Sieve_ground_p"),1960,1080);
+    targetGroundPCanv->Draw();
+    TargetGroundPSieve->Draw("same");
+
+    for (int16_t col = 0; col < NSieveCol; col++) {
+        for (int16_t row = 0; row < NSieveRow; row++) {
+            auto cutg = (TCutG *) gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+            if (cutg) {
+                cutg->Draw("same");
+                TH2F *TargetThPhSieve=(TH2F *)gROOT->FindObject(Form("th_vs_ph_cut_col%d_row%d",col,row));
 				if(TargetThPhSieve) TargetThPhSieve->Delete();
 				TargetThPhSieve=new TH2F(Form("th_vs_ph_cut_col%d_row%d",col,row),Form("th_vs_ph_cut_col%d_row%d",col,row),1000,-0.03,0.03,1000,-0.045,0.045);
 				TCut sieveCut=TCut(generalcut.Data())+TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
@@ -431,68 +717,49 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 				auto maximumX=projectx->GetXaxis()->GetBinCenter(projectx->GetMaximumBin());
 				auto maximumY=projecty->GetXaxis()->GetBinCenter(projecty->GetMaximumBin());
 
-				projectx->Fit("gaus","R","ep",maximumX-0.003,maximumX+0.003);
-				projecty->Fit("gaus","R","ep",maximumY-0.003,maximumY+0.003);
+				TLatex *txt =new TLatex(maximumX,maximumY,Form("%1.5f",MomentumFitParArray[col][row][1]));
+				txt->SetTextSize(0.03);
+				txt ->Draw("same");
+            }
+        }
+    }
+    targetGroundPCanv->Update();
+    targetGroundPCanv->Print(Form("Pointing_run%d.pdf",runID),"pdf");
 
-				double gausXFitPar[3];
-				double gausYFitPar[3];
-				projectx->GetFunction("gaus")->GetParameters(gausXFitPar);
-				projecty->GetFunction("gaus")->GetParameters(gausYFitPar);
+    TH2F *TargetFirstPSieve=(TH2F *)gROOT->FindObject(Form("Sieve_First_P"));
+    if(TargetFirstPSieve) TargetFirstPSieve->Delete();
+    TargetFirstPSieve=new TH2F(Form("Sieve_Ground_P"),Form("Sieve_First_P"),1000,-0.03,0.03,1000,-0.045,0.045);
+    TCanvas *targetFirstPCanv = new TCanvas(Form("Sieve_first_p"),Form("Sieve_first_p"),1960,1080);
+    targetFirstPCanv->Draw();
+    TargetFirstPSieve->Draw();
 
-				thetaValueArray[col][row]=gausXFitPar[1];
-				phiValueArray[col][row]=gausYFitPar[1];
-			}
-		}
-	}
+    for (int16_t col = 0; col < NSieveCol; col++) {
+        for (int16_t row = 0; row < NSieveRow; row++) {
+            auto cutg = (TCutG *) gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+            if (cutg) {
+                cutg->Draw("same");
+                TH2F *TargetThPhSieve=(TH2F *)gROOT->FindObject(Form("th_vs_ph_cut_col%d_row%d",col,row));
+                if(TargetThPhSieve) TargetThPhSieve->Delete();
+                TargetThPhSieve=new TH2F(Form("th_vs_ph_cut_col%d_row%d",col,row),Form("th_vs_ph_cut_col%d_row%d",col,row),1000,-0.03,0.03,1000,-0.045,0.045);
+                TCut sieveCut=TCut(generalcut.Data())+TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
+                //project the sieve
+                chain->Project(TargetThPhSieve->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveCut);
 
-	// TODO add the code used for calculated the HRS
-	//get the scattered angle
+                auto projectx=TargetThPhSieve->ProjectionX();
+                auto projecty=TargetThPhSieve->ProjectionY();
 
-	TH2F *sieveIDHRSAngle=new TH2F("ID vs. HRS angle","ID vs. HRS angle",100,0,100,100,0,10);
-	for (int16_t col = 0; col < NSieveCol; col++) {
-			for (int16_t row = 0; row < NSieveRow; row++) {
-			if (thetaValueArray.find(col) != thetaValueArray.end()
-					&& (thetaValueArray[col].find(row)
-							!= thetaValueArray[col].end())
-					&& (scatteredAngleArray.find(col)
-							!= scatteredAngleArray.end())
-					&& (scatteredAngleArray[col].find(row)
-							!= scatteredAngleArray[col].end())) {
-				std::cout<<"Get the HRS angle from ("<<col<<","<<row<<std::endl;
-				double a = scatteredAngleArray[col][row];
-				double theta_tg=thetaValueArray[col][row];
-				double phi_tg=phiValueArray[col][row];
+                // get central sieve position
+                auto maximumX=projectx->GetXaxis()->GetBinCenter(projectx->GetMaximumBin());
+                auto maximumY=projecty->GetXaxis()->GetBinCenter(projecty->GetMaximumBin());
 
-//				auto result = GetHRSAngle(a,theta_tg,phi_tg);
-//				std::cout<<"result:: 1-> "<<result<<std::endl;
-
-				GLobalSovler_phi_tg=phi_tg;
-				GLobalSovler_theta_tg=theta_tg;
-				GLobalSovler_scatteredAngle=a*TMath::Pi()/180.0;
-
-				// sovle the function and get the angle
-				 ROOT::Math::Functor1D f1D(&GetHRSAngle);
-				 ROOT::Math::RootFinder rfb(ROOT::Math::RootFinder::kBRENT);
-				 rfb.SetFunction(f1D,0.0,6.0*TMath::Pi()/180.0);
-				 rfb.Solve();
-				 std::cout << rfb.Root()*180.0/TMath::Pi() << "  incease error:";
-				 sieveIDHRSAngle->Fill(col*NSieveRow+row,rfb.Root()*180.0/TMath::Pi());
-				 GLobalSovler_phi_tg=phi_tg*1.01;
-				 GLobalSovler_theta_tg=theta_tg*1.01;
-				 GLobalSovler_scatteredAngle=a*TMath::Pi()/180.0;
-				 rfb.Solve();
-				 std::cout << rfb.Root()*180.0/TMath::Pi()<<std::endl;
-
-				}
-			}
-	}
-	TCanvas *canvastest1=new TCanvas("canvs1","sasas1",1000,1000);
-	canvastest1->cd();
-
-	sieveIDHRSAngle->SetLineWidth(2);
-	sieveIDHRSAngle->SetMarkerStyle(20);
-	sieveIDHRSAngle->Draw();
-	canvastest1->Update();
+                TLatex *txt =new TLatex(maximumX,maximumY,Form("%1.5f",MomentumFitParArray[col][row][6]));
+                txt->SetTextSize(0.03);
+                txt ->Draw("same");
+            }
+        }
+    }
+    targetFirstPCanv->Update();
+    targetFirstPCanv->Print(Form("Pointing_run%d.pdf",runID),"pdf");
 
 
 	TH2F *momentumP1=new TH2F("momentumP1","MomentmP0",100,0,100,1000,2.1,2.2);
@@ -517,7 +784,8 @@ Int_t OpticsGraphicCutProH20(UInt_t type,UInt_t runID,
 		momentumP2->SetLineColor(kRed);
 		momentumP2->Draw("same");
 	canvastest2->Update();
-	return 1;
+
+	canvastest2->Print(Form("Pointing_run%d.pdf)",runID),"pdf");
 }
 
 
@@ -596,75 +864,11 @@ Int_t OpticsGraphicCutProH20(UInt_t runID,UInt_t maximumFileas=1,TString folder=
 }
 
 
-double HRSAngleBPMCorrection(UInt_t runID){
-    //create the the canvas and calculate the angle correction cause the bpm
-    std::map<UInt_t, double> bpmValue;
-
-    std::map<UInt_t,double> bpmCorrectArray;
-
-    return 0.0;
-}
-
-double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Learning/GeneralScripts/halog/beamE.txt"){
-	std::map<int, double_t> beamE;
-	beamE[21739]=2.1763077;
-	beamE[21740]=2.1763047;
-	beamE[21789]=2.1762745;
-	beamE[21790]=2.1762517;
-    beamE[21762]=2.1763254;
-
-	beamE[2566]=2.175918588;
-	beamE[2565]=2.175984498;
-	beamE[2550]=2.17560073;
-	beamE[2556]=2.1762867;
-	beamE[2674]=2.1763062;
-	beamE[2697]=2.1763254;
-	beamE[2726]=2.1762729;
-
-	//TODO check the root file, if it contains the hallp information, need to use this value
-    {
-        double beamERangeMin=2100;
-        double beamERangeMax=2200;
-        chain->GetListOfBranches()->Contains("HALLA_p");
-        TH1F *HallEpicsBeamE = new TH1F("HallEpicsBeamE", "HallEpicsBeamE", 1000, beamERangeMin, beamERangeMax);
-        chain->Project(HallEpicsBeamE->GetName(),"HALLA_p");
-        double epicsBeamE=HallEpicsBeamE->GetMean();
-        if ((epicsBeamE > 2170)&&(epicsBeamE < 2180)){
-            std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E in ROOT file(with correction): "<<epicsBeamE*953.4/951.1<<std::endl;
-            return  epicsBeamE/1000.0*2182.2152/2176;
-        }
-    }
-
-	//read in the beamE information and parser
-	if ((!beamEfname.IsNull()) && IsFileExist(beamEfname.Data())){
-		std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E file: "<<beamEfname.Data()<<std::endl;
-		std::ifstream infile(beamEfname.Data());
-		int runID_temp;
-		float beamE_temp;
-		while (infile >> runID_temp >> beamE_temp){
-           beamE[runID_temp]=beamE_temp/1000.0;
-		}
-	}else{
-		std::cout<<"\033[1;33m [Warning]\033[0m can not find file "<<beamEfname.Data()<<" Skip the beamE file!!!"<<std::endl;
-
-	}
-	if(beamE.find(runID)!=beamE.end()){
-        std::cout<<"\033[1;32m [Infor]\033[0m Read in the Beam E file(with correction): "<<beamE[runID]*953.4/951.1<<std::endl;
-		return beamE[runID]*2182.2152/2176;
-	}else{
-		std::cout<<"\033[1;31m [CAUTION]\033[0m Can not find the Beam E for run"<<runID<<" Using default value!!!["<<__func__<<"("<<__LINE__<<")]"<<std::endl;
-		exit(-1);
-	}
-}
-
 
 void DynamicCanvas(){
 	//check which button is clicked
 	//if the S button clicked, save the current  cut
 	//if the the d button clicked, skip the current hole and continue with the next one
-
-	// need to get the beamE
-
 
 	int event = gPad->GetEvent();
 	if (event == kNoEvent)
@@ -678,9 +882,6 @@ void DynamicCanvas(){
 		return;
 	}
 	if (event!=kButton1Down) return;
-
-
-
 
 	// link the root tree and check which HRS we are working on
 	TChain *chain = (TChain *) gROOT->FindObject("T");
@@ -696,7 +897,6 @@ void DynamicCanvas(){
     int eventID=int(eventIDhh->GetMean());
     TFile *f1=new TFile(Form("./PointingCheck/result/Pointing_%d.root",eventID),"RECREATE");
     assert(f1);
-
 	// try to extract the hall prob if this is LHRS
 	double CentralP;
 	if (HRS == "L") {
@@ -724,9 +924,6 @@ void DynamicCanvas(){
 	}
 
 
-
-
-
 	TH2 *h = (TH2*) select;
 	gPad->GetCanvas()->FeedbackMode(kTRUE);
 
@@ -744,11 +941,11 @@ void DynamicCanvas(){
 		SieveRecCanvas = new TCanvas("SieveRecCanvas", "Projection Canvas",
 				1000, 1000);
 
-	SieveRecCanvas->Divide(1, 4);   // on the third line, will display the bpm correction term
+	SieveRecCanvas->Divide(1, 3);   // on the third line, will display the bpm correction term
 
 	SieveRecCanvas->cd(2)->Divide(4, 1);
     SieveRecCanvas->cd(3)->Divide(4,1);
-    SieveRecCanvas->cd(4)->Divide(4,1);
+//    SieveRecCanvas->cd(4)->Divide(4,1);
 	//get the hsitogram and start rec
 	SieveRecCanvas->cd(2)->cd(2);
 
@@ -834,7 +1031,6 @@ void DynamicCanvas(){
 	test->GetXaxis()->SetRangeUser(momentum->GetXaxis()->GetXmin(),fgroudGausPar[1]-10*fgroudGausPar[2]);
 
 	auto C1stp=test->GetXaxis()->GetBinCenter(test->GetMaximumBin());
-//	auto C1stp=2.1565;//CGroundp-0.016504;
 
 	TF1 *ffirstGuas=new TF1 ("firststatesgaus","gaus",C1stp-0.0015,C1stp+0.00155);
 	momentum->Fit("firststatesgaus","RQ0","ep",ffirstGuas->GetXmin(),ffirstGuas->GetXmax());
@@ -867,8 +1063,6 @@ void DynamicCanvas(){
 	fCrystalMomentum->Draw("same");
 	fCrystalMomentum->GetParameters(fCrystalMomentumPar);
 
-
-
 	SieveRecCanvas->Update();
 	// plot the reconstrcution peak
 	TLine *groudposLine=new TLine(fCrystalMomentumPar[1],0,fCrystalMomentumPar[1],fgroudGausPar[0]*1.1);
@@ -891,68 +1085,15 @@ void DynamicCanvas(){
 	    //Step-1 calculate the correction
         double HRSBPMCorrection=0.0;
 
-	        //load the BPM information from the data file. bpm on target
-	        TH1F *bpmXinforh=new TH1F(Form("BPM_X_on_targ"),Form("BPM_X_on_targ"),500,-5,5);
-            TH1F *bpmYinforh=new TH1F(Form("BPM_Y_on_targ"),Form("BPM_Y_on_targ"),500,-5,5);
-            bpmXinforh->GetXaxis()->SetTitle(Form("targx"));
-            bpmYinforh->GetXaxis()->SetTitle(Form("targy"));
-            chain->Project(bpmXinforh->GetName(),Form("targx"),Form("%s && %s",generalcut.Data(),cutg->GetName()));
-            chain->Project(bpmYinforh->GetName(),Form("targy"),Form("%s && %s",generalcut.Data(),cutg->GetName()));
-
-            // set the range, and do the fit on BPM
-//            bpmXinforh->GetXaxis()->SetRangeUser(bpmXinforh->GetBinCenter(bpmXinforh->GetMaximumBin())-1,bpmXinforh->GetBinCenter(bpmXinforh->GetMaximumBin())+1);
-//            bpmXinforh->Fit("gaus","","",bpmXinforh->GetBinCenter(bpmXinforh->GetMaximumBin())-1,bpmXinforh->GetBinCenter(bpmXinforh->GetMaximumBin())+1);
-
-//            bpmYinforh->GetXaxis()->SetRangeUser(bpmYinforh->GetBinCenter(bpmYinforh->GetMaximumBin())-1,bpmYinforh->GetBinCenter(bpmYinforh->GetMaximumBin())+1);
-//            bpmYinforh->Fit("gaus","","",bpmYinforh->GetBinCenter(bpmYinforh->GetMaximumBin())-1,bpmYinforh->GetBinCenter(bpmYinforh->GetMaximumBin())+1);
-
-            double bpmX=bpmXinforh->GetMean();
-            double bpmY=bpmYinforh->GetMean();
-
-
-            double sieveX=82.46;
-            double sieveY=-0.6;
-            double sieveZ=993.03;
-            if(HRS == "R"){
-                sieveX=-82.66;
-                sieveY=-0.46;
-                sieveZ=993.26;
-            }
-            // calculate the target value, and project the data to the hall-0 position
-
-
-            SieveRecCanvas->cd(3)->cd(1);
-            TLine *xMeanLine=new TLine(bpmX,0,bpmX,bpmXinforh->GetMaximumBin());
-            bpmXinforh->Draw();
-            xMeanLine->Draw("same");
-            SieveRecCanvas->cd(3)->cd(2);
-            TLine *yMeanLine=new TLine(bpmY,0,bpmY,bpmYinforh->GetMaximumBin());
-            bpmYinforh->Draw();
-            yMeanLine->Draw("same");
-
-            // calculate the angle
-            HRSBPMCorrection=TMath::ATan((bpmX)/sieveZ) * 180.0 / TMath::Pi();
-            std::cout<<"Correction angle::"<<HRSBPMCorrection<<std::endl;
-
-            SieveRecCanvas->cd(3)->cd(3);
-            TString imgfname=Form("/home/newdriver/Learning/GeneralScripts/halog/result/BeamE%d.jpg",eventID);
-            if(!gSystem->AccessPathName(imgfname.Data())){
-                TImage *img=TImage::Open(imgfname.Data());
-                img->Draw();
-            }
-
-            // get the equantion and the equation that used for calculate the correction angle
-//            SieveRecCanvas->cd(3)->cd(4);
-//            TPaveText *infor=new TPaveText(0.1,0.1,0.9,0.9,"NDC");
-//            infor->AddText(Form("Bpm on Targ x.y/cm:(%f,%f)",bpmX,bpmY));
-//            infor->AddText(Form("Targ to Sieve on Beamline:%f",sieveZ));
-//            infor->AddText(Form("Atan(#frac{%f}{%f})=%f (%f#circ)",bpmX,sieveZ,TMath::ATan((bpmX)/sieveZ),HRSBPMCorrection));
-//            infor->Draw("same");
-
+        SieveRecCanvas->cd(3)->cd(3);
+        TString imgfname=Form("/home/newdriver/Learning/GeneralScripts/halog/result/BeamE%d.jpg",eventID);
+        if(!gSystem->AccessPathName(imgfname.Data())){
+            TImage *img=TImage::Open(imgfname.Data());
+            img->Draw();
+        } else{
+            std::cout << "\033[1;33m [Warning]\033[0m Missing Beam E image:"<<imgfname.Data()<< std::endl;
+        }
         SieveRecCanvas->cd(1);
-		//calculate the Dp with +/x 10^-4 change
-		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
-		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
 		// get the error
 		double DeltaEMax=deltaE+deltaErr;
 		double DeltaE200=deltaE+200.0/1000000.0;
@@ -972,26 +1113,8 @@ void DynamicCanvas(){
 		double HRSAngle=GetPointingAngle(deltaE,getBeamE(eventID,chain));
 		HRSAngle_Final=HRSAngle;
 		pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle,errorAngle,errorAngle1));
-//		pt->AddText(Form("Beam E   :%f",getBeamE(eventID,chain)));
-//        pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f#pm%1.3f#pm%1.3f Degree)",1000.0*deltaE,HRSAngle-HRSBPMCorrection,errorAngle,errorAngle1));
-//        pt->AddText(Form("BPM x::%1.5f  , BPM y::%1.5f beamE:%f",bpmX,bpmY,getBeamE(eventID,chain)));
-
-		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
-		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
-		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");
-
-		//calculate the Dp with +/x 10^-4 change
-		//pt->AddText(Form("#DeltaDp +2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0002*CentralP*1000.0,GetPointingAngle(deltaE+0.0002*CentralP)));
-		//pt->AddText(Form("#DeltaDp +1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE+0.0001*CentralP*1000.0,GetPointingAngle(deltaE+0.0001*CentralP)));
-        //pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(eventID,chain))));
-		//pt->AddText(Form("#DeltaDp -1*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0001*CentralP*1000.0,GetPointingAngle(deltaE-0.0001*CentralP)));
-		//pt->AddText(Form("#DeltaDp -2*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE-0.0002*CentralP*1000.0,GetPointingAngle(deltaE-0.0002*CentralP)));
-		//pt->AddText("CentalP : HallProb * 0.95282/0.33930");
-
 	}
-//	else{
-//		pt->AddText(Form("#DeltaDp  0*10^{-4}:%1.3f MeV (%1.4f Degree)",1000.0*deltaE,GetPointingAngle(deltaE)));
-//	}
+
 	pt->Draw("same");
 
 	TLatex *t1 = new TLatex(fgroudGausPar[1] + 2 * fgroudGausPar[2],fgroudGausPar[0], Form("P=%2.5fGeV #pm %1.3fMeV", fCrystalMomentumPar[1],1000.0*(fCrystalMomentum->GetParError(1))));
@@ -1011,8 +1134,6 @@ void DynamicCanvas(){
 	t3->SetTextAlign(12);
 	t3->SetTextColor(2);
 	t3->Draw("same");
-
-
 
 	//plot the bigger plot for first excited states
 	SieveRecCanvas->cd(2)->cd(3);
@@ -1056,7 +1177,7 @@ void DynamicCanvas(){
 
 	//ceate the data for the target focal plane variables and also save it to canvas
     {
-        SieveRecCanvas->cd(4)->cd(1);
+        SieveRecCanvas->cd(3)->cd(1);
         TH1F *tgThetah=new TH1F(Form("tg_th_%d",eventID),Form("tg_th_%d",eventID),1000,-0.045,0.045);
         chain->Project(tgThetah->GetName(),Form("%s.gold.th",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
         tgThetah->GetXaxis()->SetRangeUser(tgThetah->GetMaximum()-0.005,tgThetah->GetMaximum()+0.005);
@@ -1066,7 +1187,7 @@ void DynamicCanvas(){
         TLatex *txTheta=new TLatex(thetaFunc->GetParameter(1),thetaFunc->GetParameter(0),Form("theta:%f",thetaFunc->GetParameter(1)));
         txTheta->Draw("same");
 
-        SieveRecCanvas->cd(4)->cd(2);
+        SieveRecCanvas->cd(3)->cd(2);
         TH1F *tgPhih=new TH1F(Form("tg_ph_%d",eventID),Form("tg_ph_%d",eventID),1000,-0.045,0.045);
         chain->Project(tgPhih->GetName(),Form("%s.gold.ph",HRS.Data()),Form("%s && %s",generalcut.Data(),cutg->GetName()));
         tgPhih->GetXaxis()->SetRangeUser(tgPhih->GetMaximum()-0.005,tgPhih->GetMaximum()+0.005);
