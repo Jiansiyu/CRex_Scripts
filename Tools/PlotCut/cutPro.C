@@ -18,27 +18,18 @@
 #include <TH2F.h>
 #include <TH1.h>
 #include <TF1.h>
-#include <TMath.h>
-#include <TF1NormSum.h>
 #include <TPaveText.h>
 #include <map>
 #include <vector>
 #include <random>
 #include <iostream>
-#include <sstream>
-#include <TComplex.h>
 #include <TVirtualPad.h>
-
-#include <TSpectrum2.h>
-#include <TF2.h>
+#include <TVector2.h>
 #include <TObject.h>
-#include "TMinuit.h"
 #include <TFile.h>
-#include <fstream>
 #include <TSystem.h>
 #include <TApplication.h>
 #include <TLatex.h>
-#include <TGApplication.h>
 
 // used for create the folder if does not exist in the destintion folder
 #include <boost/filesystem.hpp>
@@ -70,7 +61,7 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //////////////////////////////////////////////////////////////////////////////
 
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/LHRS";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20201209/LHRS";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/junk";
 
 TString CutSuf = ".FullCut.root";
@@ -109,8 +100,8 @@ inline Bool_t IsFileExist (const std::string& name) {
 void ExperimentConfigure(TString experiment, TString HRS){
 
 	if(experiment =="PRex"){
-//		defaultDataPath="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result";
-        defaultDataPath="/home/newdriver/pyQuant/prex_replayed/optroot";
+		defaultDataPath="/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result";
+//        defaultDataPath="/home/newdriver/pyQuant/prex_replayed/optroot";
 		defaultMomMin=0.94;
 		defaultMomMax=0.973;
 	}else{
@@ -519,6 +510,44 @@ double_t getCentralP(TChain *chain){
     return CentralP;
 }
 
+TVector2 getBPM(UInt_t runID,TString csvfname="bpm_on_targ.csv"){
+    if (gSystem->AccessPathName(csvfname.Data())){
+        std::cout<<"\033[1;33m [Warning]\033[0m Missing csv file::"<<csvfname.Data()<<std::endl;
+        exit(-1);
+    }
+
+    std::map<UInt_t,TVector2> bpmList;
+
+    std::ifstream csvStream(csvfname.Data());
+    std::string line;
+    while (std::getline(csvStream,line)){
+        std::istringstream s(line);
+        std::string field;
+
+        getline(s,field,',');
+        TString title=field;
+        if(title.Contains("run")) continue;
+
+        UInt_t runs=std::stoi(field.c_str());
+
+        getline(s,field,',');
+        double_t bpmx=std::stof(field.c_str());
+
+        getline(s,field,',');
+        double_t bpmy=std::stof(field.c_str());
+
+        TVector2 vec(bpmx,bpmy);
+
+        bpmList[runs]=vec;
+    }
+    if(bpmList.find(runID) != bpmList.end()){
+        return bpmList[runID];
+    } else{
+        std::cout<<"\033[1;33m [Warning]\033[0m Missing csv file::"<<csvfname.Data()<<std::endl;
+        exit(-1);
+    }
+}
+
 // take the cut file and  the root file as input, and generate the average value the parameters on the focal plane
 //TString cutFile =
 //        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/WithOutMomCut",
@@ -526,10 +555,13 @@ double_t getCentralP(TChain *chain){
 //"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles")
 Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		TString cutFile =
-		        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/RHRS/WithOutMomCut",
+		        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20201209/LHRS/WithOutMomCut",
+//		        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/RHRS/WithOutMomCut",
 //				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/LHRS/WithOutMomCut",
 		TString folder =
-				"/home/newdriver/pyQuant/prex_replayed/optroot")
+		        "/home/newdriver/Storage/Research/PRex_Experiment/PRex_Replay/replay/Result"
+//				"/home/newdriver/pyQuant/prex_replayed/optroot"
+				)
 				{
 
 	TFile *rootFileIO=new TFile(Form("./OpticsFocalDiagnose_run%d.root",runID),"recreate");
@@ -830,6 +862,10 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 
 				mainPatternCanvas->Update();
 				//mainPatternCanvas->Write(Form("sieve_kine%d_col%d_row%d",KineID,col,row));
+
+				auto bpmPos = getBPM(runID);
+				bpmX = bpmPos.X();
+				bpmY = bpmPos.Y();
 				f51OutPut<<uid<<"	"<<focal_x<<" "<<focal_th<<" "<<focal_y<<" "<<focal_ph<<" "<<0.00000<<" "<<bpmX/1000.0<<" "<<bpmY/1000.0<<" "<<0.0<<std::endl;
 
 //				mainPatternCanvas->Write(Form("run%d_kine%d_col%d_row%d",runID,KineID,col,row));
@@ -1582,7 +1618,7 @@ Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
 	mainPatternCanvas->Draw();
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",500,-0.03,0.03,500,-0.045,0.045);
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.02,0.03,1000,-0.045,0.045);
 
 	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
@@ -1611,7 +1647,7 @@ Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
     mainPatternCanvas->Update();
 
     // make the select cut and save to folder
-    TFile *tempfile=new TFile("temp.root","UPDATE");
+    TFile *tempfile=new TFile("temp.root","RECREATE");
 
     for(int row = rmin; row < rmin + nhol; row++){
     	std::cout << "Testing " << Form("hcut_R_%d_%d_%d", FoilID, col, row) << std::endl;
