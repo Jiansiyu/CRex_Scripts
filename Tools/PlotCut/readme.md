@@ -62,6 +62,7 @@ python3 getBeamE.py
 
 ### Pointing Measurement Script
 #### Regular mode 
+
 Measure the Central Sieve Pointing Angle (HRS pointing angle)
 ```c++
 OpticsGraphicCutH2O.C +
@@ -71,6 +72,11 @@ OpticsGraphicCutProH20(UInt_t runID)
 
 #### Calculate All the Sieve holes for single Pointing Run 
 
+```c++
+OpticsGraphicCutH2O.C +
+
+getAllSievePointing(UInt_t runID)
+```
 
 
 ## PRexCRex_cut branch 
