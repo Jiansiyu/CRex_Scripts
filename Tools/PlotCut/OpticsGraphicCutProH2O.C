@@ -34,10 +34,9 @@
 #include <TRotation.h>
 #include "TImage.h"
 #include <Math/Functor.h>
-
 #include "Math/RootFinder.h"
-#include "iostream"
-#include "fstream"
+#include "TGraphErrors.h"
+
 int FoilID=0;
 
 int col=3;
@@ -131,7 +130,13 @@ double_t getBeamE(int runID,TChain *chain,TString beamEfname="/home/newdriver/Le
         double beamERangeMin=2100;
         double beamERangeMax=2200;
         chain->GetListOfBranches()->Contains("HALLA_p");
-        TH1F *HallEpicsBeamE = new TH1F("HallEpicsBeamE", "HallEpicsBeamE", 1000, beamERangeMin, beamERangeMax);
+
+//        TH1F *HallEpicsBeamE = new TH1F("HallEpicsBeamE", "HallEpicsBeamE", 1000, beamERangeMin, beamERangeMax);
+
+        TH1F *HallEpicsBeamE=(TH1F *)gROOT->FindObject("HallEpicsBeamE");
+        if(HallEpicsBeamE) HallEpicsBeamE->Delete();
+        HallEpicsBeamE=new TH1F("HallEpicsBeamE", "HallEpicsBeamE", 1000, beamERangeMin, beamERangeMax);
+
         chain->Project(HallEpicsBeamE->GetName(),"HALLA_p");
         double epicsBeamE=HallEpicsBeamE->GetMean();
         if ((epicsBeamE > 2170)&&(epicsBeamE < 2180)){
@@ -265,7 +270,7 @@ TF1 *SpectroCrystalFit_H2O(TH1F*momentumSpectro){
     std::copy(fgroundCrystalballPar,fgroundCrystalballPar+5,fCrystalMomentumPar);
     std::copy(ffirstCrystalPar,ffirstCrystalPar+5,fCrystalMomentumPar+5);
     fCrystalMomentum->SetParameters(fCrystalMomentumPar);
-    momentumSpectro->Fit("fCrystalMomentum","R","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
+    momentumSpectro->Fit("fCrystalMomentum","RQ0","",fCrystalMomentum->GetXmin(),fCrystalMomentum->GetXmax());
     return fCrystalMomentum;
 }
 
@@ -322,6 +327,164 @@ TChain *LoadrootFile(UInt_t runID,TString folder="/home/newdriver/Storage/Resear
     }
     return chain;
 }
+
+///
+/// \param runID
+/// \param csvfname
+/// \return TVector2 with the beam Position on target, Unit/meter
+TVector2 getBPM(UInt_t runID,TString csvfname="bpm_on_targ.csv"){
+    if (gSystem->AccessPathName(csvfname.Data())){
+        std::cout<<"\033[1;33m [Warning]\033[0m Missing csv file::"<<csvfname.Data()<<std::endl;
+        exit(-1);
+    }
+
+    std::map<UInt_t,TVector2> bpmList;
+
+    std::ifstream csvStream(csvfname.Data());
+    std::string line;
+    while (std::getline(csvStream,line)){
+        std::istringstream s(line);
+        std::string field;
+
+        getline(s,field,',');
+        TString title=field;
+        if(title.Contains("run")) continue;
+
+        UInt_t runs=std::stoi(field.c_str());
+
+        getline(s,field,',');
+        double_t bpmx=std::stof(field.c_str());
+
+        getline(s,field,',');
+        double_t bpmy=std::stof(field.c_str());
+
+        TVector2 vec(bpmx/1000.,bpmy/1000.);
+
+        bpmList[runs]=vec;
+    }
+    if(bpmList.find(runID) != bpmList.end()){
+        return bpmList[runID];
+    } else{
+        std::cout<<"\033[1;33m [Warning]\033[0m Missing csv file::"<<csvfname.Data()<<std::endl;
+        exit(-1);
+    }
+}
+
+
+/// Use get the Sieve Positions on the target cooridnation system
+/// \param HRS  L/R
+/// \param col  col Index
+/// \param row  row index
+/// \return     TVecter3 with each position
+TVector3 _getSievePos(TString HRS, UInt_t col, UInt_t row){
+
+    if (HRS == "L"){
+        auto ZPos = (97.9) * 1e-2;
+        // return the Sieve hole position
+        assert(col < NSieveCol);
+        assert(row < NSieveRow);
+
+        // for prex experiment,
+        const Double_t PositionIndex_y[]={-20.52, -18.12, -15.72, -10.92,
+                                          -8.52,  -6.12,      0.0,	3.06,
+                                          6.12,    12.24, 15.30,   18.30,
+                                          21.42};
+
+        const Double_t XOffset[]      = {0.0,	    6.65,	   0.0,	    0.0,    // 0 - 3
+                                         6.65,	   0.0,	   0.0,    6.65,      // 4 - 7
+                                         0.0,	   0,	6.65,      0,
+                                         6.65};
+
+        double_t rowID_temp=(double_t)row -3.0;
+
+        Double_t PRex_x=rowID_temp*13.3*(1e-3)+XOffset[col]*(1e-3);
+        Double_t PRex_y=PositionIndex_y[col]*(1e-3);
+
+        assert(PRex_x<0.2 && PRex_x<-0.2);
+        assert(PRex_y<0.2 && PRex_y<-0.2);
+
+        return TVector3(PRex_x,PRex_y,ZPos);
+    } else{
+        auto ZPos = (97.923) * 1e-2;
+        assert(col < NSieveCol);
+        assert(row < NSieveRow);
+
+        // temporary uasage
+        // for prex experiment,
+        const Double_t PositionIndex_y[]={-20.52, -18.12, -15.72, -10.92,
+                                          -8.52,  -6.12,      0.0,	3.06,
+                                          6.12,    12.24, 15.30,   18.30,
+                                          21.42
+        };
+        const Double_t XOffset[]      = {0.0,	    6.65,	   0.0,	    0.0,    // 0 - 3
+                                         6.65,	   0.0,	   0.0,    6.65,      // 4 - 7
+                                         0.0,	   0,	6.65,      0,
+                                         6.65};
+        //  the gap of each two hole 13.3mm
+        double_t rowID_temp=(double_t)row -3.0;
+
+        Double_t PRex_x=rowID_temp*13.3*(1e-3)+XOffset[col]*(1e-3);
+        Double_t PRex_y=PositionIndex_y[col]*(-1e-3);
+
+        assert(PRex_x<0.2 && PRex_x<-0.2);
+        assert(PRex_y<0.2 && PRex_y<-0.2);
+
+        return TVector3(PRex_x,PRex_y,ZPos);
+    }
+
+
+}
+TVector2 _getSieveAngleOnTargCoor(TVector2 beamPos,TString HRS, UInt_t col,UInt_t row,double HRSAngle = 0){
+    if (HRSAngle == 0){
+        if (HRS == "R"){
+            HRSAngle = -4.822 * TMath::Pi()/180.0;
+        }else{
+            HRSAngle = 4.818 * TMath::Pi() / 180.;
+        }
+    }
+    // canclulate the theoratical position of the sieve hole
+    auto SieveHoleTCS = _getSievePos(HRS,col,row);
+    const TVector3 BeamSpotHCS(beamPos.X(),beamPos.Y(),0.0);
+
+    const Int_t a = (HRSAngle > 0) ? 1 : -1;
+
+    // MissPoint* are in HCS
+    const Double_t MissPointZ =0.0;//
+    const Double_t MissPointY = 0.0;//
+
+    TRotation fTCSInHCS; // transformations vector from TCS to HCS
+    TVector3 TCSX(0, -1, 0);
+    TVector3 TCSZ(TMath::Sin(HRSAngle), 0, TMath::Cos(HRSAngle));
+    TVector3 TCSY = TCSZ.Cross(TCSX);
+    fTCSInHCS.RotateAxes(TCSX, TCSY, TCSZ);
+
+    TVector3 fPointingOffset(-a*MissPointZ*TMath::Cos(HRSAngle), MissPointY, -MissPointZ * TMath::Sin(HRSAngle));
+    const TVector3 BeamSpotTCS = fTCSInHCS.Inverse()*(BeamSpotHCS - fPointingOffset);
+    const TVector3 MomDirectionTCS = SieveHoleTCS - BeamSpotTCS;   //
+
+    double kRealThVal = MomDirectionTCS.X() / MomDirectionTCS.Z();
+    double kRealPhVal = MomDirectionTCS.Y() / MomDirectionTCS.Z();
+
+    const Double_t x_tg = BeamSpotTCS.X() - BeamSpotTCS.Z() * kRealThVal;
+    const Double_t y_tg = BeamSpotTCS.Y() - BeamSpotTCS.Z() * kRealPhVal;
+
+    const Double_t ExtTarCor_ThetaCorr = 0.61;//0.00;//
+    const Double_t ExtTarCor_DeltaCorr = 5.18;//1e36;//
+
+    double kRealThMatrixVal = kRealThVal - x_tg * ExtTarCor_ThetaCorr;
+
+    TVector2 SieveAnglePos(kRealThMatrixVal,kRealPhVal);
+    return  SieveAnglePos;
+}
+
+std::map<UInt_t,TH1F *> getOptRange(TString HRS, UInt_t col, UInt_t row){
+    // color for each run
+    //run List of the Carbon Scan
+    std::map<UInt_t,TH1F *> resMomh;
+
+    return  resMomh;
+}
+
 
 ///
 /// \param runID
@@ -448,9 +611,18 @@ void getAllSievePointing(UInt_t runID=2671,
 	TargetThPh_SieveCutHH->Draw("zcol");
 	mainPatternCanvas->Update();
 
-    mainPatternCanvas->Print(Form("Pointing_run%d.pdf(",runID),"pdf");
+//    mainPatternCanvas->Print(Form("Pointing_run%d.pdf(",runID),"pdf");
 
-	// fit each individual momentum
+    TCanvas * inforCanv = new TCanvas("InforCanv","InforCanv",1960,1080);
+    inforCanv->Draw();
+    inforCanv->cd();
+
+    TargetThPh_SieveCutHH->Draw("zcol");
+    inforCanv->Update();
+    inforCanv->Print(Form("Pointing_run%d.pdf(",runID),"pdf");
+
+
+    // fit each individual momentum
 	TCanvas *SievePointingCanv=new TCanvas(Form("SievePointing"),Form("SievePointing"),1960,1080);
     SievePointingCanv->Draw();
 
@@ -458,8 +630,10 @@ void getAllSievePointing(UInt_t runID=2671,
 	std::map<int, std::map<int, TH1F *>> SieveMomentumArray;
 
 	// plot all the Momentum, and get  the momentum difference
-    std::map<int, std::map<int, double>> scatteredAngleArray;
+    std::map<int, std::map<int, double>> scatteredAngleArray; // initial scatteredAngle
+    std::map<int, std::map<int, double>> HRSAngleArray; // HRS pointing angle
     std::map<int, std::map<int, double>> scatteredAngleEnergyDiff;
+
 
     // theta and phi value
     std::map<int, std::map<int, double>> thetaValueArray;
@@ -505,7 +679,7 @@ void getAllSievePointing(UInt_t runID=2671,
 
 
                     SievePointingCanv->cd(2)->cd(2);
-                    projectx->Fit("gaus");
+                    projectx->Fit("gaus","RQ");
                     thetaValueArray[col][row]=projectx->GetFunction("gaus")->GetParameter(1);
                     TLine *thetaValLine =new TLine(thetaValueArray[col][row],0,thetaValueArray[col][row],projectx->GetFunction("gaus")->GetParameter(0));
                     TLatex *thetaValtxt =new TLatex(thetaValueArray[col][row],projectx->GetFunction("gaus")->GetParameter(0),Form("theta %1.5f",thetaValueArray[col][row]));
@@ -514,7 +688,7 @@ void getAllSievePointing(UInt_t runID=2671,
                     thetaValtxt->Draw("same");
 
                     SievePointingCanv->cd(2)->cd(3);
-                    projecty->Fit("gaus");
+                    projecty->Fit("gaus","RQ");
                     phiValueArray[col][row] = projecty->GetFunction("gaus")->GetParameter(1);
 
                     TLine *phiValLine = new TLine(phiValueArray[col][row],0, phiValueArray[col][row], projecty->GetFunction("gaus")->GetParameter(0));
@@ -580,8 +754,19 @@ void getAllSievePointing(UInt_t runID=2671,
                     double theta_tg=thetaValueArray[col][row];
                     double phi_tg=phiValueArray[col][row];
 
-                    GLobalSovler_phi_tg=phi_tg;
-                    GLobalSovler_theta_tg=theta_tg;
+                    // TODO fill the theta-phi on target
+                    Bool_t UseMeasuredTargThPh= false;
+                    if (UseMeasuredTargThPh){
+                        // use the measured average for the theta and phi
+                        GLobalSovler_phi_tg=theta_tg;
+                        GLobalSovler_theta_tg=phi_tg;
+                    }else{
+                        // use the theoretical Value and the survey for the theta-phi
+                        auto sievePos = _getSieveAngleOnTargCoor(getBPM(runID),HRS,col,row);
+                        GLobalSovler_theta_tg=sievePos.X();
+                        GLobalSovler_phi_tg=sievePos.Y();
+                    }
+
                     GLobalSovler_scatteredAngle=a*TMath::Pi()/180.0;
 
                     // sovle the function and get the angle
@@ -590,11 +775,10 @@ void getAllSievePointing(UInt_t runID=2671,
                     rfb.SetFunction(f1D,0.0,6.0*TMath::Pi()/180.0);
                     rfb.Solve();
                     std::cout << rfb.Root()*180.0/TMath::Pi() << std::endl;
-
-                    pt->AddText(Form("#DeltaDp :%1.3f MeV (%1.3f Degree)",1000.0*deltaE,rfb.Root()*180.0/TMath::Pi()));
+                    double hrsPointingAngle = rfb.Root()*180.0/TMath::Pi();
+                    HRSAngleArray[col][row] = hrsPointingAngle;
+                    pt->AddText(Form("#DeltaDp :%1.3f MeV Scatter Angle:%1.3f, HRS Angle:%1.3f",1000.0*deltaE,GetPointingAngle(deltaE,getBeamE(runID,chain)),hrsPointingAngle));
                     pt->Draw("same");
-
-
 
                     SievePointingCanv->Update();
 					SievePointingCanv->Print(Form("Pointing_run%d.pdf",runID),"pdf");
@@ -602,92 +786,6 @@ void getAllSievePointing(UInt_t runID=2671,
 			}
 		}
 	}
-
-	// how to the get the position for the central angles
-	// get the target theta and phi from the measurement
-//	for (int16_t col = 0; col < NSieveCol; col++) {
-//		for (int16_t row = 0; row < NSieveRow; row++) {
-//			auto cutg = (TCutG*) gROOT->FindObject(Form("hcut_R_%d_%d_%d", FoilID, col, row));
-//			if (cutg) {
-//				std::cout<<"Get the theta/phi position: col"<<col<<"row"<<row<<std::endl;
-//				// get the theta and phi for the sieve hole
-//				TH2F *TargetThPhSieve=(TH2F *)gROOT->FindObject(Form("th_vs_ph_cut_col%d_row%d",col,row));
-//				if(TargetThPhSieve) TargetThPhSieve->Delete();
-//				TargetThPhSieve=new TH2F(Form("th_vs_ph_cut_col%d_row%d",col,row),Form("th_vs_ph_cut_col%d_row%d",col,row),1000,-0.03,0.03,1000,-0.045,0.045);
-//				TCut sieveCut=TCut(generalcut.Data())+TCut(Form("hcut_R_%d_%d_%d", FoilID, col, row));
-//				//project the sieve
-//				chain->Project(TargetThPhSieve->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveCut);
-//
-//				auto projectx=TargetThPhSieve->ProjectionX();
-//				auto projecty=TargetThPhSieve->ProjectionY();
-//
-//				// get central sieve position
-//				auto maximumX=projectx->GetXaxis()->GetBinCenter(projectx->GetMaximumBin());
-//				auto maximumY=projecty->GetXaxis()->GetBinCenter(projecty->GetMaximumBin());
-//
-//				projectx->Fit("gaus","R","ep",maximumX-0.003,maximumX+0.003);
-//				projecty->Fit("gaus","R","ep",maximumY-0.003,maximumY+0.003);
-//
-//				double gausXFitPar[3];
-//				double gausYFitPar[3];
-//				projectx->GetFunction("gaus")->GetParameters(gausXFitPar);
-//				projecty->GetFunction("gaus")->GetParameters(gausYFitPar);
-//
-//				thetaValueArray[col][row]=gausXFitPar[1];
-//				phiValueArray[col][row]=gausYFitPar[1];
-//			}
-//		}
-//	}
-
-	// TODO add the code used for calculated the HRS
-	//get the scattered angle
-
-//	TH2F *sieveIDHRSAngle=new TH2F("ID vs. HRS angle","ID vs. HRS angle",100,0,100,100,0,10);
-//	for (int16_t col = 0; col < NSieveCol; col++) {
-//			for (int16_t row = 0; row < NSieveRow; row++) {
-//			if (thetaValueArray.find(col) != thetaValueArray.end()
-//					&& (thetaValueArray[col].find(row)
-//							!= thetaValueArray[col].end())
-//					&& (scatteredAngleArray.find(col)
-//							!= scatteredAngleArray.end())
-//					&& (scatteredAngleArray[col].find(row)
-//							!= scatteredAngleArray[col].end())) {
-//				std::cout<<"Get the HRS angle from ("<<col<<","<<row<<std::endl;
-//				double a = scatteredAngleArray[col][row];
-//				double theta_tg=thetaValueArray[col][row];
-//				double phi_tg=phiValueArray[col][row];
-//
-////				auto result = GetHRSAngle(a,theta_tg,phi_tg);
-////				std::cout<<"result:: 1-> "<<result<<std::endl;
-//
-//				GLobalSovler_phi_tg=phi_tg;
-//				GLobalSovler_theta_tg=theta_tg;
-//				GLobalSovler_scatteredAngle=a*TMath::Pi()/180.0;
-//
-//				// sovle the function and get the angle
-//				 ROOT::Math::Functor1D f1D(&GetHRSAngle);
-//				 ROOT::Math::RootFinder rfb(ROOT::Math::RootFinder::kBRENT);
-//				 rfb.SetFunction(f1D,0.0,6.0*TMath::Pi()/180.0);
-//				 rfb.Solve();
-//				 std::cout << rfb.Root()*180.0/TMath::Pi() << "  incease error:";
-//				 sieveIDHRSAngle->Fill(col*NSieveRow+row,rfb.Root()*180.0/TMath::Pi());
-//				 GLobalSovler_phi_tg=phi_tg*1.01;
-//				 GLobalSovler_theta_tg=theta_tg*1.01;
-//				 GLobalSovler_scatteredAngle=a*TMath::Pi()/180.0;
-//				 rfb.Solve();
-//				 std::cout << rfb.Root()*180.0/TMath::Pi()<<std::endl;
-//
-//				}
-//			}
-//	}
-//	TCanvas *canvastest1=new TCanvas("canvs1","sasas1",1000,1000);
-//	canvastest1->cd();
-//
-//	sieveIDHRSAngle->SetLineWidth(2);
-//	sieveIDHRSAngle->SetMarkerStyle(20);
-//	sieveIDHRSAngle->Draw();
-//	canvastest1->Update();
-
 
     // draw the Momentum of the each Sieve holes
     TH2F *TargetGroundPSieve=(TH2F *)gROOT->FindObject(Form("Sieve_Ground_P"));
@@ -726,10 +824,10 @@ void getAllSievePointing(UInt_t runID=2671,
     targetGroundPCanv->Update();
     targetGroundPCanv->Print(Form("Pointing_run%d.pdf",runID),"pdf");
 
-    TH2F *TargetFirstPSieve=(TH2F *)gROOT->FindObject(Form("Sieve_First_P"));
+    TH2F *TargetFirstPSieve=(TH2F *)gROOT->FindObject(Form("Sieve_First_P_h"));
     if(TargetFirstPSieve) TargetFirstPSieve->Delete();
-    TargetFirstPSieve=new TH2F(Form("Sieve_Ground_P"),Form("Sieve_First_P"),1000,-0.03,0.03,1000,-0.045,0.045);
-    TCanvas *targetFirstPCanv = new TCanvas(Form("Sieve_first_p"),Form("Sieve_first_p"),1960,1080);
+    TargetFirstPSieve=new TH2F(Form("Sieve_First_P_h"),Form("Sieve_First_P_h"),1000,-0.03,0.03,1000,-0.045,0.045);
+    TCanvas *targetFirstPCanv = new TCanvas(Form("Sieve_first_p_canv"),Form("Sieve_first_p_canv"),1960,1080);
     targetFirstPCanv->Draw();
     TargetFirstPSieve->Draw();
 
@@ -761,8 +859,205 @@ void getAllSievePointing(UInt_t runID=2671,
     targetFirstPCanv->Update();
     targetFirstPCanv->Print(Form("Pointing_run%d.pdf",runID),"pdf");
 
+    //plot all the HRS angle on canvas
 
-	TH2F *momentumP1=new TH2F("momentumP1","MomentmP0",100,0,100,1000,2.1,2.2);
+
+    // plot the angle on the canvas
+    std::map<int,TH1F *>sievePointColh;
+    std::map<int,TH1F *>sievePointRowh;
+
+    // buffer all the data in the canvas
+    for (int16_t col = 0; col < NSieveCol; col++) {
+        for (int16_t row = 0; row < NSieveRow; row++) {
+            // write the data into the histograme
+
+
+            if ((HRSAngleArray.find(col)!=HRSAngleArray.end())&&(HRSAngleArray[col].find(row)!=HRSAngleArray[col].end())){
+                if (!(sievePointColh.find(col)!=sievePointColh.end())){
+                    sievePointColh[col] = new TH1F(Form("Sieve Col %d HRS Angle",col),Form("Sieve Col %d HRS Angle",col),10,0,10);
+                    sievePointColh[col]->GetYaxis()->SetRangeUser(4.5,5.1);
+                    sievePointColh[col]->SetMarkerColor(46);
+                    sievePointColh[col]->SetLineWidth(2);
+                    sievePointColh[col]->SetLineColor(46);
+                    sievePointColh[col]->SetMarkerStyle(20);
+                }
+
+                sievePointColh[col]->SetBinContent(row+1,HRSAngleArray[col][row]);
+                sievePointColh[col]->SetBinError(row+1,0.02);
+
+                if (!(sievePointRowh.find(row) != sievePointRowh.end())){
+                    sievePointRowh[row] =new TH1F(Form("Sieve Row %d HRS Angle",row),Form("Sieve Row %d HRS Angle",col),15,0,15);
+                    sievePointRowh[row]->GetYaxis()->SetRangeUser(4.5,5.1);
+                    sievePointRowh[row]->SetMarkerColor(46);
+                    sievePointRowh[row]->SetLineWidth(2);
+                    sievePointRowh[row]->SetLineColor(46);
+                    sievePointRowh[row]->SetMarkerStyle(20);
+                }
+                sievePointRowh[row]->SetBinContent(col+1,HRSAngleArray[col][row]);
+                sievePointRowh[row]->SetBinError(col+1,0.02);
+            }
+        }
+    }
+    //plot the HRS angle on the canvas
+    TCanvas *pointAngColPart1Canv=new TCanvas(Form("pointAngColPart1"),Form("pointAngColPart1"),1960,1080);
+    pointAngColPart1Canv->Divide(4,3);
+    pointAngColPart1Canv->Draw();
+    for (auto colIter = 3; colIter <=12; colIter ++){
+        if(sievePointColh.find(colIter)!=sievePointColh.end()){
+            pointAngColPart1Canv->cd(colIter-2);
+            gStyle->SetEndErrorSize(5);
+            gStyle->SetErrorX(0.);
+            sievePointColh[colIter]->Draw("E1");
+
+            // plot the reference line
+            if(1) {
+                double survey = 4.818;
+                double final_pointVal = 4.765;
+                if (HRS == "R"){
+                    survey=4.822;
+                    final_pointVal = 4.747;
+                }
+
+                // draw
+                TLine *line=new TLine(0.5,survey,9.5,survey);
+                line->SetLineWidth(2);
+                line->SetLineColor(3);
+                line->Draw("same");
+
+
+                TLatex *text1= new TLatex(6,survey+0.07,Form("Survey: %1.3f + 0.06#circ",survey));
+                text1->SetTextSize(0.04);
+                text1->SetTextColorAlpha(93,0.476);
+
+                TLatex *text2= new TLatex(6,survey-0.09,Form("Survey: %1.3f - 0.06#circ",survey));
+                text2->SetTextSize(0.04);
+                text2->SetTextColorAlpha(93,0.476);
+
+                TLatex *surveyValtext= new TLatex(6,survey+0.001,Form("Survey: %1.3f #pm 0.06#circ",survey));
+                surveyValtext->SetTextSize(0.04);
+                surveyValtext->SetTextColorAlpha(3,0.476);
+
+
+                text1->Draw("same");
+                text2->Draw("same");
+                surveyValtext->Draw("same");
+
+                TLine *line1=new TLine(0.5,survey+0.06,9.5,survey+0.06);
+                line1->SetLineWidth(2);
+                line1->SetLineColor(93);
+                line1->Draw("same");
+
+                TLine *line2=new TLine(0.5,survey-0.06,9.5,survey-0.06);
+                line2->SetLineWidth(2);
+                line2->SetLineColor(93);
+                line2->Draw("same");
+
+
+                // line with the measurement value
+                TLine *fvalueLine=new TLine(0.5,final_pointVal,9.5,final_pointVal);
+                fvalueLine->SetLineWidth(2);
+                fvalueLine->SetLineColor(4);
+                fvalueLine->Draw("same");
+
+                TLatex *fvaluetxt= new TLatex(6,final_pointVal+0.001,Form("Measure: %1.3f #pm 0.02#circ",final_pointVal));
+                fvaluetxt->SetTextSize(0.04);
+                fvaluetxt->SetTextColor(4);
+                fvaluetxt->Draw("same");
+
+            }
+        }
+    }
+    pointAngColPart1Canv->Update();
+    pointAngColPart1Canv->Print(Form("Pointing_run%d.pdf",runID),"pdf");
+
+    TCanvas *canv_temp=new TCanvas(Form("canv_temp"),Form("canv_temp"),1960,1080);
+    for (auto colIter = 3; colIter <=12; colIter ++){
+        if(sievePointColh.find(colIter)!=sievePointColh.end()){
+
+            canv_temp->Clear();
+            canv_temp->cd();
+
+            gStyle->SetEndErrorSize(5);
+            gStyle->SetErrorX(0.);
+            sievePointColh[colIter]->Draw("E1");
+
+            // plot the reference line
+            if(1) {
+                double survey = 4.818;
+                double final_pointVal = 4.765;
+                if (HRS == "R") {
+                    survey = 4.822;
+                    final_pointVal = 4.747;
+                }
+
+                // draw
+                TLine *line = new TLine(0.5, survey, 9.5, survey);
+                line->SetLineWidth(2);
+                line->SetLineColor(3);
+                line->Draw("same");
+
+
+                TLatex *text1 = new TLatex(6, survey + 0.07, Form("Survey: %1.3f + 0.06#circ", survey));
+                text1->SetTextSize(0.04);
+                text1->SetTextColorAlpha(93, 0.476);
+
+                TLatex *text2 = new TLatex(6, survey - 0.09, Form("Survey: %1.3f - 0.06#circ", survey));
+                text2->SetTextSize(0.04);
+                text2->SetTextColorAlpha(93, 0.476);
+
+                TLatex *surveyValtext = new TLatex(6, survey + 0.001, Form("Survey: %1.3f #pm 0.06#circ", survey));
+                surveyValtext->SetTextSize(0.04);
+                surveyValtext->SetTextColorAlpha(3, 0.476);
+
+
+                text1->Draw("same");
+                text2->Draw("same");
+                surveyValtext->Draw("same");
+
+                TLine *line1 = new TLine(0.5, survey + 0.06, 9.5, survey + 0.06);
+                line1->SetLineWidth(2);
+                line1->SetLineColor(93);
+                line1->Draw("same");
+
+                TLine *line2 = new TLine(0.5, survey - 0.06, 9.5, survey - 0.06);
+                line2->SetLineWidth(2);
+                line2->SetLineColor(93);
+                line2->Draw("same");
+
+
+                // line with the measurement value
+                TLine *fvalueLine = new TLine(0.5, final_pointVal, 9.5, final_pointVal);
+                fvalueLine->SetLineWidth(2);
+                fvalueLine->SetLineColor(4);
+                fvalueLine->Draw("same");
+
+                TLatex *fvaluetxt = new TLatex(6, final_pointVal + 0.001,
+                                               Form("Measure: %1.3f #pm 0.02#circ", final_pointVal));
+                fvaluetxt->SetTextSize(0.04);
+                fvaluetxt->SetTextColor(4);
+                fvaluetxt->Draw("same");
+            }
+            canv_temp->Print(Form("Pointing_run%d.pdf",runID),"pdf");
+        }
+    }
+    // write the canvas seperately
+
+
+    TCanvas *pointAngRowPart1Canv=new TCanvas(Form("pointAngRowPart1Canv"),Form("pointAngRowPart1Canv"),1960,1080);
+    pointAngRowPart1Canv->Divide(3,3);
+    pointAngRowPart1Canv->Draw();
+    for (auto rowIter = 0; rowIter<=8; rowIter++){
+        if (sievePointRowh.find(rowIter)!=sievePointRowh.end()){
+            pointAngRowPart1Canv->cd(rowIter+1);
+            sievePointRowh[rowIter]->Draw("E1");
+        }
+    }
+    pointAngRowPart1Canv->Update();
+    pointAngRowPart1Canv->Print(Form("Pointing_run%d.pdf",runID),"pdf");
+
+
+
+    TH2F *momentumP1=new TH2F("momentumP1","MomentmP0",100,0,100,1000,2.1,2.2);
 	TH2F *momentumP2=new TH2F("momentumP2","MomentmP1",100,0,100,1000,2.1,2.2);
 	for (auto iter_col=MomentumFitParArray.begin();iter_col!=MomentumFitParArray.end();iter_col++){
 		for (auto iter_row=iter_col->second.begin();iter_row!=iter_col->second.end();iter_row++){
@@ -779,10 +1074,10 @@ void getAllSievePointing(UInt_t runID=2671,
 	momentumP1->Draw();
 
 	momentumP2->SetLineWidth(2);
-		momentumP2->SetMarkerStyle(20);
-		momentumP2->SetMarkerColor(kRed);
-		momentumP2->SetLineColor(kRed);
-		momentumP2->Draw("same");
+    momentumP2->SetMarkerStyle(20);
+    momentumP2->SetMarkerColor(kRed);
+    momentumP2->SetLineColor(kRed);
+    momentumP2->Draw("same");
 	canvastest2->Update();
 
 	canvastest2->Print(Form("Pointing_run%d.pdf)",runID),"pdf");
