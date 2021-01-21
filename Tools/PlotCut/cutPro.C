@@ -61,8 +61,10 @@ TString generalcutL="L.tr.n==1 && L.vdc.u1.nclust==1&& L.vdc.v1.nclust==1 && L.v
 //////////////////////////////////////////////////////////////////////////////
 
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719";
-TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20201209/LHRS";
+//TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20201209/LHRS";
 //TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/junk";
+//TString WorkDir ="/home/newdriver/Learning/GeneralScripts/vdcConstantOpt/cutFiles";
+TString WorkDir = "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20210111_PRex";
 
 TString CutSuf = ".FullCut.root";
 TString CutDescFileSufVertex = ".VertexCut.cut";
@@ -555,7 +557,8 @@ TVector2 getBPM(UInt_t runID,TString csvfname="bpm_on_targ.csv"){
 //"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/PRex/Cut20200719/rootfiles")
 Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 		TString cutFile =
-		        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20201209/LHRS/WithOutMomCut",
+		        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20210111_PRex/WithOutMomCut",
+//		        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20201209/LHRS/WithOutMomCut",
 //		        "/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/RHRS/WithOutMomCut",
 //				"/home/newdriver/Storage/Research/PRex_Workspace/PREX-MPDGEM/PRexScripts/Tools/PlotCut/Result/Cut20200927/LHRS/WithOutMomCut",
 		TString folder =
@@ -637,7 +640,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.03,0.03,1000,-0.045,0.05);
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.03,0.03,1000,-0.05,0.05);
 
 	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
@@ -701,7 +704,7 @@ Int_t OpticsFocalAverageGenerator(UInt_t runID,UInt_t KineID,
 	mainPatternCanvas->cd(1)->cd(2);
 	TH2F *TargetThPh_SieveCutHH=(TH2F *)gROOT->FindObject("th_vs_ph_cut");
 	if(TargetThPh_SieveCutHH) TargetThPh_SieveCutHH->Delete();
-	TargetThPh_SieveCutHH=new TH2F("th_vs_ph_cut","th_vs_ph_cut",1000,-0.03,0.03,1000,-0.045,0.05);
+	TargetThPh_SieveCutHH=new TH2F("th_vs_ph_cut","th_vs_ph_cut",1000,-0.03,0.03,1000,-0.05,0.05);
 	chain->Project(TargetThPh_SieveCutHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),sieveAllHoleCut);
 	TargetThPh_SieveCutHH->Draw("zcol");
 	mainPatternCanvas->Update();
@@ -1618,7 +1621,7 @@ Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
 	mainPatternCanvas->Draw();
 	TH2F *TargetThPhHH=(TH2F *)gROOT->FindObject("th_vs_ph");
 	if(TargetThPhHH) TargetThPhHH->Delete();
-	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.02,0.03,1000,-0.045,0.045);
+	TargetThPhHH=new TH2F("th_vs_ph","th_vs_ph",1000,-0.02,0.03,1000,-0.05,0.05);
 
 	chain->Project(TargetThPhHH->GetName(),Form("%s.gold.th:%s.gold.ph",HRS.Data(),HRS.Data()),generalcut.Data());
 	TargetThPhHH->Draw("zcol");
@@ -1683,5 +1686,3 @@ Int_t cutManual(UInt_t runID,UInt_t current_col=3,TString folder="") {
   //SavePatternHole_P1();
   return 1;
 }
-
-
